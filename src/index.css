@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #0f172a;
+  background: #f8fafc;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  background: #f8fafc;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-medium outline-none transition;
+  }
+
+  .input:focus {
+    @apply border-slate-400 ring-2 ring-slate-900/10;
+  }
+
+  .page-title {
+    @apply text-2xl font-black tracking-tight sm:text-3xl;
+  }
+
+  .surface {
+    @apply rounded-3xl border border-slate-200 bg-white;
+  }
+}
