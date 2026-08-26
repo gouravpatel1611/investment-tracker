@@ -193,61 +193,6 @@ function MutualFundSummaryCard({ data }) {
 
         </div>
 
-        {/* BOTTOM STATS */}
-        <div
-          className="
-            mt-2.5
-            flex
-            items-center
-            justify-between
-            border-t
-            border-zinc-700/70
-            pt-2.5
-          "
-        >
-
-          {/* TOTAL UNITS */}
-          <div>
-            <p className="text-[10px] font-medium text-zinc-400">
-              Total Units
-            </p>
-
-            <p
-              className="
-                mt-0.5
-                text-xs
-                font-bold
-                text-zinc-100
-              "
-            >
-              {formatUnits(data.units)}
-            </p>
-          </div>
-
-          {/* HOLDINGS */}
-          <div className="text-right">
-
-            <p className="text-[10px] font-medium text-zinc-400">
-              Holdings
-            </p>
-
-            <p
-              className="
-                mt-0.5
-                text-xs
-                font-bold
-                text-zinc-100
-              "
-            >
-              {data.holdings}{" "}
-              {data.holdings === 1
-                ? "Fund"
-                : "Funds"}
-            </p>
-
-          </div>
-
-        </div>
 
       </div>
     </div>
