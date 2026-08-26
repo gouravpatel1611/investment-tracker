@@ -24,18 +24,18 @@ function MutualFundSummaryCard({ data }) {
         relative
         overflow-hidden
         rounded-2xl
-        border border-indigo-400/20
+        border border-zinc-700
         bg-gradient-to-br
-        from-indigo-950
-        via-purple-950
-        to-slate-900
+        from-zinc-900
+        via-neutral-900
+        to-black
         p-4
         shadow-lg
-        shadow-indigo-950/20
+        shadow-black/40
       "
     >
 
-      {/* GLOW */}
+      {/* SUBTLE GLOW */}
       <div
         className="
           pointer-events-none
@@ -45,26 +45,11 @@ function MutualFundSummaryCard({ data }) {
           h-40
           w-40
           rounded-full
-          bg-purple-500/10
+          bg-white/[0.025]
           blur-3xl
         "
       />
 
-      <div
-        className="
-          pointer-events-none
-          absolute
-          -bottom-20
-          -left-10
-          h-40
-          w-40
-          rounded-full
-          bg-indigo-500/10
-          blur-3xl
-        "
-      />
-
-      {/* CONTENT */}
       <div className="relative">
 
         {/* HEADER */}
@@ -77,7 +62,7 @@ function MutualFundSummaryCard({ data }) {
                 font-bold
                 uppercase
                 tracking-[0.14em]
-                text-indigo-300/70
+                text-zinc-400
               "
             >
               Mutual Funds
@@ -99,8 +84,8 @@ function MutualFundSummaryCard({ data }) {
               font-bold
               ${
                 isProfit
-                  ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-                  : "border-red-400/20 bg-red-400/10 text-red-300"
+                  ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
+                  : "border-red-400/25 bg-red-400/10 text-red-300"
               }
             `}
           >
@@ -113,17 +98,33 @@ function MutualFundSummaryCard({ data }) {
         {/* CURRENT VALUE */}
         <div className="mt-4">
 
-          <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-200/50">
+          <p
+            className="
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-wider
+              text-zinc-400
+            "
+          >
             Current Value
           </p>
 
-          <p className="mt-0.5 text-2xl font-black tracking-tight text-white">
+          <p
+            className="
+              mt-0.5
+              text-2xl
+              font-black
+              tracking-tight
+              text-white
+            "
+          >
             {formatCurrency(data.currentValue)}
           </p>
 
         </div>
 
-        {/* STATS */}
+        {/* MAIN STATS */}
         <div className="mt-4 grid grid-cols-2 gap-2.5">
 
           {/* INVESTED */}
@@ -131,18 +132,25 @@ function MutualFundSummaryCard({ data }) {
             className="
               rounded-xl
               border
-              border-white/[0.07]
+              border-zinc-700/80
               bg-white/[0.045]
               px-3
               py-2.5
-              backdrop-blur-sm
             "
           >
-            <p className="text-[10px] text-indigo-200/50">
+            <p className="text-[10px] font-medium text-zinc-400">
               Invested
             </p>
 
-            <p className="mt-0.5 truncate text-sm font-bold text-white/90">
+            <p
+              className="
+                mt-0.5
+                truncate
+                text-sm
+                font-bold
+                text-zinc-100
+              "
+            >
               {formatCurrency(data.invested)}
             </p>
           </div>
@@ -156,21 +164,27 @@ function MutualFundSummaryCard({ data }) {
               py-2.5
               ${
                 isProfit
-                  ? "border-emerald-400/15 bg-emerald-400/[0.07]"
-                  : "border-red-400/15 bg-red-400/[0.07]"
+                  ? "border-emerald-400/20 bg-emerald-400/[0.07]"
+                  : "border-red-400/20 bg-red-400/[0.07]"
               }
             `}
           >
-            <p className="text-[10px] text-indigo-200/50">
+            <p className="text-[10px] font-medium text-zinc-400">
               Profit / Loss
             </p>
 
             <p
-              className={`mt-0.5 truncate text-sm font-bold ${
-                isProfit
-                  ? "text-emerald-300"
-                  : "text-red-300"
-              }`}
+              className={`
+                mt-0.5
+                truncate
+                text-sm
+                font-bold
+                ${
+                  isProfit
+                    ? "text-emerald-300"
+                    : "text-red-300"
+                }
+              `}
             >
               {isProfit ? "+" : ""}
               {formatCurrency(profitLoss)}
@@ -179,7 +193,7 @@ function MutualFundSummaryCard({ data }) {
 
         </div>
 
-        {/* BOTTOM INFO */}
+        {/* BOTTOM STATS */}
         <div
           className="
             mt-2.5
@@ -187,32 +201,50 @@ function MutualFundSummaryCard({ data }) {
             items-center
             justify-between
             border-t
-            border-white/[0.07]
+            border-zinc-700/70
             pt-2.5
           "
         >
 
+          {/* TOTAL UNITS */}
           <div>
-            <p className="text-[10px] text-indigo-200/45">
+            <p className="text-[10px] font-medium text-zinc-400">
               Total Units
             </p>
 
-            <p className="mt-0.5 text-xs font-bold text-white/80">
+            <p
+              className="
+                mt-0.5
+                text-xs
+                font-bold
+                text-zinc-100
+              "
+            >
               {formatUnits(data.units)}
             </p>
           </div>
 
+          {/* HOLDINGS */}
           <div className="text-right">
-            <p className="text-[10px] text-indigo-200/45">
+
+            <p className="text-[10px] font-medium text-zinc-400">
               Holdings
             </p>
 
-            <p className="mt-0.5 text-xs font-bold text-white/80">
+            <p
+              className="
+                mt-0.5
+                text-xs
+                font-bold
+                text-zinc-100
+              "
+            >
               {data.holdings}{" "}
               {data.holdings === 1
                 ? "Fund"
                 : "Funds"}
             </p>
+
           </div>
 
         </div>
