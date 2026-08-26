@@ -6,6 +6,8 @@ import {
   Hash,
 } from "lucide-react";
 
+import { useNavigate } from "react-router-dom";
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -14,19 +16,37 @@ function formatCurrency(value) {
   }).format(Number(value) || 0);
 }
 
-function MutualFundCard({ fund }) {
+function MutualFundCard({
+  fund,
+  clickable = true,
+}) {
+  const navigate = useNavigate();
+
   const profitLoss = Number(fund.profitLoss) || 0;
-  const returnPercent = Number(fund.returnPercent) || 0;
+  const returnPercent =
+    Number(fund.returnPercent) || 0;
 
   const isProfit = profitLoss >= 0;
 
+  const handleClick = () => {
+    if (!clickable) return;
+
+    navigate(
+      `/portfolio/mutual-funds/${fund.id}`
+    );
+  };
+
   return (
     <div
-      className="
+      onClick={handleClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      className={`
         relative
         overflow-hidden
         rounded-2xl
-        border border-slate-600/70
+        border
+        border-slate-600/70
         bg-gradient-to-br
         from-slate-950
         via-slate-900
@@ -34,7 +54,20 @@ function MutualFundCard({ fund }) {
         p-4
         shadow-lg
         shadow-black/30
-      "
+
+        ${
+          clickable
+            ? `
+              cursor-pointer
+              transition
+              duration-200
+              hover:border-slate-500
+              hover:shadow-xl
+              active:scale-[0.99]
+            `
+            : ""
+        }
+      `}
     >
 
       {/* SIDE ACCENT */}
@@ -56,7 +89,6 @@ function MutualFundCard({ fund }) {
       {/* HEADER */}
       <div className="flex items-start justify-between gap-3">
 
-        {/* SCHEME */}
         <div className="min-w-0">
 
           <h3 className="truncate text-sm font-bold text-white">
@@ -82,6 +114,7 @@ function MutualFundCard({ fund }) {
             py-1
             text-[11px]
             font-bold
+
             ${
               isProfit
                 ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
@@ -118,7 +151,6 @@ function MutualFundCard({ fund }) {
 
         <div className="mt-0.5 flex items-end justify-between gap-3">
 
-          {/* CURRENT VALUE */}
           <p
             className="
               truncate
@@ -131,7 +163,6 @@ function MutualFundCard({ fund }) {
             {formatCurrency(fund.currentValue)}
           </p>
 
-          {/* PROFIT / LOSS */}
           <div className="shrink-0 text-right">
 
             <p
@@ -166,7 +197,8 @@ function MutualFundCard({ fund }) {
         <div
           className="
             rounded-xl
-            border border-white/10
+            border
+            border-white/10
             bg-white/[0.05]
             px-2.5
             py-2
@@ -185,7 +217,9 @@ function MutualFundCard({ fund }) {
               text-slate-100
             "
           >
-            {formatCurrency(fund.investedAmount)}
+            {formatCurrency(
+              fund.investedAmount
+            )}
           </p>
         </div>
 
@@ -193,7 +227,8 @@ function MutualFundCard({ fund }) {
         <div
           className="
             rounded-xl
-            border border-white/10
+            border
+            border-white/10
             bg-white/[0.05]
             px-2.5
             py-2
@@ -220,7 +255,8 @@ function MutualFundCard({ fund }) {
         <div
           className="
             rounded-xl
-            border border-white/10
+            border
+            border-white/10
             bg-white/[0.05]
             px-2.5
             py-2

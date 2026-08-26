@@ -13,6 +13,7 @@ import Transactions from "../pages/Transactions";
 import Settings from "../pages/Settings";
 import MutualFunds from "../pages/MutualFunds";
 import MutualFundForm from "../components/investments/mutualFunds/MutualFundForm";
+import MutualFundDetails from "../pages/MutualFundDetails";
 
 function AppRoutes() {
   return (
@@ -35,6 +36,12 @@ function AppRoutes() {
             path="/mutual-funds"
             element={<MutualFunds />}
           />
+
+          <Route
+            path="/portfolio/mutual-funds/:fundId"
+            element={<MutualFundDetails />}
+          />
+
           <Route
             path="/mutual-funds/add"
             element={<MutualFundForm />}
