@@ -73,14 +73,22 @@ export const mutualFundSchemes = [
 export const investors = [
   {
     id: "investor-1",
-    name: "Gourav Patel",
+    name: "AMRIT",
   },
   {
     id: "investor-2",
-    name: "Priyanshu Sahu",
+    name: "BRP",
   },
   {
     id: "investor-3",
-    name: "Family",
+    name: "ANITA",
+  },
+  {
+    id: "investor-4",
+    name: "VINITA",
+  },
+  {
+    id: "investor-5",
+    name: "SHIVAM",
   },
 ];
