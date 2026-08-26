@@ -4,15 +4,33 @@ import {
 } from "lucide-react";
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
+  return new Intl.NumberFormat(
+    "en-IN",
+    {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }
+  ).format(
+    Number(value) || 0
+  );
 }
 
 function formatDate(date) {
-  return new Date(date).toLocaleDateString(
+  if (!date) return "";
+
+  const parsed =
+    new Date(date);
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  return parsed.toLocaleDateString(
     "en-IN",
     {
       day: "2-digit",
@@ -26,19 +44,45 @@ function MutualFundTransactionCard({
   transaction,
   onDelete,
 }) {
-  const isBuy = transaction.type === "BUY";
 
-  const handleDelete = (event) => {
+  /*
+   * Existing transactions
+   * currently have type = "mutual-fund".
+   *
+   * So anything except SELL/REDEEM
+   * is treated as Purchase.
+   */
+
+  const transactionType =
+    String(
+      transaction.type || ""
+    ).toUpperCase();
+
+  const isSell =
+    transactionType ===
+      "SELL" ||
+    transactionType ===
+      "REDEEM";
+
+  const handleDelete = (
+    event
+  ) => {
+
     event.stopPropagation();
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this transaction?"
-    );
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this transaction?"
+      );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     if (onDelete) {
-      onDelete(transaction.id);
+      onDelete(
+        transaction.id
+      );
     }
   };
 
@@ -56,12 +100,27 @@ function MutualFundTransactionCard({
     >
 
       {/* TOP ROW */}
-      <div className="flex items-center justify-between gap-2">
 
-        {/* LEFT */}
-        <div className="flex min-w-0 items-center gap-2">
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          gap-2
+        "
+      >
+
+        <div
+          className="
+            flex
+            min-w-0
+            items-center
+            gap-2
+          "
+        >
 
           {/* TYPE */}
+
           <span
             className={`
               rounded-md
@@ -71,22 +130,35 @@ function MutualFundTransactionCard({
               font-extrabold
               uppercase
               tracking-wide
+
               ${
-                isBuy
-                  ? "bg-emerald-400/10 text-emerald-300"
-                  : "bg-red-400/10 text-red-300"
+                isSell
+                  ? "bg-red-400/10 text-red-300"
+                  : "bg-emerald-400/10 text-emerald-300"
               }
             `}
           >
-            {isBuy ? "Purchase" : "Sell"}
+            {isSell
+              ? "Sell"
+              : "Purchase"}
           </span>
 
           {/* DATE */}
-          <div className="flex items-center gap-1.5">
+
+          <div
+            className="
+              flex
+              items-center
+              gap-1.5
+            "
+          >
 
             <CalendarDays
               size={12}
-              className="shrink-0 text-slate-400"
+              className="
+                shrink-0
+                text-slate-400
+              "
             />
 
             <span
@@ -96,7 +168,9 @@ function MutualFundTransactionCard({
                 text-slate-200
               "
             >
-              {formatDate(transaction.date)}
+              {formatDate(
+                transaction.purchaseDate
+              )}
             </span>
 
           </div>
@@ -104,9 +178,12 @@ function MutualFundTransactionCard({
         </div>
 
         {/* DELETE */}
+
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={
+            handleDelete
+          }
           className="
             flex
             h-7
@@ -129,6 +206,7 @@ function MutualFundTransactionCard({
       </div>
 
       {/* DETAILS */}
+
       <div
         className="
           mt-2
@@ -142,6 +220,7 @@ function MutualFundTransactionCard({
       >
 
         {/* UNITS */}
+
         <div>
 
           <p
@@ -165,13 +244,15 @@ function MutualFundTransactionCard({
             "
           >
             {Number(
-              transaction.units || 0
+              transaction.units ||
+              0
             ).toFixed(2)}
           </p>
 
         </div>
 
         {/* NAV */}
+
         <div>
 
           <p
@@ -196,13 +277,15 @@ function MutualFundTransactionCard({
           >
             ₹
             {Number(
-              transaction.nav || 0
+              transaction.purchaseNav ||
+              0
             ).toFixed(4)}
           </p>
 
         </div>
 
         {/* AMOUNT */}
+
         <div className="text-right">
 
           <p
