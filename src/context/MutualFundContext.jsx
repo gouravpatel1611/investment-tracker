@@ -17,6 +17,8 @@ import {
   findMutualFundBySchemeCode,
 } from "../services/api/mutualFundApi";
 
+import { useAuth } from "./AuthContext";
+
 const MutualFundContext =
   createContext(null);
 
@@ -29,15 +31,6 @@ function buildHoldings(
   liveNavs
 ) {
   const groups = new Map();
-
-  /* --------------------------------
-     GROUP BY:
-
-     SAME INVESTOR + SAME SCHEME
-
-     Folio number grouping me use
-     nahi ho raha.
-  -------------------------------- */
 
   transactions.forEach(
     (transaction) => {
@@ -90,11 +83,6 @@ function buildHoldings(
                 transaction.units
               ) || 0;
 
-            /*
-              SELL / REDEEM
-              units minus
-            */
-
             if (
               type === "SELL" ||
               type === "REDEEM"
@@ -104,11 +92,6 @@ function buildHoldings(
                 transactionUnits
               );
             }
-
-            /*
-              BUY / PURCHASE
-              units plus
-            */
 
             return (
               total +
@@ -136,11 +119,6 @@ function buildHoldings(
                 transaction.amount
               ) || 0;
 
-            /*
-              SELL / REDEEM
-              invested amount minus
-            */
-
             if (
               type === "SELL" ||
               type === "REDEEM"
@@ -150,11 +128,6 @@ function buildHoldings(
                 amount
               );
             }
-
-            /*
-              BUY
-              invested amount plus
-            */
 
             return (
               total +
@@ -226,15 +199,6 @@ function buildHoldings(
 
       /* =====================================================
          AVERAGE PURCHASE NAV
-
-         Example:
-
-         BUY 100 units @ ₹10
-         BUY 200 units @ ₹12
-
-         Average NAV =
-         total purchase amount /
-         total purchase units
       ===================================================== */
 
       const averageNav =
@@ -247,13 +211,6 @@ function buildHoldings(
 
       /* =====================================================
          FOLIO NUMBER
-
-         IMPORTANT:
-
-         Sab transactions me folio ho zaruri nahi.
-
-         Jo pehla available folio milega
-         wahi card par show hoga.
       ===================================================== */
 
       const folioTransaction =
@@ -274,8 +231,6 @@ function buildHoldings(
 
       /* =====================================================
          LATEST TRANSACTION
-
-         Sirf fallback ke liye.
       ===================================================== */
 
       const latestTransaction =
@@ -291,11 +246,6 @@ function buildHoldings(
 
       /* =====================================================
          LIVE NAV
-
-         API se latest available NAV.
-
-         Agar API se NAV nahi mila,
-         purchase NAV / average NAV fallback.
       ===================================================== */
 
       const schemeCode =
@@ -326,8 +276,6 @@ function buildHoldings(
 
       /* =====================================================
          CURRENT VALUE
-
-         CURRENT UNITS × CURRENT NAV
       ===================================================== */
 
       const currentValue =
@@ -385,26 +333,13 @@ function buildHoldings(
 
         units,
 
-        /*
-          IMPORTANT:
-
-          Ye ab purchase NAV nahi hai.
-
-          Ye latest available/current NAV hai.
-        */
         nav: latestNav,
 
-        /*
-          Actual latest NAV date
-        */
         navDate:
           liveNavData?.date ||
           latestTransaction?.navDate ||
           null,
 
-        /*
-          true = API se live/latest NAV mila
-        */
         isLiveNav:
           Number.isFinite(liveNav) &&
           liveNav > 0,
@@ -435,6 +370,15 @@ export function MutualFundProvider({
 }) {
 
   /* =======================================================
+     CURRENT FIREBASE USER
+  ======================================================= */
+
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
+
+  /* =======================================================
      FIREBASE TRANSACTIONS
   ======================================================= */
 
@@ -445,15 +389,6 @@ export function MutualFundProvider({
 
   /* =======================================================
      LIVE NAV DATA
-
-     Structure:
-
-     {
-       "119551": {
-         nav: 123.45,
-         date: "2026-08-26"
-       }
-     }
   ======================================================= */
 
   const [
@@ -487,6 +422,25 @@ export function MutualFundProvider({
   const loadTransactions =
     useCallback(async () => {
 
+      /*
+        Firebase Auth abhi check kar raha hai
+        to Firestore request nahi bhejni.
+      */
+
+      if (authLoading) {
+        return;
+      }
+
+      /*
+        User login nahi hai.
+      */
+
+      if (!user?.uid) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError("");
 
@@ -513,7 +467,10 @@ export function MutualFundProvider({
         setLoading(false);
       }
 
-    }, []);
+    }, [
+      user?.uid,
+      authLoading,
+    ]);
 
   /* =======================================================
      INITIAL LOAD
@@ -521,24 +478,19 @@ export function MutualFundProvider({
 
   useEffect(() => {
 
+    if (authLoading) {
+      return;
+    }
+
     loadTransactions();
 
   }, [
+    authLoading,
     loadTransactions,
   ]);
 
   /* =======================================================
      FETCH LIVE NAVS
-
-     Same scheme ke liye sirf ONE API call.
-
-     Example:
-
-     5 transactions
-     2 investors
-     same scheme
-
-     → scheme ke liye 1 API call
   ======================================================= */
 
   useEffect(() => {
@@ -586,9 +538,6 @@ export function MutualFundProvider({
 
         /* --------------------------------
            FETCH ALL SCHEMES
-
-           Promise.all means parallel
-           requests.
         -------------------------------- */
 
         const results =
@@ -621,17 +570,7 @@ export function MutualFundProvider({
                   }
 
                   /* ------------------------------
-                     FIND LATEST AVAILABLE NAV
-
-                     API data ko date ke basis
-                     par sort kar rahe hain.
-
-                     Agar aaj NAV available hai
-                     to aaj ka milega.
-
-                     Agar aaj holiday hai / NAV
-                     release nahi hua hai to
-                     latest previous NAV milega.
+                     SORT NAV HISTORY
                   ------------------------------ */
 
                   const sortedHistory =
@@ -687,12 +626,6 @@ export function MutualFundProvider({
                     error
                   );
 
-                  /*
-                    Ek scheme fail hone par
-                    poora mutual fund page
-                    fail nahi hoga.
-                  */
-
                   return {
                     schemeCode,
                     nav: null,
@@ -708,7 +641,7 @@ export function MutualFundProvider({
         }
 
         /* --------------------------------
-           CONVERT ARRAY → OBJECT
+           ARRAY → OBJECT
         -------------------------------- */
 
         const navMap = {};
@@ -742,11 +675,6 @@ export function MutualFundProvider({
           error
         );
 
-        /*
-          Existing Firebase data
-          continue karega.
-        */
-
       } finally {
 
         if (!cancelled) {
@@ -773,23 +701,10 @@ export function MutualFundProvider({
 
         try {
 
-          /*
-            Firebase me save
-          */
-
           const savedTransaction =
             await addMutualFundTransaction(
               transaction
             );
-
-          /*
-            IMPORTANT
-
-            Firebase save ke turant baad
-            Context state update.
-
-            Reload ki zarurat nahi.
-          */
 
           setTransactions(
             (current) => [
@@ -827,18 +742,9 @@ export function MutualFundProvider({
           );
         }
 
-        /*
-          PEHLE FIREBASE DELETE
-        */
-
         await deleteMutualFundTransaction(
           id
         );
-
-        /*
-          FIREBASE SUCCESS KE BAAD
-          LOCAL STATE UPDATE
-        */
 
         setTransactions(
           (current) =>
@@ -878,45 +784,21 @@ export function MutualFundProvider({
     useMemo(
       () => ({
 
-        /*
-          RAW TRANSACTIONS
-        */
         transactions,
 
-        /*
-          GROUPED MUTUAL FUND CARDS
-        */
         holdings,
 
-        /*
-          FIREBASE LOADING
-        */
         loading,
 
-        /*
-          NAV API LOADING
-        */
         navLoading,
 
-        /*
-          GENERAL ERROR
-        */
         error,
 
-        /*
-          RELOAD FIREBASE DATA
-        */
         reload:
           loadTransactions,
 
-        /*
-          ADD
-        */
         addTransaction,
 
-        /*
-          DELETE
-        */
         deleteTransaction,
 
       }),

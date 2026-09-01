@@ -10,49 +10,65 @@ import {
 } from "firebase/firestore";
 
 import db from "./firestore";
+import auth from "./auth";
 
-const COLLECTION_NAME = "mutualFundTransactions";
+const COLLECTION_NAME =
+  "mutualFundTransactions";
 
-/* --------------------------------
-   ADD MUTUAL FUND TRANSACTION
--------------------------------- */
+/* =========================================================
+   USER MUTUAL FUND COLLECTION
 
-export async function addMutualFundTransaction(transaction) {
+   Firestore structure:
+
+   users
+    └── {Firebase UID}
+         └── mutualFundTransactions
+              ├── transaction
+              ├── transaction
+              └── ...
+========================================================= */
+
+function getUserCollection() {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error(
+      "User is not logged in."
+    );
+  }
+
+  return collection(
+    db,
+    "users",
+    user.uid,
+    COLLECTION_NAME
+  );
+}
+
+/* =========================================================
+   ADD TRANSACTION
+========================================================= */
+
+export async function addMutualFundTransaction(
+  transaction
+) {
   try {
-    /*
-      Firebase document me custom id save
-      karne ki zarurat nahi hai.
-
-      Firebase khud document ID generate karega.
-    */
-
     const dataToSave = {
       ...transaction,
-
-      /*
-        Agar transaction ke andar id hai,
-        to usko Firebase document data me
-        rakhne ki zarurat nahi.
-      */
-      id: undefined,
-
       createdAt: serverTimestamp(),
     };
 
     /*
-      undefined id ko remove kar do
+      Firebase document ke andar apna
+      local id save nahi karna.
     */
+
     delete dataToSave.id;
 
     const docRef = await addDoc(
-      collection(db, COLLECTION_NAME),
+      getUserCollection(),
       dataToSave
     );
-
-    /*
-      IMPORTANT:
-      Firebase document ID ko last me set karna hai.
-    */
 
     return {
       ...transaction,
@@ -68,33 +84,29 @@ export async function addMutualFundTransaction(transaction) {
   }
 }
 
-/* --------------------------------
-   GET ALL MUTUAL FUND TRANSACTIONS
--------------------------------- */
+/* =========================================================
+   GET ALL TRANSACTIONS
+========================================================= */
 
 export async function getMutualFundTransactions() {
   try {
     const q = query(
-      collection(db, COLLECTION_NAME),
-      orderBy("purchaseDate", "desc")
+      getUserCollection(),
+      orderBy(
+        "purchaseDate",
+        "desc"
+      )
     );
 
-    const snapshot = await getDocs(q);
+    const snapshot =
+      await getDocs(q);
 
-    return snapshot.docs.map((item) => ({
-      /*
-        Pehle Firebase data
-      */
-      ...item.data(),
-
-      /*
-        IMPORTANT:
-        Firebase document ID ko LAST me rakho.
-        Isse data ke andar agar purana
-        id field bhi ho to Firebase ID hi milegi.
-      */
-      id: item.id,
-    }));
+    return snapshot.docs.map(
+      (item) => ({
+        ...item.data(),
+        id: item.id,
+      })
+    );
   } catch (error) {
     console.error(
       "Failed to fetch mutual fund transactions:",
@@ -105,11 +117,13 @@ export async function getMutualFundTransactions() {
   }
 }
 
-/* --------------------------------
-   DELETE MUTUAL FUND TRANSACTION
--------------------------------- */
+/* =========================================================
+   DELETE TRANSACTION
+========================================================= */
 
-export async function deleteMutualFundTransaction(id) {
+export async function deleteMutualFundTransaction(
+  id
+) {
   try {
     if (!id) {
       throw new Error(
@@ -117,9 +131,19 @@ export async function deleteMutualFundTransaction(id) {
       );
     }
 
+    const user = auth.currentUser;
+
+    if (!user) {
+      throw new Error(
+        "User is not logged in."
+      );
+    }
+
     await deleteDoc(
       doc(
         db,
+        "users",
+        user.uid,
         COLLECTION_NAME,
         String(id)
       )

@@ -1,13 +1,20 @@
 import AppRoutes from "./routes/AppRoutes";
+
 import {
   MutualFundProvider,
 } from "./context/MutualFundContext";
 
+import {
+  AuthProvider,
+} from "./context/AuthContext";
+
 function App() {
   return (
-    <MutualFundProvider>
-      <AppRoutes />
-    </MutualFundProvider>
+    <AuthProvider>
+      <MutualFundProvider>
+        <AppRoutes />
+      </MutualFundProvider>
+    </AuthProvider>
   );
 }
 

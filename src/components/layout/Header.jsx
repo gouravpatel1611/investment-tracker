@@ -1,13 +1,12 @@
 import {
-  Bell,
   Menu,
   TrendingUp,
-  UserRound,
 } from "lucide-react";
 
 import { useState } from "react";
 
 import MobileMenu from "./MobileMenu";
+import UserMenu from "./UserMenu";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,24 +42,8 @@ function Header() {
 
           </div>
 
-          <div className="flex items-center gap-1">
-
-            <button className="grid h-10 w-10 place-items-center rounded-xl text-slate-600 hover:bg-slate-100">
-              <Bell size={19} />
-            </button>
-
-            <button className="hidden h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 sm:flex">
-
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-slate-100">
-                <UserRound size={15} />
-              </span>
-
-              <span className="text-sm font-semibold">
-                User
-              </span>
-
-            </button>
-
+          <div className="flex items-center">
+            <UserMenu />
           </div>
 
         </div>
