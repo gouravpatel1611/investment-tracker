@@ -11,11 +11,15 @@ import MutualFundCard from "../components/investments/mutualFunds/MutualFundCard
 
 import MutualFundTransactionCard from "../components/investments/mutualFunds/MutualFundTransactionCard";
 
+import AddMutualFundButton from "../components/investments/mutualFunds/AddMutualFundButton";
+
 import {
   useMutualFunds,
 } from "../context/MutualFundContext";
 
+
 function MutualFundDetails() {
+
   const navigate =
     useNavigate();
 
@@ -27,6 +31,7 @@ function MutualFundDetails() {
     deleteTransaction,
     loading,
   } = useMutualFunds();
+
 
   /*
    * --------------------------------
@@ -40,6 +45,7 @@ function MutualFundDetails() {
         item.id === fundId
     );
 
+
   /*
    * --------------------------------
    * LOADING
@@ -47,6 +53,7 @@ function MutualFundDetails() {
    */
 
   if (loading) {
+
     return (
       <div className="space-y-5">
 
@@ -83,6 +90,7 @@ function MutualFundDetails() {
     );
   }
 
+
   /*
    * --------------------------------
    * FUND NOT FOUND
@@ -90,6 +98,7 @@ function MutualFundDetails() {
    */
 
   if (!fund) {
+
     return (
       <div className="space-y-5">
 
@@ -122,14 +131,17 @@ function MutualFundDetails() {
             text-center
           "
         >
+
           <p className="font-semibold text-white">
             Mutual fund not found
           </p>
+
         </div>
 
       </div>
     );
   }
+
 
   /*
    * --------------------------------
@@ -148,6 +160,7 @@ function MutualFundDetails() {
         )
     );
 
+
   /*
    * --------------------------------
    * DELETE
@@ -156,9 +169,13 @@ function MutualFundDetails() {
 
   const handleDelete =
     async (id) => {
+
       try {
+
         await deleteTransaction(id);
+
       } catch (error) {
+
         console.error(
           "Delete transaction error:",
           error
@@ -167,15 +184,27 @@ function MutualFundDetails() {
         alert(
           "Unable to delete transaction."
         );
+
       }
     };
+
 
   return (
     <div className="space-y-5">
 
-      {/* HEADER */}
+      {/* --------------------------------
+          HEADER
+      -------------------------------- */}
 
-      <div className="flex items-center gap-3">
+      <div
+        className="
+          flex
+          items-center
+          gap-3
+        "
+      >
+
+        {/* BACK BUTTON */}
 
         <button
           type="button"
@@ -204,44 +233,93 @@ function MutualFundDetails() {
           <ArrowLeft size={17} />
         </button>
 
-        <div className="min-w-0">
 
-          <h1 className="truncate text-xl font-extrabold text-dark">
+        {/* TITLE */}
+
+        <div className="min-w-0 flex-1">
+
+          <h1
+            className="
+              truncate
+              text-xl
+              font-extrabold
+              text-dark
+            "
+          >
             Mutual Fund Details
           </h1>
 
-          <p className="mt-0.5 truncate text-xs text-slate-400">
+          <p
+            className="
+              mt-0.5
+              truncate
+              text-xs
+              text-slate-400
+            "
+          >
             {fund.schemeName}
           </p>
 
         </div>
 
+
+        {/* ADD BUTTON */}
+
+        <AddMutualFundButton
+          fund={fund}
+        />
+
       </div>
 
-      {/* FUND CARD */}
+
+      {/* --------------------------------
+          FUND CARD
+      -------------------------------- */}
 
       <MutualFundCard
         fund={fund}
         clickable={false}
       />
 
-      {/* TRANSACTIONS */}
+
+      {/* --------------------------------
+          TRANSACTIONS
+      -------------------------------- */}
 
       <div className="space-y-3">
 
-        <div className="flex items-center justify-between">
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+          "
+        >
 
           <div>
 
-            <h2 className="text-base font-bold text-dark">
+            <h2
+              className="
+                text-base
+                font-bold
+                text-dark
+              "
+            >
               Transactions
             </h2>
 
-            <p className="mt-0.5 text-[11px] text-slate-400">
+            <p
+              className="
+                mt-0.5
+                text-[11px]
+                text-slate-400
+              "
+            >
               Purchase and redemption history
             </p>
 
           </div>
+
 
           <span
             className="
@@ -264,13 +342,18 @@ function MutualFundDetails() {
 
         </div>
 
-        {/* TRANSACTION LIST */}
+
+        {/* --------------------------------
+            TRANSACTION LIST
+        -------------------------------- */}
 
         <div className="space-y-2.5">
 
           {transactions.length > 0 ? (
+
             transactions.map(
               (transaction) => (
+
                 <MutualFundTransactionCard
                   key={
                     transaction.id
@@ -282,9 +365,12 @@ function MutualFundDetails() {
                     handleDelete
                   }
                 />
+
               )
             )
+
           ) : (
+
             <div
               className="
                 rounded-2xl
@@ -295,14 +381,29 @@ function MutualFundDetails() {
                 text-center
               "
             >
-              <p className="text-sm font-semibold text-slate-200">
+
+              <p
+                className="
+                  text-sm
+                  font-semibold
+                  text-slate-200
+                "
+              >
                 No transactions found
               </p>
 
-              <p className="mt-1 text-xs text-slate-400">
+              <p
+                className="
+                  mt-1
+                  text-xs
+                  text-slate-400
+                "
+              >
                 Transaction history will appear here.
               </p>
+
             </div>
+
           )}
 
         </div>

@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   ArrowLeft,
   CalendarDays,
@@ -6,7 +10,11 @@ import {
   IndianRupee,
   Save,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+
+import {
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import InvestorSelect from "./InvestorSelect";
 import SchemeCodeInput from "./SchemeCodeInput";
@@ -20,7 +28,9 @@ import {
   getHistoricalNav,
 } from "../../../services/api/mutualFundApi";
 
-import { getTodayDate } from "../../../utils/mutualFundUtils";
+import {
+  getTodayDate,
+} from "../../../utils/mutualFundUtils";
 
 import {
   addMutualFundTransaction,
@@ -32,70 +42,222 @@ import {
 
 
 function MutualFundForm() {
-  const navigate = useNavigate();
+
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
+
 
   /*
-   * MUTUAL FUND CONTEXT
+   * --------------------------------
+   * SELECTED FUND FROM DETAILS PAGE
+   * --------------------------------
    *
-   * Transaction Firebase me add hone ke baad
-   * reload() context ko immediately refresh karega.
+   * Details page se:
+   *
+   * navigate("/portfolio/mutual-funds/add", {
+   *   state: { fund }
+   * })
+   *
+   * kiya gaya hai.
    */
+
+  const selectedFund =
+    location.state?.fund || null;
+
+
+  /*
+   * --------------------------------
+   * MUTUAL FUND CONTEXT
+   * --------------------------------
+   */
+
   const {
     reload,
   } = useMutualFunds();
 
 
-  const [investorId, setInvestorId] =
-    useState("");
+  /*
+   * --------------------------------
+   * INITIAL FUND DATA
+   * --------------------------------
+   *
+   * Holding ke schema ko form ke
+   * expected fund schema ke saath
+   * normalize kar rahe hain.
+   */
 
-  const [schemeCode, setSchemeCode] =
-    useState("");
+  const initialFund =
+    selectedFund
+      ? {
+          ...selectedFund,
 
-  const [purchaseDate, setPurchaseDate] =
-    useState(getTodayDate());
+          /*
+           * API FundPreview generally
+           * fund.name use karta hai.
+           *
+           * Holding me schemeName hai.
+           */
+          name:
+            selectedFund.name ||
+            selectedFund.schemeName ||
+            "",
 
-  const [units, setUnits] =
-    useState("");
+          schemeCode:
+            selectedFund.schemeCode ||
+            "",
 
-  const [folioNumber, setFolioNumber] =
-    useState("");
+          fundHouse:
+            selectedFund.fundHouse ||
+            selectedFund.amcName ||
+            "",
 
-  const [fund, setFund] =
-    useState(null);
-
-  const [nav, setNav] =
-    useState(null);
-
-  const [actualNavDate, setActualNavDate] =
-    useState(null);
-
-  const [isPreviousDate, setIsPreviousDate] =
-    useState(false);
-
-  const [isSearching, setIsSearching] =
-    useState(false);
-
-  const [isNavLoading, setIsNavLoading] =
-    useState(false);
-
-  const [isSaving, setIsSaving] =
-    useState(false);
-
-  const [notFound, setNotFound] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+          category:
+            selectedFund.category ||
+            "",
+        }
+      : null;
 
 
-  /* --------------------------------
-     FORMAT DATE FOR DISPLAY
-  -------------------------------- */
+  /*
+   * --------------------------------
+   * FORM STATES
+   * --------------------------------
+   */
+
+  const [
+    investorId,
+    setInvestorId,
+  ] = useState(
+    selectedFund?.investorId || ""
+  );
+
+
+  const [
+    schemeCode,
+    setSchemeCode,
+  ] = useState(
+    selectedFund?.schemeCode || ""
+  );
+
+
+  const [
+    purchaseDate,
+    setPurchaseDate,
+  ] = useState(
+    getTodayDate()
+  );
+
+
+  /*
+   * USER AMOUNT ENTER KAREGA
+   */
+
+  const [
+    amount,
+    setAmount,
+  ] = useState("");
+
+
+  const [
+    folioNumber,
+    setFolioNumber,
+  ] = useState(
+    selectedFund?.folioNumber || ""
+  );
+
+
+  /*
+   * FUND AUTOMATICALLY FILLED
+   */
+
+  const [
+    fund,
+    setFund,
+  ] = useState(
+    initialFund
+  );
+
+
+  const [
+    nav,
+    setNav,
+  ] = useState(null);
+
+
+  const [
+    actualNavDate,
+    setActualNavDate,
+  ] = useState(null);
+
+
+  const [
+    isPreviousDate,
+    setIsPreviousDate,
+  ] = useState(false);
+
+
+  const [
+    isSearching,
+    setIsSearching,
+  ] = useState(false);
+
+
+  const [
+    isNavLoading,
+    setIsNavLoading,
+  ] = useState(false);
+
+
+  const [
+    isSaving,
+    setIsSaving,
+  ] = useState(false);
+
+
+  const [
+    notFound,
+    setNotFound,
+  ] = useState(false);
+
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  /*
+   * --------------------------------
+   * CALCULATE UNITS
+   *
+   * Amount ÷ NAV = Units
+   * --------------------------------
+   */
+
+  const calculatedUnits =
+    amount &&
+    nav !== null &&
+    Number(nav) > 0
+      ? Number(amount) / Number(nav)
+      : 0;
+
+
+  /*
+   * --------------------------------
+   * FORMAT DATE
+   * --------------------------------
+   */
 
   function formatDateForDisplay(
     dateString
   ) {
-    if (!dateString) return "";
+
+    if (!dateString) {
+      return "";
+    }
 
     const [
       year,
@@ -107,69 +269,21 @@ function MutualFundForm() {
   }
 
 
-  /* --------------------------------
-     SEARCH SCHEME
-  -------------------------------- */
-
-  const handleSchemeSearch =
-    async () => {
-
-      const code =
-        schemeCode.trim();
-
-      if (!code) {
-        setFund(null);
-        setNav(null);
-        setNotFound(false);
-        return;
-      }
-
-      setIsSearching(true);
-      setNotFound(false);
-      setFund(null);
-      setNav(null);
-      setError("");
-
-      try {
-
-        const result =
-          await findMutualFundBySchemeCode(
-            code
-          );
-
-        if (!result) {
-          setNotFound(true);
-          return;
-        }
-
-        setFund(result);
-
-      } catch (error) {
-
-        console.error(
-          "Scheme search error:",
-          error
-        );
-
-        setError(
-          "Unable to search scheme. Please try again."
-        );
-
-      } finally {
-
-        setIsSearching(false);
-
-      }
-    };
-
-
-  /* --------------------------------
-     FETCH HISTORICAL NAV
-  -------------------------------- */
+  /*
+   * --------------------------------
+   * FETCH NAV
+   * --------------------------------
+   *
+   * Fund already selected hai.
+   *
+   * Sirf date change hone par
+   * historical NAV dobara fetch hoga.
+   */
 
   useEffect(() => {
 
     let cancelled = false;
+
 
     async function loadNav() {
 
@@ -177,13 +291,17 @@ function MutualFundForm() {
         !fund ||
         !purchaseDate
       ) {
+
         setNav(null);
         setActualNavDate(null);
         setIsPreviousDate(false);
+
         return;
       }
 
+
       setIsNavLoading(true);
+
 
       try {
 
@@ -193,15 +311,21 @@ function MutualFundForm() {
             purchaseDate
           );
 
+
         if (cancelled) {
           return;
         }
 
-        setNav(result.nav);
+
+        setNav(
+          result.nav
+        );
+
 
         setActualNavDate(
           result.actualDate
         );
+
 
         setIsPreviousDate(
           result.isPreviousDate
@@ -214,10 +338,13 @@ function MutualFundForm() {
           error
         );
 
+
         if (!cancelled) {
 
           setNav(null);
+
           setActualNavDate(null);
+
           setIsPreviousDate(false);
 
         }
@@ -225,24 +352,115 @@ function MutualFundForm() {
       } finally {
 
         if (!cancelled) {
+
           setIsNavLoading(false);
+
         }
 
       }
+
     }
 
+
     loadNav();
+
 
     return () => {
       cancelled = true;
     };
 
-  }, [fund, purchaseDate]);
+  }, [
+    fund,
+    purchaseDate,
+  ]);
 
 
-  /* --------------------------------
-     SCHEME CODE CHANGE
-  -------------------------------- */
+  /*
+   * --------------------------------
+   * SCHEME SEARCH
+   * --------------------------------
+   *
+   * Ye fallback ke liye rakha hai.
+   *
+   * Normally Add button se fund already
+   * filled hoga, isliye user ko search
+   * karne ki zarurat nahi padegi.
+   */
+
+  const handleSchemeSearch =
+    async () => {
+
+      const code =
+        schemeCode.trim();
+
+
+      if (!code) {
+
+        setFund(null);
+        setNav(null);
+        setNotFound(false);
+
+        return;
+      }
+
+
+      setIsSearching(true);
+      setNotFound(false);
+      setFund(null);
+      setNav(null);
+      setError("");
+
+
+      try {
+
+        const result =
+          await findMutualFundBySchemeCode(
+            code
+          );
+
+
+        if (!result) {
+
+          setNotFound(true);
+
+          return;
+        }
+
+
+        setFund(result);
+
+      } catch (error) {
+
+        console.error(
+          "Scheme search error:",
+          error
+        );
+
+
+        setError(
+          "Unable to search scheme. Please try again."
+        );
+
+      } finally {
+
+        setIsSearching(false);
+
+      }
+
+    };
+
+
+  /*
+   * --------------------------------
+   * SCHEME CODE CHANGE
+   * --------------------------------
+   *
+   * Auto-filled scheme code ko normally
+   * change nahi karna padega.
+   *
+   * Agar user change karta hai to
+   * purana fund clear hoga.
+   */
 
   const handleSchemeCodeChange =
     (value) => {
@@ -250,87 +468,147 @@ function MutualFundForm() {
       setSchemeCode(value);
 
       setFund(null);
+
       setNav(null);
+
       setActualNavDate(null);
+
       setIsPreviousDate(false);
+
       setNotFound(false);
+
       setError("");
 
     };
 
 
-  /* --------------------------------
-     SAVE INVESTMENT
-  -------------------------------- */
+  /*
+   * --------------------------------
+   * SAVE INVESTMENT
+   * --------------------------------
+   */
 
   const handleSubmit =
     async (event) => {
 
       event.preventDefault();
 
+
       /*
-       * Prevent duplicate submission
+       * Duplicate submission prevent
        */
+
       if (isSaving) {
         return;
       }
 
+
       setError("");
 
 
-      /* --------------------------------
-         VALIDATION
-      -------------------------------- */
+      /*
+       * --------------------------------
+       * VALIDATION
+       * --------------------------------
+       */
 
       if (!investorId) {
+
         setError(
           "Please select an investor."
         );
+
         return;
       }
+
 
       if (!fund) {
+
         setError(
-          "Please enter a valid scheme code."
+          "Please select a valid mutual fund."
         );
+
         return;
       }
 
+
       if (!purchaseDate) {
+
         setError(
           "Please select purchase date."
         );
+
         return;
       }
+
+
+      /*
+       * AMOUNT VALIDATION
+       */
 
       if (
-        !units ||
-        Number(units) <= 0
+        !amount ||
+        Number(amount) <= 0
       ) {
+
         setError(
-          "Please enter valid units."
+          "Please enter valid investment amount."
         );
+
         return;
       }
 
+
+      /*
+       * NAV VALIDATION
+       */
+
       if (nav === null) {
+
         setError(
           "Purchase NAV is not available."
         );
+
         return;
       }
 
+
+      /*
+       * CALCULATED UNITS VALIDATION
+       */
+
+      if (
+        !calculatedUnits ||
+        calculatedUnits <= 0
+      ) {
+
+        setError(
+          "Unable to calculate units."
+        );
+
+        return;
+      }
+
+
+      /*
+       * FOLIO VALIDATION
+       */
+
       if (!folioNumber.trim()) {
+
         setError(
           "Please enter folio number."
         );
+
         return;
       }
 
 
-      /* --------------------------------
-         SELECT INVESTOR
-      -------------------------------- */
+      /*
+       * --------------------------------
+       * SELECT INVESTOR
+       * --------------------------------
+       */
 
       const selectedInvestor =
         investors.find(
@@ -339,9 +617,11 @@ function MutualFundForm() {
         );
 
 
-      /* --------------------------------
-         CREATE TRANSACTION
-      -------------------------------- */
+      /*
+       * --------------------------------
+       * CREATE TRANSACTION
+       * --------------------------------
+       */
 
       const investment = {
 
@@ -351,103 +631,127 @@ function MutualFundForm() {
             ? crypto.randomUUID()
             : Date.now().toString(),
 
+
         assetType:
           "mutual-fund",
+
 
         type:
           "BUY",
 
+
         investorId,
 
+
         investorName:
-          selectedInvestor?.name || "",
+          selectedInvestor?.name ||
+          selectedFund?.investorName ||
+          fund?.investorName ||
+          "",
+
 
         schemeCode:
-          fund.schemeCode,
+          fund.schemeCode ||
+          schemeCode,
+
 
         fundName:
-          fund.name,
+          fund.name ||
+          fund.schemeName ||
+          selectedFund?.schemeName ||
+          "",
 
-        /*
-         * AMC / FUND HOUSE
-         *
-         * Context me amcName use ho raha hai,
-         * isliye yahan fundHouse bhi save kar rahe hain.
-         */
+
         fundHouse:
-          fund.fundHouse || "",
+          fund.fundHouse ||
+          fund.amcName ||
+          selectedFund?.fundHouse ||
+          "",
+
 
         category:
-          fund.category || "",
+          fund.category ||
+          selectedFund?.category ||
+          "",
+
 
         purchaseDate,
 
+
+        /*
+         * USER ENTERED AMOUNT
+         */
+
+        amount:
+          Number(amount),
+
+
+        /*
+         * AUTOMATICALLY CALCULATED UNITS
+         */
+
         units:
-          Number(units),
+          calculatedUnits,
+
 
         purchaseNav:
           Number(nav),
 
+
         navDate:
           actualNavDate,
+
 
         folioNumber:
           folioNumber.trim(),
 
-        amount:
-          Number(units) *
-          Number(nav),
 
         createdAt:
           new Date().toISOString(),
+
       };
 
 
-      /* --------------------------------
-         SAVE TO FIREBASE
-      -------------------------------- */
+      /*
+       * --------------------------------
+       * SAVE TO FIREBASE
+       * --------------------------------
+       */
 
       setIsSaving(true);
+
 
       try {
 
         /*
-         * 1. Firebase me transaction save
+         * 1. Firebase save
          */
+
         await addMutualFundTransaction(
           investment
         );
 
 
         /*
-         * 2. Context ko immediately refresh
-         *
-         * Iske baad:
-         *
-         * Firebase
-         *    ↓
-         * Context transactions
-         *    ↓
-         * holdings
-         *    ↓
-         * MutualFundCard
-         *
-         * sab update ho jayega.
+         * 2. Context refresh
          */
+
         await reload();
 
 
         /*
-         * 3. Success message
+         * 3. Success
          */
+
         alert(
           "Mutual fund investment added successfully!"
         );
 
 
         /*
-         * 4. Mutual Fund list par wapas
+         * 4. Back to mutual fund list
          */
+
         navigate(
           "/portfolio/mutual-funds"
         );
@@ -459,6 +763,7 @@ function MutualFundForm() {
           error
         );
 
+
         setError(
           "Unable to save investment. Please try again."
         );
@@ -468,10 +773,12 @@ function MutualFundForm() {
         setIsSaving(false);
 
       }
+
     };
 
 
   return (
+
     <div
       className="
         mx-auto
@@ -519,8 +826,11 @@ function MutualFundForm() {
             active:scale-95
           "
         >
+
           <ArrowLeft size={18} />
+
         </button>
+
 
         <div>
 
@@ -533,6 +843,7 @@ function MutualFundForm() {
           >
             MUTUAL FUNDS
           </p>
+
 
           <h1
             className="
@@ -560,7 +871,10 @@ function MutualFundForm() {
         className="space-y-4"
       >
 
-        {/* INVESTOR */}
+
+        {/* --------------------------------
+            INVESTOR
+        -------------------------------- */}
 
         <div
           className="
@@ -582,7 +896,9 @@ function MutualFundForm() {
         </div>
 
 
-        {/* SCHEME CODE */}
+        {/* --------------------------------
+            SCHEME CODE
+        -------------------------------- */}
 
         <div
           className="
@@ -611,9 +927,12 @@ function MutualFundForm() {
         </div>
 
 
-        {/* FUND PREVIEW */}
+        {/* --------------------------------
+            FUND PREVIEW
+        -------------------------------- */}
 
         {fund && (
+
           <FundPreview
             fund={fund}
             purchaseDate={
@@ -627,6 +946,7 @@ function MutualFundForm() {
               isPreviousDate
             }
           />
+
         )}
 
 
@@ -657,6 +977,7 @@ function MutualFundForm() {
               Purchase details
             </p>
 
+
             <p
               className="
                 mt-1
@@ -672,7 +993,10 @@ function MutualFundForm() {
 
           <div className="space-y-4">
 
-            {/* PURCHASE DATE */}
+
+            {/* --------------------------------
+                PURCHASE DATE
+            -------------------------------- */}
 
             <div>
 
@@ -689,6 +1013,7 @@ function MutualFundForm() {
                 Purchase Date
               </label>
 
+
               <div className="relative">
 
                 <CalendarDays
@@ -704,19 +1029,24 @@ function MutualFundForm() {
                   "
                 />
 
+
                 <input
                   id="purchaseDateDisplay"
                   type="text"
-                  value={formatDateForDisplay(
-                    purchaseDate
-                  )}
+                  value={
+                    formatDateForDisplay(
+                      purchaseDate
+                    )
+                  }
                   readOnly
                   onClick={() => {
+
                     document
                       .getElementById(
                         "hiddenPurchaseDate"
                       )
                       ?.showPicker?.();
+
                   }}
                   className="
                     h-12
@@ -739,10 +1069,13 @@ function MutualFundForm() {
                   "
                 />
 
+
                 <input
                   id="hiddenPurchaseDate"
                   type="date"
-                  value={purchaseDate}
+                  value={
+                    purchaseDate
+                  }
                   onChange={(event) =>
                     setPurchaseDate(
                       event.target.value
@@ -764,12 +1097,14 @@ function MutualFundForm() {
             </div>
 
 
-            {/* UNITS */}
+            {/* --------------------------------
+                INVESTMENT AMOUNT
+            -------------------------------- */}
 
             <div>
 
               <label
-                htmlFor="units"
+                htmlFor="investmentAmount"
                 className="
                   mb-2
                   block
@@ -778,12 +1113,13 @@ function MutualFundForm() {
                   text-slate-200
                 "
               >
-                Units
+                Investment Amount
               </label>
+
 
               <div className="relative">
 
-                <Hash
+                <IndianRupee
                   size={17}
                   className="
                     pointer-events-none
@@ -795,19 +1131,20 @@ function MutualFundForm() {
                   "
                 />
 
+
                 <input
-                  id="units"
+                  id="investmentAmount"
                   type="number"
                   inputMode="decimal"
                   min="0"
-                  step="0.0001"
-                  value={units}
+                  step="0.01"
+                  value={amount}
                   onChange={(event) =>
-                    setUnits(
+                    setAmount(
                       event.target.value
                     )
                   }
-                  placeholder="Enter units"
+                  placeholder="Enter investment amount"
                   className="
                     h-12
                     w-full
@@ -833,7 +1170,106 @@ function MutualFundForm() {
             </div>
 
 
-            {/* PURCHASE NAV */}
+            {/* --------------------------------
+                CALCULATED UNITS
+            -------------------------------- */}
+
+            <div>
+
+              <div
+                className="
+                  mb-2
+                  flex
+                  items-center
+                  justify-between
+                "
+              >
+
+                <label
+                  htmlFor="units"
+                  className="
+                    text-sm
+                    font-bold
+                    text-slate-200
+                  "
+                >
+                  Units
+                </label>
+
+
+                {amount &&
+                  nav !== null &&
+                  Number(nav) > 0 && (
+
+                    <span
+                      className="
+                        text-[11px]
+                        font-bold
+                        text-purple-400
+                      "
+                    >
+                      Auto calculated
+                    </span>
+
+                  )}
+
+              </div>
+
+
+              <div className="relative">
+
+                <Hash
+                  size={17}
+                  className="
+                    pointer-events-none
+                    absolute
+                    left-3
+                    top-1/2
+                    -translate-y-1/2
+                    text-slate-500
+                  "
+                />
+
+
+                <input
+                  id="units"
+                  type="text"
+                  value={
+                    calculatedUnits > 0
+                      ? calculatedUnits.toFixed(4)
+                      : ""
+                  }
+                  readOnly
+                  placeholder={
+                    nav !== null
+                      ? "Enter amount"
+                      : "Select scheme first"
+                  }
+                  className="
+                    h-12
+                    w-full
+                    rounded-xl
+                    border
+                    border-slate-700
+                    bg-slate-900
+                    pl-10
+                    pr-3
+                    text-sm
+                    font-bold
+                    text-white
+                    outline-none
+                    placeholder:text-slate-500
+                  "
+                />
+
+              </div>
+
+            </div>
+
+
+            {/* --------------------------------
+                PURCHASE NAV
+            -------------------------------- */}
 
             <div>
 
@@ -857,7 +1293,9 @@ function MutualFundForm() {
                   Purchase NAV
                 </label>
 
+
                 {isNavLoading && (
+
                   <span
                     className="
                       text-[11px]
@@ -867,6 +1305,7 @@ function MutualFundForm() {
                   >
                     Fetching NAV...
                   </span>
+
                 )}
 
               </div>
@@ -885,6 +1324,7 @@ function MutualFundForm() {
                     text-slate-500
                   "
                 />
+
 
                 <input
                   id="purchaseNav"
@@ -922,7 +1362,9 @@ function MutualFundForm() {
             </div>
 
 
-            {/* FOLIO NUMBER */}
+            {/* --------------------------------
+                FOLIO NUMBER
+            -------------------------------- */}
 
             <div>
 
@@ -938,6 +1380,7 @@ function MutualFundForm() {
               >
                 Folio Number
               </label>
+
 
               <input
                 id="folioNumber"
@@ -975,19 +1418,29 @@ function MutualFundForm() {
         </div>
 
 
-        {/* SUMMARY */}
+        {/* --------------------------------
+            SUMMARY
+        -------------------------------- */}
 
-        {fund && nav !== null && (
-          <InvestmentSummary
-            units={units}
-            nav={nav}
-          />
-        )}
+        {fund &&
+          nav !== null && (
+
+            <InvestmentSummary
+              units={
+                calculatedUnits
+              }
+              nav={nav}
+            />
+
+          )}
 
 
-        {/* ERROR */}
+        {/* --------------------------------
+            ERROR
+        -------------------------------- */}
 
         {error && (
+
           <div
             className="
               rounded-xl
@@ -1003,10 +1456,13 @@ function MutualFundForm() {
           >
             {error}
           </div>
+
         )}
 
 
-        {/* SAVE */}
+        {/* --------------------------------
+            SAVE
+        -------------------------------- */}
 
         <div className="pb-6">
 
@@ -1016,6 +1472,8 @@ function MutualFundForm() {
               !fund ||
               nav === null ||
               isNavLoading ||
+              !amount ||
+              Number(amount) <= 0 ||
               isSaving
             }
             className="
@@ -1045,6 +1503,7 @@ function MutualFundForm() {
           >
 
             <Save size={18} />
+
 
             {isSaving
               ? "Saving..."
