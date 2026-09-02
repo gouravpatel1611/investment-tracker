@@ -67,7 +67,7 @@ const assets = [
     type: "Sovereign Gold Bond",
     icon: Gem,
     iconClass: "bg-yellow-500/15 text-yellow-300",
-    route: "/investments/sgb/add",
+    route: "/sgb/add",
   },
   {
     id: "lic",

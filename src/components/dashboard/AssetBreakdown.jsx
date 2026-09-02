@@ -176,35 +176,28 @@ function AssetBreakdown({ onAssetClick }) {
      CARD CLICK
   -------------------------------- */
 
-  const handleCardClick = (asset) => {
+const handleCardClick = (asset) => {
 
-    /* MUTUAL FUNDS */
+  /* MUTUAL FUNDS */
+  if (asset.id === "mutualFunds") {
+    navigate("/mutual-funds");
+    return;
+  }
 
-    if (asset.id === "mutualFunds") {
+  /* SGB */
+  if (asset.id === "sgb") {
+    navigate("/sgb");
+    return;
+  }
 
-      navigate(
-        "/mutual-funds"
-      );
+  /* OTHER ASSETS */
+  if (onAssetClick) {
+    onAssetClick(asset);
+    return;
+  }
 
-      return;
-    }
-
-
-    /* OTHER ASSETS */
-
-    if (onAssetClick) {
-
-      onAssetClick(asset);
-
-      return;
-    }
-
-
-    console.log(
-      "Open asset:",
-      asset.id
-    );
-  };
+  console.log("Open asset:", asset.id);
+};
 
 
   return (

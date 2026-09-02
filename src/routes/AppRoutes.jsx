@@ -15,6 +15,9 @@ import MutualFunds from "../pages/MutualFunds";
 import MutualFundForm from "../components/investments/mutualFunds/MutualFundForm";
 import MutualFundDetails from "../pages/MutualFundDetails";
 import Login from "../pages/Login";
+import SGB from "../pages/investments/SGB";
+import AddSGB from "../pages/investments/AddSGB";
+
 
 import Migration from "../pages/Migration";
 
@@ -67,6 +70,16 @@ function AppRoutes() {
             <Route
               path="/settings"
               element={<Settings />}
+            />
+
+            <Route
+              path="/sgb"
+              element={<SGB />}
+            />  
+
+            <Route
+              path="/sgb/add"
+              element={<AddSGB />}
             />
 
             <Route
