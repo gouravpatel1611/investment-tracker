@@ -8,7 +8,6 @@ import { useOutletContext } from "react-router-dom";
 import PortfolioSummary from "../components/dashboard/PortfolioSummary";
 import AssetAllocation from "../components/dashboard/AssetAllocation";
 import AssetBreakdown from "../components/dashboard/AssetBreakdown";
-import TopHoldings from "../components/dashboard/TopHoldings";
 
 import SectionHeader from "../components/common/SectionHeader";
 
@@ -94,33 +93,7 @@ function Dashboard() {
       </section>
 
 
-      {/* TOP HOLDINGS */}
-      <section className="surface p-4 sm:p-5">
-
-        <SectionHeader
-          title="Top holdings"
-          subtitle="Your largest positions"
-          action={
-            <button
-              type="button"
-              className="
-                flex
-                items-center
-                gap-1
-                text-xs
-                font-bold
-                text-slate-600
-              "
-            >
-              View all
-              <ChevronRight size={15} />
-            </button>
-          }
-        />
-
-        <TopHoldings />
-
-      </section>
+     
 
     </div>
   );
