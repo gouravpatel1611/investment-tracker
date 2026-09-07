@@ -2,11 +2,19 @@ import {
   IndianRupee,
 } from "lucide-react";
 
-import { useMemo } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   useMutualFunds,
 } from "../../context/MutualFundContext";
+
+import {
+  getSGBPortfolio,
+} from "../../services/sgb/sgbPortfolioService";
 
 
 function formatCurrency(value) {
@@ -20,20 +28,107 @@ function formatCurrency(value) {
 
 function PortfolioSummary() {
 
+  /* --------------------------------
+     MUTUAL FUNDS
+  -------------------------------- */
+
   const {
-    holdings,
-    loading,
+    holdings: mutualFundHoldings,
+    loading: mutualFundLoading,
   } = useMutualFunds();
 
 
   /* --------------------------------
-     MUTUAL FUND SUMMARY
+     SGB
   -------------------------------- */
 
-  const summary = useMemo(() => {
+  const [
+    sgbPortfolio,
+    setSgbPortfolio,
+  ] = useState({
+    holdings: [],
+    summary: {
+      seriesCount: 0,
+      units: 0,
+      purchaseValue: 0,
+      currentValue: 0,
+      interest: 0,
+      profit: 0,
+      gain: 0,
+      totalGainPercent: 0,
+    },
+  });
 
-    const invested =
-      holdings.reduce(
+  const [
+    sgbLoading,
+    setSgbLoading,
+  ] = useState(true);
+
+
+  useEffect(() => {
+
+    let mounted = true;
+
+
+    const loadSGB = async () => {
+
+      try {
+
+        setSgbLoading(true);
+
+        const data =
+          await getSGBPortfolio();
+
+
+        if (mounted) {
+          setSgbPortfolio(
+            data || {
+              holdings: [],
+              summary: {},
+            }
+          );
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Failed to load SGB portfolio:",
+          error
+        );
+
+      } finally {
+
+        if (mounted) {
+          setSgbLoading(false);
+        }
+
+      }
+
+    };
+
+
+    loadSGB();
+
+
+    return () => {
+      mounted = false;
+    };
+
+  }, []);
+
+
+  /* --------------------------------
+     ASSET BREAKDOWN VALUES
+  -------------------------------- */
+
+  const assetSummary = useMemo(() => {
+
+    /* ==============================
+       MUTUAL FUNDS
+    ============================== */
+
+    const mutualFundInvested =
+      mutualFundHoldings.reduce(
         (total, fund) =>
           total +
           (Number(
@@ -43,8 +138,8 @@ function PortfolioSummary() {
       );
 
 
-    const currentValue =
-      holdings.reduce(
+    const mutualFundCurrentValue =
+      mutualFundHoldings.reduce(
         (total, fund) =>
           total +
           (Number(
@@ -54,37 +149,177 @@ function PortfolioSummary() {
       );
 
 
-    const profitLoss =
-      currentValue -
-      invested;
+    const mutualFundProfit =
+      mutualFundCurrentValue -
+      mutualFundInvested;
 
 
-    const returnPercent =
-      invested > 0
-        ? (profitLoss / invested) *
-          100
+    /* ==============================
+       SGB
+    ============================== */
+
+    const sgbSummary =
+      sgbPortfolio?.summary || {};
+
+
+    const sgbInvested =
+      Number(
+        sgbSummary.purchaseValue
+      ) || 0;
+
+
+    const sgbCurrentValue =
+      Number(
+        sgbSummary.currentValue
+      ) || 0;
+
+
+    const sgbInterest =
+      Number(
+        sgbSummary.interest
+      ) || 0;
+
+
+    // Final SGB value shown in AssetBreakdown
+    const sgbValueWithInterest =
+      sgbCurrentValue +
+      sgbInterest;
+
+
+    const sgbProfit =
+      Number(
+        sgbSummary.profit
+      ) || 0;
+
+
+    const sgbGain =
+      Number(
+        sgbSummary.gain
+      ) || 0;
+
+
+    /* ==============================
+       OTHER ASSETS
+       ==============================
+
+       Currently AssetBreakdown
+       has these as 0.
+
+       Later when you add their
+       actual data, put the values here.
+    */
+
+    const cpfValue = 0;
+
+    const fdValue = 0;
+
+    const apyNpsValue = 0;
+
+    const cryptoValue = 0;
+
+    const bondsValue = 0;
+
+    const licValue = 0;
+
+    const etfStockValue = 0;
+
+
+    /* ==============================
+       TOTAL ASSETS
+    ============================== */
+
+    const totalInvested =
+      mutualFundInvested +
+      sgbInvested;
+
+
+    const totalCurrentValue =
+      mutualFundCurrentValue +
+      sgbValueWithInterest +
+      cpfValue +
+      fdValue +
+      apyNpsValue +
+      cryptoValue +
+      bondsValue +
+      licValue +
+      etfStockValue;
+
+
+    /*
+      SGB gain already includes
+      interest.
+
+      Therefore use:
+
+      SGB gain
+      + MF P/L
+    */
+
+    const totalProfitLoss =
+      mutualFundProfit +
+      sgbGain;
+
+
+    const totalReturnPercent =
+      totalInvested > 0
+        ? (
+            totalProfitLoss /
+            totalInvested
+          ) * 100
         : 0;
 
 
     return {
-      invested,
-      currentValue,
-      profitLoss,
-      returnPercent,
+
+      totalInvested,
+
+      totalCurrentValue,
+
+      totalProfitLoss,
+
+      totalReturnPercent,
+
+      /* Individual assets */
+
+      mutualFundCurrentValue,
+
+      sgbValueWithInterest,
+
+      cpfValue,
+
+      fdValue,
+
+      apyNpsValue,
+
+      cryptoValue,
+
+      bondsValue,
+
+      licValue,
+
+      etfStockValue,
+
     };
 
-  }, [holdings]);
+  }, [
+    mutualFundHoldings,
+    sgbPortfolio,
+  ]);
 
 
   const isProfit =
-    summary.profitLoss >= 0;
+    assetSummary.totalProfitLoss >= 0;
 
 
   /* --------------------------------
      LOADING
   -------------------------------- */
 
-  if (loading) {
+  if (
+    mutualFundLoading ||
+    sgbLoading
+  ) {
+
     return (
       <section
         className="
@@ -100,9 +335,24 @@ function PortfolioSummary() {
 
         <div className="animate-pulse">
 
-          <div className="h-4 w-36 rounded bg-slate-700" />
+          <div
+            className="
+              h-4
+              w-36
+              rounded
+              bg-slate-700
+            "
+          />
 
-          <div className="mt-3 h-10 w-52 rounded bg-slate-700" />
+          <div
+            className="
+              mt-3
+              h-10
+              w-52
+              rounded
+              bg-slate-700
+            "
+          />
 
           <div
             className="
@@ -116,6 +366,7 @@ function PortfolioSummary() {
 
             {[1, 2, 3, 4].map(
               (item) => (
+
                 <div
                   key={item}
                   className="
@@ -124,6 +375,7 @@ function PortfolioSummary() {
                     bg-white/10
                   "
                 />
+
               )
             )}
 
@@ -133,8 +385,13 @@ function PortfolioSummary() {
 
       </section>
     );
+
   }
 
+
+  /* --------------------------------
+     UI
+  -------------------------------- */
 
   return (
     <section
@@ -175,7 +432,7 @@ function PortfolioSummary() {
             "
           >
             {formatCurrency(
-              summary.currentValue
+              assetSummary.totalCurrentValue
             )}
           </p>
 
@@ -194,7 +451,6 @@ function PortfolioSummary() {
         >
 
           <IndianRupee
-
             size={22}
           />
 
@@ -220,7 +476,7 @@ function PortfolioSummary() {
         <Stat
           label="Invested"
           value={formatCurrency(
-            summary.invested
+            assetSummary.totalInvested
           )}
         />
 
@@ -232,7 +488,7 @@ function PortfolioSummary() {
           value={`${
             isProfit ? "+" : ""
           }${formatCurrency(
-            summary.profitLoss
+            assetSummary.totalProfitLoss
           )}`}
           positive={isProfit}
           negative={!isProfit}
@@ -245,7 +501,7 @@ function PortfolioSummary() {
           label="Return"
           value={`${
             isProfit ? "+" : ""
-          }${summary.returnPercent.toFixed(
+          }${assetSummary.totalReturnPercent.toFixed(
             2
           )}%`}
           positive={isProfit}
@@ -266,6 +522,10 @@ function PortfolioSummary() {
   );
 }
 
+
+/* --------------------------------
+   STAT COMPONENT
+-------------------------------- */
 
 function Stat({
   label,
