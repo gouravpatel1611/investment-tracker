@@ -1,121 +1,377 @@
 import { useState } from "react";
-import { Save, X } from "lucide-react";
+import {
+  Save,
+  X,
+} from "lucide-react";
 
 import SGBSeriesSearch from "./SGBSeriesSearch";
-import { findSGBBySeriesCode } from "../../../services/api/sgbService";
 
-const SGBForm = ({ onCancel, onSave }) => {
-  const [seriesCode, setSeriesCode] = useState("");
-  const [selectedSeries, setSelectedSeries] = useState(null);
+import {
+  findSGBBySeriesCode,
+} from "../../../services/api/sgbService";
 
-  const [searchError, setSearchError] = useState("");
-  const [loading, setLoading] = useState(false);
+const SGBForm = ({
+  onCancel,
+  onSave,
+  saving = false,
+}) => {
 
-  const [units, setUnits] = useState("");
-  const [purchaseRate, setPurchaseRate] = useState("");
+  // ==========================================
+  // SGB SERIES
+  // ==========================================
+
+  const [seriesCode, setSeriesCode] =
+    useState("");
+
+  const [selectedSeries, setSelectedSeries] =
+    useState(null);
+
+  const [searchError, setSearchError] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  // ==========================================
+  // INVESTMENT DETAILS
+  // ==========================================
+
+  const [issueDate, setIssueDate] =
+    useState("");
+
+  const [units, setUnits] =
+    useState("");
+
+  const [purchaseRate, setPurchaseRate] =
+    useState("");
+
+  // ==========================================
+  // MATURITY DATE
+  // Issue Date + 8 Years
+  // ==========================================
+
+  const calculateMaturityDate = (date) => {
+
+    if (!date) {
+      return "";
+    }
+
+    const parts = date.split("-");
+
+    if (parts.length !== 3) {
+      return "";
+    }
+
+    const year =
+      Number(parts[0]);
+
+    const month =
+      Number(parts[1]);
+
+    const day =
+      Number(parts[2]);
+
+    if (
+      !year ||
+      !month ||
+      !day
+    ) {
+      return "";
+    }
+
+    /*
+      String based calculation se timezone
+      problem avoid hota hai.
+    */
+
+    return `${year + 8}-${String(
+      month
+    ).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
+  };
+
+  const maturityDate =
+    calculateMaturityDate(issueDate);
+
+  // ==========================================
+  // PURCHASE VALUE
+  // ==========================================
 
   const purchaseValue =
     units && purchaseRate
-      ? Number(units) * Number(purchaseRate)
+      ? Number(units) *
+        Number(purchaseRate)
       : 0;
 
-  const handleSeriesCodeChange = (value) => {
-    setSeriesCode(value.toUpperCase());
+  // ==========================================
+  // SERIES CODE CHANGE
+  // ==========================================
 
-    // Code change karte hi purani search details hata do
+  const handleSeriesCodeChange = (
+    value
+  ) => {
+
+    const normalizedValue =
+      value.toUpperCase();
+
+    setSeriesCode(
+      normalizedValue
+    );
+
+    /*
+      Purani search details clear
+    */
+
     setSelectedSeries(null);
     setSearchError("");
+
+    /*
+      Issue date bhi clear
+    */
+
+    setIssueDate("");
   };
 
+  // ==========================================
+  // SEARCH SGB
+  // ==========================================
+
   const handleSearch = async () => {
+
     setSearchError("");
     setSelectedSeries(null);
+    setIssueDate("");
 
     if (!seriesCode.trim()) {
-      setSearchError("Please enter SGB Series Code");
+
+      setSearchError(
+        "Please enter SGB Series Code"
+      );
+
       return;
     }
 
     try {
+
       setLoading(true);
 
-      const result = await findSGBBySeriesCode(seriesCode);
+      const result =
+        await findSGBBySeriesCode(
+          seriesCode
+        );
 
       setSelectedSeries(result);
+
     } catch (error) {
+
       setSearchError(
-        error.message || "SGB Series Code not found"
+        error?.message ||
+          "SGB Series Code not found"
       );
+
     } finally {
+
       setLoading(false);
     }
   };
 
-  const handleSubmit = (e) => {
+  // ==========================================
+  // SUBMIT
+  // ==========================================
+
+  const handleSubmit = async (e) => {
+
     e.preventDefault();
 
     setSearchError("");
 
+    // ------------------------------------------
+    // ALREADY SAVING
+    // ------------------------------------------
+
+    if (saving) {
+      return;
+    }
+
+    // ------------------------------------------
+    // SERIES VALIDATION
+    // ------------------------------------------
+
     if (!selectedSeries) {
+
       setSearchError(
         "Please search and select a valid SGB Series Code"
       );
+
       return;
     }
 
-    if (!units || Number(units) <= 0) {
-      setSearchError("Please enter valid Units / Gram");
+    // ------------------------------------------
+    // ISSUE DATE VALIDATION
+    // ------------------------------------------
+
+    if (!issueDate) {
+
+      setSearchError(
+        "Please select Issue Date"
+      );
+
       return;
     }
 
-    if (!purchaseRate || Number(purchaseRate) <= 0) {
-      setSearchError("Please enter valid Purchase Rate");
+    // ------------------------------------------
+    // UNITS VALIDATION
+    // ------------------------------------------
+
+    if (
+      !units ||
+      Number(units) <= 0
+    ) {
+
+      setSearchError(
+        "Please enter valid Units / Gram"
+      );
+
       return;
     }
+
+    // ------------------------------------------
+    // PURCHASE RATE VALIDATION
+    // ------------------------------------------
+
+    if (
+      !purchaseRate ||
+      Number(purchaseRate) <= 0
+    ) {
+
+      setSearchError(
+        "Please enter valid Purchase Rate"
+      );
+
+      return;
+    }
+
+    // ------------------------------------------
+    // MATURITY DATE
+    // ------------------------------------------
+
+    if (!maturityDate) {
+
+      setSearchError(
+        "Unable to calculate maturity date"
+      );
+
+      return;
+    }
+
+    // ------------------------------------------
+    // FINAL SGB DATA
+    // ------------------------------------------
 
     const sgbData = {
-      seriesCode: selectedSeries.seriesCode,
-      seriesName: selectedSeries.seriesName,
-      isin: selectedSeries.isin,
 
-      issueDate: selectedSeries.issueDate,
-      maturityDate: selectedSeries.maturityDate,
+      /*
+        SGB API data
+      */
 
-      issuePrice: selectedSeries.issuePrice,
-      interestRate: selectedSeries.interestRate,
-      interestFrequency: selectedSeries.interestFrequency,
-      denomination: selectedSeries.denomination,
-      issuer: selectedSeries.issuer,
+      seriesCode:
+        selectedSeries.seriesCode,
 
-      units: Number(units),
-      purchaseRate: Number(purchaseRate),
-      purchaseValue,
+      issuePrice:
+        Number(
+          selectedSeries.issuePrice || 0
+        ),
+
+      /*
+        User entered data
+      */
+
+      issueDate,
+
+      maturityDate,
+
+      units:
+        Number(units),
+
+      purchaseRate:
+        Number(purchaseRate),
+
+      purchaseValue:
+        Number(purchaseValue),
     };
 
+    console.log(
+      "SGB DATA:",
+      sgbData
+    );
+
+    // ------------------------------------------
+    // SAVE
+    // ------------------------------------------
+
     if (onSave) {
-      onSave(sgbData);
+
+      try {
+
+        await onSave(sgbData);
+
+      } catch (error) {
+
+        console.error(
+          "SGB form save error:",
+          error
+        );
+
+      }
     }
   };
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 "
+      className="space-y-6"
     >
-      {/* SGB Series Search */}
+
+      {/* ======================================
+          SGB SERIES SEARCH + FOUND CARD
+      ======================================= */}
+
       <SGBSeriesSearch
         seriesCode={seriesCode}
-        setSeriesCode={handleSeriesCodeChange}
+        setSeriesCode={
+          handleSeriesCodeChange
+        }
         onSearch={handleSearch}
         loading={loading}
         error={searchError}
-        selectedSeries={selectedSeries}
+        selectedSeries={
+          selectedSeries
+        }
+        issueDate={issueDate}
+        maturityDate={
+          maturityDate
+        }
+        setIssueDate={
+          setIssueDate
+        }
       />
 
-      {/* Investment Details */}
+      {/* ======================================
+          INVESTMENT DETAILS
+      ======================================= */}
+
       {selectedSeries && (
         <div className="space-y-5">
-          {/* Heading */}
+
+          {/* ==================================
+              HEADING
+          =================================== */}
+
           <div>
             <h3 className="text-base font-semibold text-gray-200">
               Your Investment
@@ -126,8 +382,12 @@ const SGBForm = ({ onCancel, onSave }) => {
             </p>
           </div>
 
-          {/* Units */}
+          {/* ==================================
+              UNITS
+          =================================== */}
+
           <div>
+
             <label className="mb-2 block text-sm font-medium text-gray-300">
               Units / Gram
             </label>
@@ -137,19 +397,30 @@ const SGBForm = ({ onCancel, onSave }) => {
               min="1"
               step="1"
               value={units}
-              onChange={(e) => setUnits(e.target.value)}
+              onChange={(e) =>
+                setUnits(
+                  e.target.value
+                )
+              }
               placeholder="e.g. 10"
-              className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-yellow-500"
+              disabled={saving}
+              className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
             />
+
           </div>
 
-          {/* Purchase Rate */}
+          {/* ==================================
+              PURCHASE RATE
+          =================================== */}
+
           <div>
+
             <label className="mb-2 block text-sm font-medium text-gray-300">
               Purchase Rate
             </label>
 
             <div className="relative">
+
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                 ₹
               </span>
@@ -160,55 +431,120 @@ const SGBForm = ({ onCancel, onSave }) => {
                 step="0.01"
                 value={purchaseRate}
                 onChange={(e) =>
-                  setPurchaseRate(e.target.value)
+                  setPurchaseRate(
+                    e.target.value
+                  )
                 }
                 placeholder="e.g. 12000"
-                className="w-full rounded-xl border border-gray-700 bg-gray-950 py-3 pl-9 pr-4 text-sm text-white outline-none transition focus:border-yellow-500"
+                disabled={saving}
+                className="w-full rounded-xl border border-gray-700 bg-gray-950 py-3 pl-9 pr-4 text-sm text-white outline-none transition focus:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
               />
+
             </div>
+
           </div>
 
-          {/* Purchase Value */}
+          {/* ==================================
+              PURCHASE VALUE
+          =================================== */}
+
           <div className="rounded-2xl border border-gray-700 bg-gray-950 p-4">
+
             <div className="flex items-center justify-between gap-4">
+
               <span className="text-sm text-gray-400">
                 Purchase Value
               </span>
 
               <span className="text-lg font-bold text-gray-100">
-                ₹{purchaseValue.toLocaleString("en-IN")}
+                ₹
+                {purchaseValue.toLocaleString(
+                  "en-IN",
+                  {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  }
+                )}
               </span>
+
             </div>
 
-            {units && purchaseRate && (
-              <p className="mt-2 text-xs text-gray-500">
-                {units} Gram × ₹
-                {Number(purchaseRate).toLocaleString("en-IN")}
-              </p>
-            )}
+            {units &&
+              purchaseRate && (
+                <p className="mt-2 text-xs text-gray-500">
+
+                  {units} Gram × ₹
+                  {Number(
+                    purchaseRate
+                  ).toLocaleString(
+                    "en-IN",
+                    {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2,
+                    }
+                  )}
+
+                </p>
+              )}
+
           </div>
 
-          {/* Buttons */}
+          {/* ==================================
+              ERROR
+          =================================== */}
+
+          {searchError && (
+            <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+              {searchError}
+            </div>
+          )}
+
+          {/* ==================================
+              BUTTONS
+          =================================== */}
+
           <div className="flex gap-3 pt-2">
+
+            {/* --------------------------------
+                CANCEL
+            --------------------------------- */}
+
             <button
               type="button"
               onClick={onCancel}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm font-medium text-gray-300 transition hover:bg-gray-800"
+              disabled={saving}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm font-medium text-gray-300 transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
+
               <X size={18} />
+
               Cancel
+
             </button>
+
+            {/* --------------------------------
+                SAVE
+            --------------------------------- */}
 
             <button
               type="submit"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-yellow-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-yellow-400"
+              disabled={saving}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-yellow-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
+
               <Save size={18} />
-              Save SGB
+
+              {saving
+                ? "Saving..."
+                : "Save SGB"}
+
             </button>
+
           </div>
+
         </div>
       )}
+
     </form>
   );
 };

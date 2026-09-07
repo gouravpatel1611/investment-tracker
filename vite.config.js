@@ -24,15 +24,30 @@ export default defineConfig({
           {
             src: "/pwa-192x192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "/pwa-512x512.png",
             sizes: "512x512",
-            type: "image/png"
-          }
-        ]
-      }
-    })
-  ]
+            type: "image/png",
+          },
+        ],
+      },
+    }),
+  ],
+
+  server: {
+    proxy: {
+      "/api/sgb": {
+        target: "https://www.nseindia.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) =>
+          path.replace(
+            /^\/api\/sgb/,
+            "/api/sovereign-gold-bonds"
+          ),
+      },
+    },
+  },
 });

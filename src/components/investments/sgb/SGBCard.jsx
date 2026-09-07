@@ -5,39 +5,85 @@ import {
   TrendingUp,
   Wallet,
   Percent,
+  Trash2,
 } from "lucide-react";
 
+// ==========================================================
+// FORMATTERS
+// ==========================================================
+
 const formatCurrency = (value) => {
-  return `₹${Number(value).toLocaleString("en-IN")}`;
+  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 };
 
 const formatUnits = (value) => {
-  return Number(value).toFixed(2);
+  return Number(value || 0).toFixed(2);
 };
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  if (!date) {
+    return "-";
+  }
+
+  const parsedDate =
+    new Date(date);
+
+  if (
+    Number.isNaN(
+      parsedDate.getTime()
+    )
+  ) {
+    return "-";
+  }
+
+  return parsedDate.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  );
 };
 
-const SGBCard = ({ sgb }) => {
-  const isGain = sgb.gain >= 0;
+// ==========================================================
+// SGB CARD
+// ==========================================================
+
+const SGBCard = ({
+  sgb,
+  onDelete,
+}) => {
+  const isGain =
+    Number(sgb.gain || 0) >= 0;
+
+  // ========================================================
+  // CURRENT VALUE WITH INTEREST
+  // ========================================================
+
+  const currentValueWithInterest =
+    Number(sgb.currentValue || 0) +
+    Number(sgb.interest || 0);
 
   return (
     <div className="group rounded-2xl border border-gray-800 bg-gray-900 p-4 transition-all duration-200 hover:border-yellow-500/20">
 
-      {/* Header */}
+      {/* ================================================== */}
+      {/* HEADER */}
+      {/* ================================================== */}
+
       <div className="flex items-start justify-between gap-3">
 
+        {/* SERIES */}
+
         <div className="flex min-w-0 items-center gap-3">
+
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
             <Coins size={19} />
           </div>
 
           <div className="min-w-0">
+
             <p className="text-[10px] uppercase tracking-wider text-gray-500">
               Series No.
             </p>
@@ -45,76 +91,99 @@ const SGBCard = ({ sgb }) => {
             <h3 className="truncate text-sm font-semibold text-gray-200">
               {sgb.seriesNo}
             </h3>
+
           </div>
+
         </div>
 
-        {/* Total Gain % */}
-        <div
-          className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
-            isGain
-              ? "bg-emerald-500/10 text-emerald-400"
-              : "bg-red-500/10 text-red-400"
-          }`}
+        {/* DELETE BUTTON */}
+
+        <button
+          type="button"
+          onClick={() =>
+            onDelete?.(sgb)
+          }
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-500/10 bg-red-500/5 text-red-400 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300"
+          title="Delete SGB"
         >
-          <Percent size={11} />
-
-          {isGain ? "+" : ""}
-          {sgb.totalGainPercent.toFixed(2)}%
-        </div>
+          <Trash2 size={15} />
+        </button>
 
       </div>
 
-      {/* Current Value */}
+      {/* ================================================== */}
+      {/* CURRENT VALUE WITH INTEREST */}
+      {/* ================================================== */}
+
       <div className="mt-4 rounded-xl border border-yellow-500/10 bg-yellow-500/5 p-3">
 
         <p className="text-[11px] text-gray-500">
-          Current Value
+          Current Value with Interest
         </p>
 
         <div className="mt-1 flex items-end justify-between gap-2">
 
           <p className="text-2xl font-bold text-yellow-400">
-            {formatCurrency(sgb.currentValue)}
+            {formatCurrency(
+              currentValueWithInterest
+            )}
           </p>
 
-          {/* Total Gain */}
+          {/* GAIN % */}
+
           <div
-            className={`flex items-center gap-1 text-xs font-semibold ${
+            className={`flex shrink-0 items-center gap-1 text-xs font-semibold ${
               isGain
                 ? "text-emerald-400"
                 : "text-red-400"
             }`}
           >
-            <TrendingUp size={13} />
+            <Percent size={13} />
 
             {isGain ? "+" : ""}
-            {formatCurrency(sgb.gain)}
+            {Number(
+              sgb.totalGainPercent || 0
+            ).toFixed(2)}
+            %
           </div>
 
         </div>
+
       </div>
 
-      {/* Purchase Value + Profit */}
+      {/* ================================================== */}
+      {/* PURCHASE VALUE + PROFIT */}
+      {/* ================================================== */}
+
       <div className="mt-3 grid grid-cols-2 gap-2">
 
-        {/* Purchase Value */}
+        {/* PURCHASE VALUE */}
+
         <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-3">
 
           <div className="flex items-center gap-2">
-            <Wallet size={14} className="text-gray-500" />
+
+            <Wallet
+              size={14}
+              className="text-gray-500"
+            />
 
             <p className="text-[11px] text-gray-500">
               Purchase Value
             </p>
+
           </div>
 
           <p className="mt-1 text-sm font-semibold text-gray-200">
-            {formatCurrency(sgb.purchaseValue)}
+            {formatCurrency(
+              sgb.purchaseValue
+            )}
           </p>
 
         </div>
 
-        {/* Profit */}
+        {/* PROFIT */}
+
         <div
           className={`rounded-xl border p-3 ${
             sgb.profit >= 0
@@ -134,55 +203,85 @@ const SGBCard = ({ sgb }) => {
                 : "text-red-400"
             }`}
           >
-            {sgb.profit >= 0 ? "+" : ""}
-            {formatCurrency(sgb.profit)}
+            {sgb.profit >= 0
+              ? "+"
+              : ""}
+            {formatCurrency(
+              sgb.profit
+            )}
           </p>
 
         </div>
+
       </div>
 
-      {/* Units + Purchase Rate */}
+      {/* ================================================== */}
+      {/* UNITS + CURRENT RATE */}
+      {/* ================================================== */}
+
       <div className="mt-2 grid grid-cols-2 gap-2">
 
-        {/* Units */}
+        {/* UNITS */}
+
         <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-3">
 
           <div className="flex items-center gap-2">
-            <Coins size={14} className="text-gray-500" />
+
+            <Coins
+              size={14}
+              className="text-gray-500"
+            />
 
             <p className="text-[11px] text-gray-500">
               Units
             </p>
+
           </div>
 
           <p className="mt-1 text-sm font-semibold text-gray-200">
-            {formatUnits(sgb.units)} g
+            {formatUnits(
+              sgb.units
+            )}{" "}
+            g
           </p>
 
         </div>
 
-        {/* Purchase Rate */}
+        {/* CURRENT RATE */}
+
         <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-3">
 
           <div className="flex items-center gap-2">
-            <IndianRupee size={14} className="text-gray-500" />
+
+            <IndianRupee
+              size={14}
+              className="text-gray-500"
+            />
 
             <p className="text-[11px] text-gray-500">
-              Purchase Rate
+              Current Rate
             </p>
+
           </div>
 
-          <p className="mt-1 text-sm font-semibold text-gray-200">
-            {formatCurrency(sgb.purchaseRate)}
+          <p className="mt-1 text-sm font-semibold text-yellow-400">
+            {formatCurrency(
+              sgb.currentRate
+            )}
           </p>
 
         </div>
+
       </div>
 
-      {/* Interest + Total Gain */}
+      {/* ================================================== */}
+      {/* INTEREST + TOTAL GAIN */}
+      {/* ================================================== */}
+
       <div className="mt-2 grid grid-cols-2 gap-2">
 
-        {/* Interest */}
+        {/* INTEREST */}
+
         <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-3">
 
           <p className="text-[11px] text-gray-500">
@@ -190,12 +289,15 @@ const SGBCard = ({ sgb }) => {
           </p>
 
           <p className="mt-1 text-sm font-semibold text-blue-300">
-            {formatCurrency(sgb.interest)}
+            {formatCurrency(
+              sgb.interest
+            )}
           </p>
 
         </div>
 
-        {/* Total Gain */}
+        {/* TOTAL GAIN */}
+
         <div
           className={`rounded-xl border p-3 ${
             isGain
@@ -216,16 +318,23 @@ const SGBCard = ({ sgb }) => {
             }`}
           >
             {isGain ? "+" : ""}
-            {formatCurrency(sgb.gain)}
+            {formatCurrency(
+              sgb.gain
+            )}
           </p>
 
         </div>
+
       </div>
 
-      {/* Dates */}
+      {/* ================================================== */}
+      {/* DATES */}
+      {/* ================================================== */}
+
       <div className="mt-2 grid grid-cols-2 gap-2">
 
-        {/* Purchase Date */}
+        {/* ISSUE DATE */}
+
         <div className="flex items-center gap-2 rounded-xl bg-gray-950/60 px-3 py-2.5">
 
           <CalendarDays
@@ -234,18 +343,23 @@ const SGBCard = ({ sgb }) => {
           />
 
           <div>
+
             <p className="text-[10px] text-gray-500">
-              Purchase Date
+              Issue Date
             </p>
 
             <p className="text-xs font-medium text-gray-400">
-              {formatDate(sgb.purchaseDate)}
+              {formatDate(
+                sgb.issueDate
+              )}
             </p>
+
           </div>
 
         </div>
 
-        {/* Maturity Date */}
+        {/* MATURITY DATE */}
+
         <div className="flex items-center gap-2 rounded-xl bg-gray-950/60 px-3 py-2.5">
 
           <CalendarDays
@@ -254,18 +368,23 @@ const SGBCard = ({ sgb }) => {
           />
 
           <div>
+
             <p className="text-[10px] text-gray-500">
               Maturity Date
             </p>
 
             <p className="text-xs font-medium text-gray-400">
-              {formatDate(sgb.maturityDate)}
+              {formatDate(
+                sgb.maturityDate
+              )}
             </p>
+
           </div>
 
         </div>
 
       </div>
+
     </div>
   );
 };
