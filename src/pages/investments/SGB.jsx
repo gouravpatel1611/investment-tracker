@@ -342,10 +342,13 @@ const SGB = () => {
             /* ============================================ */
 
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-
-              {sgbHoldings.map(
-                (sgb) => (
-
+              {[...sgbHoldings]
+                .sort(
+                  (a, b) =>
+                    new Date(a.issueDate) -
+                    new Date(b.issueDate)
+                )
+                .map((sgb) => (
                   <div
                     key={sgb.id}
                     className={
@@ -354,19 +357,12 @@ const SGB = () => {
                         : ""
                     }
                   >
-
                     <SGBCard
                       sgb={sgb}
-                      onDelete={
-                        handleDeleteSGB
-                      }
+                      onDelete={handleDeleteSGB}
                     />
-
                   </div>
-
-                )
-              )}
-
+                ))}
             </div>
 
           )}

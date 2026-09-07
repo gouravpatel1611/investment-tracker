@@ -375,14 +375,16 @@ function MutualFunds() {
             "
           >
 
-            {filteredFunds.map(
-              (fund) => (
+            {[...filteredFunds]
+              .sort((a, b) =>
+                a.schemeName.localeCompare(b.schemeName)
+              )
+              .map((fund) => (
                 <MutualFundCard
                   key={fund.id}
                   fund={fund}
                 />
-              )
-            )}
+              ))}
 
           </div>
 
