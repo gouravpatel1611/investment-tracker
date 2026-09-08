@@ -290,18 +290,6 @@ const SGBSummaryCard = ({
         />
 
 
-        {/* CURRENT RATE */}
-
-        <Stat
-          icon={IndianRupee}
-          label="Current Rate"
-          value={formatCurrency(
-            summary?.currentRate
-          )}
-          valueClass="text-yellow-400"
-        />
-
-
         {/* INTEREST */}
 
         <Stat
@@ -318,7 +306,7 @@ const SGBSummaryCard = ({
 
         <Stat
           icon={TrendingUp}
-          label="Profit"
+          label="Gain"
           value={formatCurrency(
             summary?.profit
           )}
@@ -326,22 +314,6 @@ const SGBSummaryCard = ({
             Number(
               summary?.profit || 0
             ) >= 0
-              ? "text-emerald-400"
-              : "text-red-400"
-          }
-        />
-
-
-        {/* TOTAL GAIN % */}
-
-        <Stat
-          icon={Percent}
-          label="Total Gain %"
-          value={`${Number(
-            summary?.totalGainPercent || 0
-          ).toFixed(2)}%`}
-          valueClass={
-            isGain
               ? "text-emerald-400"
               : "text-red-400"
           }
