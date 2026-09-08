@@ -23,11 +23,20 @@ export default async function handler(req, res) {
       },
     });
 
-    if (!response.ok) {
-      return res.status(response.status).json({
+   if (!response.ok) {
+    const errorText = await response.text();
+
+    console.error(
+        "RetailBonds Error:",
+        response.status,
+        errorText
+    );
+
+    return res.status(response.status).json({
         success: false,
-        error: "Bond not found",
-      });
+        error: `RetailBonds returned ${response.status}`,
+        status: response.status,
+    });
     }
 
     const html = await response.text();
