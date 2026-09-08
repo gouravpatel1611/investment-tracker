@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "bond-api": "node local-bond-api.js"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "firebase": "^12.18.0",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",

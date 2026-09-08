@@ -59,7 +59,7 @@ const assets = [
     type: "Fixed Income",
     icon: FileText,
     iconClass: "bg-blue-500/15 text-blue-300",
-    route: "/investments/bonds/add",
+    route: "/bonds/add",
   },
   {
     id: "sgb",

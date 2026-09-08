@@ -13,10 +13,13 @@ export default defineConfig({
         name: "Investment Tracker",
         short_name: "Investments",
         description: "Personal Investment Portfolio Tracker",
+
         theme_color: "#0f172a",
         background_color: "#020617",
+
         display: "standalone",
         orientation: "portrait",
+
         start_url: "/",
         scope: "/",
 
@@ -42,6 +45,7 @@ export default defineConfig({
         target: "https://www.nseindia.com",
         changeOrigin: true,
         secure: true,
+
         rewrite: (path) =>
           path.replace(
             /^\/api\/sgb/,
