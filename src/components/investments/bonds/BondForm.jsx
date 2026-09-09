@@ -347,6 +347,7 @@ function BondForm() {
      SAVE
   ================================================= */
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -369,29 +370,18 @@ function BondForm() {
       return;
     }
 
-    if (
-      !form.quantity ||
-      Number(form.quantity) <= 0
-    ) {
+    if (!form.quantity || Number(form.quantity) <= 0) {
       setError("Please enter valid quantity.");
       return;
     }
 
-    if (
-      !form.faceValue ||
-      Number(form.faceValue) <= 0
-    ) {
+    if (!form.faceValue || Number(form.faceValue) <= 0) {
       setError("Please enter valid face value.");
       return;
     }
 
-    if (
-      !form.purchasePrice ||
-      Number(form.purchasePrice) <= 0
-    ) {
-      setError(
-        "Please enter valid purchase price."
-      );
+    if (!form.purchasePrice || Number(form.purchasePrice) <= 0) {
+      setError("Please enter valid purchase price.");
       return;
     }
 
@@ -400,43 +390,43 @@ function BondForm() {
     if (
       form.issueDate &&
       form.maturityDate &&
-      new Date(form.maturityDate) <
-        new Date(form.issueDate)
+      new Date(form.maturityDate) < new Date(form.issueDate)
     ) {
-      setError(
-        "Maturity date cannot be before issue date."
-      );
+      setError("Maturity date cannot be before issue date.");
       return;
     }
 
     if (
       form.issueDate &&
-      new Date(form.purchaseDate) <
-        new Date(form.issueDate)
+      new Date(form.purchaseDate) < new Date(form.issueDate)
     ) {
-      setError(
-        "Purchase date cannot be before issue date."
-      );
+      setError("Purchase date cannot be before issue date.");
       return;
     }
+
+    /* ---------- Purchase Value Calculation ---------- */
+
+    const quantity = Number(form.quantity);
+    const faceValue = Number(form.faceValue);
+    const purchasePrice = Number(form.purchasePrice);
+
+    const purchaseValue = quantity * purchasePrice;
 
     /* ---------- Final data ---------- */
 
     const bondData = {
       ...form,
 
-      quantity: Number(form.quantity),
+      quantity,
+      faceValue,
+      purchasePrice,
 
-      faceValue: Number(form.faceValue),
+      // Auto calculated
+      purchaseValue,
 
-      purchasePrice:
-        Number(form.purchasePrice),
+      couponRate: Number(form.couponRate) || 0,
 
-      couponRate:
-        Number(form.couponRate) || 0,
-
-      createdAt:
-        new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     try {
@@ -448,16 +438,18 @@ function BondForm() {
         await addBondTransaction(bondData);
       */
 
-      console.log(
-        "Bond to save:",
-        bondData
-      );
+      console.log("Bond to save:", bondData);
 
       await new Promise((resolve) =>
         setTimeout(resolve, 500)
       );
 
+      // Success alert
+      alert("Bond saved successfully! 🎉");
+
+      // Alert close hone ke baad bonds page par jayega
       navigate("/bonds");
+
     } catch (err) {
       console.error(err);
 
@@ -468,6 +460,8 @@ function BondForm() {
       setSaving(false);
     }
   };
+
+
 
   /* =================================================
      CANCEL
