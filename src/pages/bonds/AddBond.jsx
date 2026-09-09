@@ -1,53 +1,49 @@
 
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 import BondForm from "../../components/investments/bonds/BondForm";
 
-export default function AddBond() {
+function AddBond() {
   const navigate = useNavigate();
 
-  const handleSubmit = async (bondData) => {
-    try {
-      console.log("Bond data received:", bondData);
-
-      /*
-        Firebase save yahan baad me add karenge.
-
-        Example:
-
-        await addBondTransaction(bondData);
-
-        Save hone ke baad:
-        navigate("/portfolio/bonds");
-      */
-
-      // Abhi testing ke liye
-      alert("Bond data ready to save!");
-
-      console.log(
-        "Final Bond Data:",
-        JSON.stringify(bondData, null, 2)
-      );
-
-      // Filhaal list page par nahi bhej rahe.
-      // Firebase connect hone ke baad uncomment karenge.
-
-      // navigate("/portfolio/bonds");
-    } catch (error) {
-      console.error("Error saving bond:", error);
-    }
-  };
-
-  const handleCancel = () => {
-    navigate("/portfolio/bonds");
-  };
-
   return (
-    <div className="min-h-full w-full bg-slate-950 px-3 py-5 sm:px-5 lg:px-6">
-      <BondForm
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-      />
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* =========================================
+          HEADER
+      ========================================= */}
+
+      <div className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 transition hover:bg-slate-800 hover:text-white"
+          >
+            <ArrowLeft size={18} />
+          </button>
+
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-white">
+              Add Bond
+            </h1>
+
+            <p className="text-xs text-slate-500">
+              Enter your bond details manually
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================
+          FORM
+      ========================================= */}
+
+      <main className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-5 sm:py-6">
+        <BondForm />
+      </main>
     </div>
   );
 }
 
+export default AddBond;
