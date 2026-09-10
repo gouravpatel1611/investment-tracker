@@ -9,6 +9,8 @@ import {
   X,
 } from "lucide-react";
 
+import { addBond } from "../../../services/firebase/bondService";
+
 /* =================================================
    HELPERS
 ================================================= */
@@ -276,24 +278,10 @@ function DatePickerField({
 ================================================= */
 
 function SectionCard({
-  title,
-  subtitle,
   children,
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-      <div className="border-b border-slate-800 px-4 py-3.5">
-        <h2 className="text-sm font-semibold text-white">
-          {title}
-        </h2>
-
-        {subtitle && (
-          <p className="mt-0.5 text-[11px] text-slate-500">
-            {subtitle}
-          </p>
-        )}
-      </div>
-
       <div className="p-4">
         {children}
       </div>
@@ -313,21 +301,19 @@ function BondForm() {
 
   const [form, setForm] = useState({
     bondName: "",
-    issuer: "",
     isin: "",
-    bondType: "Corporate Bond",
 
     purchaseDate: getToday(),
 
     quantity: "1",
     faceValue: "",
-    purchasePrice: "",
+    purchaseValue: "",
 
     couponRate: "",
-    couponFrequency: "annual",
+    couponFrequency: "monthly",
 
-    issueDate: "",
     maturityDate: "",
+    firstPayoutDate: "",
   });
 
   /* =================================================
@@ -347,119 +333,79 @@ function BondForm() {
      SAVE
   ================================================= */
 
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  setError("");
 
-    setError("");
+  /* ---------- Required validation ---------- */
 
-    /* ---------- Required validation ---------- */
+  if (!form.bondName.trim()) {
+    setError("Please enter bond name.");
+    return;
+  }
 
-    if (!form.bondName.trim()) {
-      setError("Please enter bond name.");
-      return;
-    }
 
-    if (!form.issuer.trim()) {
-      setError("Please enter issuer.");
-      return;
-    }
+  if (!form.purchaseDate) {
+    setError("Please select purchase date.");
+    return;
+  }
 
-    if (!form.purchaseDate) {
-      setError("Please select purchase date.");
-      return;
-    }
+  if (!form.quantity || Number(form.quantity) <= 0) {
+    setError("Please enter valid quantity.");
+    return;
+  }
 
-    if (!form.quantity || Number(form.quantity) <= 0) {
-      setError("Please enter valid quantity.");
-      return;
-    }
+  if (!form.faceValue || Number(form.faceValue) <= 0) {
+    setError("Please enter valid face value.");
+    return;
+  }
 
-    if (!form.faceValue || Number(form.faceValue) <= 0) {
-      setError("Please enter valid face value.");
-      return;
-    }
+  if (!form.purchaseValue || Number(form.purchaseValue) <= 0) {
+    setError("Please enter valid purchase Value.");
+    return;
+  }
 
-    if (!form.purchasePrice || Number(form.purchasePrice) <= 0) {
-      setError("Please enter valid purchase price.");
-      return;
-    }
 
-    /* ---------- Date validation ---------- */
 
-    if (
-      form.issueDate &&
-      form.maturityDate &&
-      new Date(form.maturityDate) < new Date(form.issueDate)
-    ) {
-      setError("Maturity date cannot be before issue date.");
-      return;
-    }
 
-    if (
-      form.issueDate &&
-      new Date(form.purchaseDate) < new Date(form.issueDate)
-    ) {
-      setError("Purchase date cannot be before issue date.");
-      return;
-    }
 
-    /* ---------- Purchase Value Calculation ---------- */
 
-    const quantity = Number(form.quantity);
-    const faceValue = Number(form.faceValue);
-    const purchasePrice = Number(form.purchasePrice);
+  /* ---------- Final data ---------- */
 
-    const purchaseValue = quantity * purchasePrice;
-
-    /* ---------- Final data ---------- */
-
-    const bondData = {
-      ...form,
-
-      quantity,
-      faceValue,
-      purchasePrice,
-
-      // Auto calculated
-      purchaseValue,
-
-      couponRate: Number(form.couponRate) || 0,
-
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      setSaving(true);
-
-      /*
-        Firebase save yahan connect hoga:
-
-        await addBondTransaction(bondData);
-      */
-
-      console.log("Bond to save:", bondData);
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 500)
-      );
-
-      // Success alert
-      alert("Bond saved successfully! 🎉");
-
-      // Alert close hone ke baad bonds page par jayega
-      navigate("/bonds");
-
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        "Bond save nahi ho paya. Please try again."
-      );
-    } finally {
-      setSaving(false);
-    }
+  const bondData = {
+    ...form,
+    couponRate: Number(form.couponRate) || 0,
   };
+
+  try {
+    setSaving(true);
+
+    /* ---------- Save to Firebase ---------- */
+
+    const savedBond = await addBond(bondData);
+
+    console.log("Bond saved:", savedBond);
+
+    /* ---------- Success ---------- */
+
+    alert("Bond saved successfully! 🎉");
+
+    // Alert close hone ke baad bonds page
+    navigate("/bonds");
+
+  } catch (err) {
+    console.error("Failed to save bond:", err);
+
+    setError(
+      "Bond save nahi ho paya. Please try again."
+    );
+  } finally {
+    setSaving(false);
+  }
+};
+
+
 
 
 
@@ -484,10 +430,7 @@ function BondForm() {
           BASIC DETAILS
       ========================================= */}
 
-      <SectionCard
-        title="Basic Details"
-        subtitle="Enter basic information about the bond"
-      >
+      <SectionCard>
         <div className="space-y-4">
           <InputField
             label="Bond Name"
@@ -502,18 +445,6 @@ function BondForm() {
             required
           />
 
-          <InputField
-            label="Issuer"
-            value={form.issuer}
-            onChange={(value) =>
-              updateField(
-                "issuer",
-                value
-              )
-            }
-            placeholder="e.g. HDFC Ltd"
-            required
-          />
 
           <InputField
             label="ISIN"
@@ -527,17 +458,6 @@ function BondForm() {
             placeholder="e.g. INE123A01012"
           />
 
-          <SelectField
-            label="Bond Type"
-            value={form.bondType}
-            onChange={(value) =>
-              updateField(
-                "bondType",
-                value
-              )
-            }
-            options={BOND_TYPE_OPTIONS}
-          />
         </div>
       </SectionCard>
 
@@ -596,11 +516,11 @@ function BondForm() {
           </div>
 
           <InputField
-            label="Purchase Price"
-            value={form.purchasePrice}
+            label="Purchase Value"
+            value={form.purchaseValue}
             onChange={(value) =>
               updateField(
-                "purchasePrice",
+                "purchaseValue",
                 value
               )
             }
@@ -611,24 +531,6 @@ function BondForm() {
             }
             required
           />
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 mt-4">
-          <p className="text-xs text-slate-500">Purchase Value</p>
-
-          <p className="mt-1 text-lg font-semibold text-white">
-            ₹
-            {(
-              (Number(form.quantity) || 0) *
-              (Number(form.purchasePrice) || 0)
-            ).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-
-          <p className="mt-1 text-[11px] text-slate-500">
-            Quantity × Purchase Price
-          </p>
         </div>
       </SectionCard>
 
@@ -676,21 +578,10 @@ function BondForm() {
       ========================================= */}
 
       <SectionCard
-        title="Issue & Maturity"
+        title=" Maturity"
         subtitle="Bond lifecycle dates"
       >
         <div className="space-y-4">
-          <DatePickerField
-            label="Issue Date"
-            value={form.issueDate}
-            onChange={(value) =>
-              updateField(
-                "issueDate",
-                value
-              )
-            }
-          />
-
           <DatePickerField
             label="Maturity Date"
             value={form.maturityDate}
@@ -701,7 +592,22 @@ function BondForm() {
               )
             }
             min={
-              form.issueDate || undefined
+              form.purchaseDate || undefined
+            }
+          />
+        </div>
+        <div className="space-y-4 mt-3">
+          <DatePickerField
+            label="First Payout Date"
+            value={form.firstPayoutDate}
+            onChange={(value) =>
+              updateField(
+                "firstPayoutDate",
+                value
+              )
+            }
+            min={
+              form.purchaseDate || undefined
             }
           />
         </div>

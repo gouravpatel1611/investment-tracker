@@ -8,11 +8,17 @@ import {
   AuthProvider,
 } from "./context/AuthContext";
 
+import{
+  BondProvider
+} from "./context/BondContext";
+
 function App() {
   return (
     <AuthProvider>
       <MutualFundProvider>
-        <AppRoutes />
+        <BondProvider>
+          <AppRoutes />
+        </BondProvider>
       </MutualFundProvider>
     </AuthProvider>
   );

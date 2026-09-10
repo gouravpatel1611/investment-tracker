@@ -18,6 +18,9 @@ import Login from "../pages/Login";
 import SGB from "../pages/investments/SGB";
 import AddSGB from "../pages/investments/AddSGB";
 import AddBond from "../pages/bonds/AddBond";
+import Bonds from "../pages/bonds/Bonds";
+import BondDetails  from "../pages/bonds/BondDetails";
+
 
 import Migration from "../pages/Migration";
 
@@ -85,6 +88,16 @@ function AppRoutes() {
             <Route
               path="/bonds/add"
               element={<AddBond />}
+            />
+
+             <Route
+              path="/bonds"
+              element={<Bonds />}
+            />
+
+            <Route
+              path="/bonds/:id"
+              element={<BondDetails />}
             />
 
             <Route
