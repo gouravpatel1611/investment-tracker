@@ -5,6 +5,7 @@ import {
   orderBy,
   query,
   deleteDoc,
+  updateDoc,
   doc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -16,15 +17,6 @@ const COLLECTION_NAME = "bonds";
 
 /* =========================================================
    USER BOND COLLECTION
-
-   Firestore structure:
-
-   users
-    └── {Firebase UID}
-         └── bonds
-              ├── bond
-              ├── bond
-              └── ...
 ========================================================= */
 
 function getUserCollection() {
@@ -53,11 +45,6 @@ export async function addBond(bond) {
       createdAt: serverTimestamp(),
     };
 
-    /*
-      Local id agar form/object me ho
-      to Firestore me save nahi karna.
-    */
-
     delete dataToSave.id;
 
     const docRef = await addDoc(
@@ -70,8 +57,57 @@ export async function addBond(bond) {
       id: docRef.id,
     };
   } catch (error) {
+    console.error("Failed to add bond:", error);
+    throw error;
+  }
+}
+
+/* =========================================================
+   UPDATE BOND
+========================================================= */
+
+export async function updateBond(id, bond) {
+  try {
+    if (!id) {
+      throw new Error(
+        "Bond ID is required for update."
+      );
+    }
+
+    const user = auth.currentUser;
+
+    if (!user) {
+      throw new Error("User is not logged in.");
+    }
+
+    const dataToSave = {
+      ...bond,
+      updatedAt: serverTimestamp(),
+    };
+
+    delete dataToSave.id;
+    delete dataToSave.createdAt;
+
+    const bondRef = doc(
+      db,
+      "users",
+      user.uid,
+      COLLECTION_NAME,
+      String(id)
+    );
+
+    await updateDoc(
+      bondRef,
+      dataToSave
+    );
+
+    return {
+      ...bond,
+      id,
+    };
+  } catch (error) {
     console.error(
-      "Failed to add bond:",
+      "Failed to update bond:",
       error
     );
 

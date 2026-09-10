@@ -1,116 +1,56 @@
 // ==================================================
-// DATE HELPERS
+// DATE
 // ==================================================
 
-function toDate(value) {
-  if (!value) {
-    return null;
+export const toDate = (value) => {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return new Date(value);
+  }
+
+  if (
+    typeof value === "object" &&
+    typeof value.toDate === "function"
+  ) {
+    return value.toDate();
+  }
+
+  if (typeof value === "string") {
+    const parts =
+      value.split("-");
+
+    if (parts.length === 3) {
+      return new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+      );
+    }
   }
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  date.setHours(0, 0, 0, 0);
-
-  return date;
-}
-
-
-// ==================================================
-// ADD DAYS
-// ==================================================
-
-function addDays(date, days) {
-  const result = new Date(date);
-
-  result.setDate(
-    result.getDate() + days
-  );
-
-  result.setHours(0, 0, 0, 0);
-
-  return result;
-}
-
-
-// ==================================================
-// DAYS BETWEEN TWO DATES
-//
-// IMPORTANT:
-// Start date + End date
-// dono include honge.
-//
-// 09-Sep → 08-Oct
-// = 30 days
-//
-// 09-Oct → 08-Nov
-// = 31 days
-// ==================================================
-
-function getDaysBetween(
-  startDate,
-  endDate
-) {
-  const start =
-    toDate(startDate);
-
-  const end =
-    toDate(endDate);
-
-  if (!start || !end) {
-    return 0;
-  }
-
-  const millisecondsPerDay =
-    1000 * 60 * 60 * 24;
-
-  const difference =
-    end.getTime() -
-    start.getTime();
-
-  const days =
-    Math.floor(
-      difference /
-        millisecondsPerDay
-    );
-
-  /*
-    Start aur end dono include.
-  */
-
-  return Math.max(
-    0,
-    days 
-  );
-}
-
+  return Number.isNaN(
+    date.getTime()
+  )
+    ? null
+    : date;
+};
 
 // ==================================================
 // ADD MONTHS
-//
-// Month-end safe
-//
-// 31-Jan + 1 month
-// → 28-Feb / 29-Feb
 // ==================================================
 
-function addMonths(
+export const addMonths = (
   date,
   months
-) {
+) => {
   const result =
     new Date(date);
 
   const originalDay =
     result.getDate();
-
-  /*
-    Pehle date 1 karte hain,
-    taki month overflow na ho.
-  */
 
   result.setDate(1);
 
@@ -118,11 +58,7 @@ function addMonths(
     result.getMonth() + months
   );
 
-  /*
-    Target month ka last day.
-  */
-
-  const lastDayOfTargetMonth =
+  const lastDay =
     new Date(
       result.getFullYear(),
       result.getMonth() + 1,
@@ -132,32 +68,93 @@ function addMonths(
   result.setDate(
     Math.min(
       originalDay,
-      lastDayOfTargetMonth
+      lastDay
     )
   );
 
-  result.setHours(0, 0, 0, 0);
-
   return result;
-}
-
+};
 
 // ==================================================
-// PAYMENT FREQUENCY
+// DAYS BETWEEN
+//
+// 25 Sep -> 25 Oct = 30
+// 25 Apr -> 30 Apr = 5
 // ==================================================
 
-function getMonthsPerPayment(
-  couponFrequency
-) {
-  const frequency =
-    String(
-      couponFrequency || ""
+export const getDaysBetween = (
+  start,
+  end
+) => {
+  const startDate =
+    toDate(start);
+
+  const endDate =
+    toDate(end);
+
+  if (!startDate || !endDate) {
+    return 0;
+  }
+
+  const startUTC =
+    Date.UTC(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate()
+    );
+
+  const endUTC =
+    Date.UTC(
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate()
+    );
+
+  return Math.max(
+    0,
+    Math.round(
+      (endUTC - startUTC) /
+        86400000
     )
-      .toLowerCase()
-      .trim();
+  );
+};
 
+// ==================================================
+// LEAP YEAR
+// ==================================================
+
+export const isLeapYear = (
+  year
+) => {
+  return (
+    year % 4 === 0 &&
+    (
+      year % 100 !== 0 ||
+      year % 400 === 0
+    )
+  );
+};
+
+// ==================================================
+// DAYS IN YEAR
+// ==================================================
+
+export const getDaysInYear = (
+  year
+) => {
+  return isLeapYear(year)
+    ? 366
+    : 365;
+};
+
+// ==================================================
+// FREQUENCY
+// ==================================================
+
+export const getMonthsPerPayment = (
+  frequency
+) => {
   switch (frequency) {
-
     case "monthly":
       return 1;
 
@@ -165,637 +162,960 @@ function getMonthsPerPayment(
       return 3;
 
     case "half-yearly":
-    case "half yearly":
-    case "halfyearly":
-    case "semi-annually":
-    case "semi annually":
-    case "semiannual":
       return 6;
 
-    case "yearly":
     case "annual":
-    case "annually":
       return 12;
 
     default:
-      return 0;
+      return 12;
   }
-}
-
+};
 
 // ==================================================
-// CALCULATE INTEREST FOR PERIOD
-//
-// Formula:
-//
-// Principal × Rate × Days / 36500
-//
-// Principal = Face Value × Quantity
-// Rate      = Coupon Rate
-// Days      = Actual calendar days
-//
-// Result = 2 decimal
+// NORMALIZE REPAYMENTS
 // ==================================================
 
-export function calculatePeriodInterest(
-  bond,
-  startDate,
-  endDate
-) {
-  const faceValue =
-    Number(
-      bond?.faceValue
-    ) || 0;
-
-  const quantity =
-    Number(
-      bond?.quantity
-    ) || 0;
-
-  const couponRate =
-    Number(
-      bond?.couponRate
-    ) || 0;
-
-  const principal =
-    faceValue * quantity;
-
-  const days =
-    getDaysBetween(
-      startDate,
-      endDate
+export const normalizeRepayments = (
+  repayments = []
+) => {
+  return repayments
+    .filter(
+      (item) =>
+        item &&
+        item.date &&
+        Number(item.amount) > 0
+    )
+    .map((item) => ({
+      date: toDate(item.date),
+      amount: Number(item.amount),
+    }))
+    .filter(
+      (item) => item.date
+    )
+    .sort(
+      (a, b) =>
+        a.date.getTime() -
+        b.date.getTime()
     );
+};
 
+// ==================================================
+// PRINCIPAL AT A DATE
+// ==================================================
 
-  if (
-    principal <= 0 ||
-    couponRate <= 0 ||
-    days <= 0
-  ) {
-    return 0;
+export const getOutstandingPrincipalAt = (
+  originalPrincipal,
+  repayments,
+  date
+) => {
+  const targetDate =
+    toDate(date);
+
+  if (!targetDate) {
+    return Number(
+      originalPrincipal
+    );
   }
 
+  let remaining =
+    Number(originalPrincipal);
 
-  const interest =
-    (
-      principal *
-      couponRate *
-      days
-    ) / 36500;
+  for (
+    const repayment of repayments
+  ) {
+    /*
+      Repayment on this exact date is
+      considered paid at the start of
+      that date for future interest.
+    */
 
+    if (
+      repayment.date.getTime() <=
+      targetDate.getTime()
+    ) {
+      remaining -=
+        repayment.amount;
 
-  /*
-    Interest ko 2 decimal
-    tak round kar rahe hain.
-  */
+      if (remaining <= 0) {
+        return 0;
+      }
+    }
+  }
 
-  return Number(
-    interest.toFixed(2)
+  return Math.max(
+    0,
+    remaining
   );
-}
-
-
-// ==================================================
-// GET PERIOD DAYS
-// ==================================================
-
-export function getInterestPeriodDays(
-  startDate,
-  endDate
-) {
-  return getDaysBetween(
-    startDate,
-    endDate
-  );
-}
-
+};
 
 // ==================================================
-// INTEREST SCHEDULE
-//
-// Example:
-//
-// First payout = 09-Oct-2025
-//
-// Period 1:
-// 09-Sep-2025 → 08-Oct-2025
-// = 30 days
-//
-// Period 2:
-// 09-Oct-2025 → 08-Nov-2025
-// = 31 days
-//
-// Period 3:
-// 09-Nov-2025 → 08-Dec-2025
-// = 30 days
-//
-// Schedule date = payout date
+// SPLIT BY YEAR
 // ==================================================
 
-export function calculateInterestSchedule(
-  bond,
-  asOfDate = new Date()
-) {
-  const purchaseDate =
-    toDate(
-      bond?.purchaseDate
-    );
+const splitByYear = (
+  start,
+  end,
+  principal
+) => {
+  const parts = [];
 
-  const firstPayoutDate =
-    toDate(
-      bond?.firstPayoutDate
-    );
+  let cursor =
+    toDate(start);
 
-  const maturityDate =
-    toDate(
-      bond?.maturityDate
-    );
-
-  const currentDate =
-    toDate(
-      asOfDate
-    );
-
-
-  // ------------------------------------------------
-  // REQUIRED DATES
-  // ------------------------------------------------
-
-  if (
-    !purchaseDate ||
-    !firstPayoutDate ||
-    !maturityDate ||
-    !currentDate
-  ) {
-    return [];
-  }
-
-
-  // ------------------------------------------------
-  // INVALID DATE RANGE
-  // ------------------------------------------------
-
-  if (
-    maturityDate <
-    purchaseDate
-  ) {
-    return [];
-  }
-
-
-  // ------------------------------------------------
-  // PAYMENT FREQUENCY
-  // ------------------------------------------------
-
-  const monthsPerPayment =
-    getMonthsPerPayment(
-      bond?.couponFrequency
-    );
-
-
-  if (
-    monthsPerPayment <= 0
-  ) {
-    return [];
-  }
-
-
-  // ------------------------------------------------
-  // SCHEDULE ARRAY
-  // ------------------------------------------------
-
-  const schedule = [];
-
-
-  /*
-    First payment se ek cycle
-    peeche jao.
-
-    Example:
-
-    First payout:
-    09-Oct-2025
-
-    Period start:
-    09-Sep-2025
-  */
-
-  let payoutDate =
-    new Date(
-      firstPayoutDate
-    );
-
-
-  let periodStart =
-    addMonths(
-      payoutDate,
-      -monthsPerPayment
-    );
-
-
-  // ------------------------------------------------
-  // GENERATE SCHEDULE
-  // ------------------------------------------------
+  const finalEnd =
+    toDate(end);
 
   while (
-    payoutDate <= maturityDate
+    cursor &&
+    finalEnd &&
+    cursor < finalEnd
   ) {
+    const year =
+      cursor.getFullYear();
 
-    // ----------------------------------------------
-    // ACTUAL PERIOD START
-    // ----------------------------------------------
-
-    let actualStart =
+    const nextYear =
       new Date(
-        periodStart
+        year + 1,
+        0,
+        1
       );
 
-
-    /*
-      Agar purchase date period ke
-      beech me hai, to interest
-      purchase date se start hoga.
-    */
-
-    if (
-      actualStart <
-      purchaseDate
-    ) {
-      actualStart =
-        new Date(
-          purchaseDate
-        );
-    }
-
-
-    // ----------------------------------------------
-    // ACTUAL PERIOD END
-    // ----------------------------------------------
-
-    /*
-      Payout date ko include karna hai,
-      isliye period end payout date
-      hi rahega.
-
-      Example:
-
-      09-Sep → 08-Oct
-      = 30 days
-    */
-
-    let actualEnd =
-      new Date(
-        payoutDate
-      );
-
-
-    /*
-      Maturity ke baad nahi.
-    */
-
-    if (
-      actualEnd >
-      maturityDate
-    ) {
-      actualEnd =
-        new Date(
-          maturityDate
-        );
-    }
-
-
-    // ----------------------------------------------
-    // DAYS
-    // ----------------------------------------------
+    const segmentEnd =
+      nextYear < finalEnd
+        ? nextYear
+        : finalEnd;
 
     const days =
       getDaysBetween(
-        actualStart,
-        actualEnd
+        cursor,
+        segmentEnd
       );
 
-
-    // ----------------------------------------------
-    // INTEREST
-    // ----------------------------------------------
-
-    const interest =
-      calculatePeriodInterest(
-        bond,
-        actualStart,
-        actualEnd
-      );
-
-
-    // ----------------------------------------------
-    // VALID PERIOD
-    // ----------------------------------------------
-
-    if (
-      days > 0 &&
-      actualEnd >= purchaseDate
-    ) {
-
-      /*
-        IMPORTANT:
-
-        Ye sirf calculated status hai.
-
-        Actual Firebase transaction
-        aane ke baad isko:
-
-        Received
-        Pending
-        Partial
-
-        me convert kar sakte hain.
-
-        Abhi existing behaviour
-        preserve kiya gaya hai.
-      */
-
-      const status =
-        payoutDate <= currentDate
-          ? "Received"
-          : "Pending";
-
-
-      schedule.push({
-
-        // ----------------------------------------
-        // PAYMENT DATE
-        // ----------------------------------------
-
-        date:
-          new Date(
-            payoutDate
-          ),
-
-
-        // ----------------------------------------
-        // INTEREST PERIOD START
-        // ----------------------------------------
-
-        periodStart:
-          new Date(
-            actualStart
-          ),
-
-
-        // ----------------------------------------
-        // INTEREST PERIOD END
-        // ----------------------------------------
-
-        periodEnd:
-          new Date(
-            actualEnd
-          ),
-
-
-        // ----------------------------------------
-        // ACTUAL DAYS
-        // ----------------------------------------
-
+    if (days > 0) {
+      parts.push({
+        start: new Date(cursor),
+        end: new Date(
+          segmentEnd
+        ),
+        year,
         days,
-
-
-        // ----------------------------------------
-        // EXPECTED INTEREST
-        // ----------------------------------------
-
-        interest,
-
-
-        // ----------------------------------------
-        // STATUS
-        // ----------------------------------------
-
-        status,
+        daysInYear:
+          getDaysInYear(year),
+        principal,
       });
     }
 
+    cursor =
+      segmentEnd;
+  }
 
-    // ----------------------------------------------
-    // NEXT PERIOD
-    // ----------------------------------------------
+  return parts;
+};
 
-    periodStart =
-      new Date(
-        payoutDate
-      );
+// ==================================================
+// SEGMENT INTEREST
+// ==================================================
 
+const calculateSegmentInterest = ({
+  principal,
+  couponRate,
+  days,
+  daysInYear,
+}) => {
+  return (
+    principal *
+    couponRate *
+    days /
+    (daysInYear * 100)
+  );
+};
 
-    payoutDate =
-      addMonths(
-        payoutDate,
-        monthsPerPayment
-      );
+// ==================================================
+// PERIOD
+// ==================================================
 
+const calculatePeriod = ({
+  periodStart,
+  periodEnd,
+  originalPrincipal,
+  couponRate,
+  repayments,
+}) => {
+  const start =
+    toDate(periodStart);
 
-    // ----------------------------------------------
-    // SAFETY LIMIT
-    // ----------------------------------------------
+  const end =
+    toDate(periodEnd);
 
+  if (
+    !start ||
+    !end ||
+    start >= end
+  ) {
+    return null;
+  }
+
+  /*
+    First split at principal repayment
+    dates.
+  */
+
+  const splitPoints = [
+    start,
+  ];
+
+  for (
+    const repayment of repayments
+  ) {
     if (
-      schedule.length >= 600
+      repayment.date > start &&
+      repayment.date < end
     ) {
-      break;
+      splitPoints.push(
+        new Date(
+          repayment.date
+        )
+      );
     }
   }
 
+  splitPoints.push(end);
 
-  // ------------------------------------------------
-  // ASCENDING ORDER
-  // ------------------------------------------------
-
-  schedule.sort(
+  splitPoints.sort(
     (a, b) =>
-      a.date.getTime() -
-      b.date.getTime()
+      a.getTime() -
+      b.getTime()
   );
 
+  const segments = [];
+
+  let totalInterest = 0;
+  let totalDays = 0;
+
+  for (
+    let i = 0;
+    i < splitPoints.length - 1;
+    i++
+  ) {
+    const segmentStart =
+      splitPoints[i];
+
+    const segmentEnd =
+      splitPoints[i + 1];
+
+    /*
+      Principal applicable at beginning
+      of this segment.
+    */
+
+    const principal =
+      getOutstandingPrincipalAt(
+        originalPrincipal,
+        repayments,
+        segmentStart
+      );
+
+    /*
+      Split again by calendar year.
+    */
+
+    const yearParts =
+      splitByYear(
+        segmentStart,
+        segmentEnd,
+        principal
+      );
+
+    for (
+      const part of yearParts
+    ) {
+      const interest =
+        calculateSegmentInterest({
+          principal:
+            part.principal,
+          couponRate,
+          days: part.days,
+          daysInYear:
+            part.daysInYear,
+        });
+
+      totalInterest +=
+        interest;
+
+      totalDays +=
+        part.days;
+
+      segments.push({
+        ...part,
+        interest,
+      });
+    }
+  }
+
+  return {
+    periodStart: start,
+    periodEnd: end,
+
+    days: totalDays,
+
+    interest: Number(
+      totalInterest.toFixed(2)
+    ),
+
+    segments,
+
+    principalAtStart:
+      getOutstandingPrincipalAt(
+        originalPrincipal,
+        repayments,
+        start
+      ),
+
+    principalAtEnd:
+      getOutstandingPrincipalAt(
+        originalPrincipal,
+        repayments,
+        end
+      ),
+  };
+};
+
+// ==================================================
+// PAYMENT DATES
+// ==================================================
+
+const buildPaymentDates = ({
+  firstPayoutDate,
+  maturityDate,
+  frequency,
+}) => {
+  const firstPayout =
+    toDate(firstPayoutDate);
+
+  const maturity =
+    toDate(maturityDate);
+
+  if (
+    !firstPayout ||
+    !maturity
+  ) {
+    return [];
+  }
+
+  /*
+    At maturity:
+    one single payment.
+  */
+
+  if (
+    frequency ===
+    "at-maturity"
+  ) {
+    return [
+      {
+        date: maturity,
+        isMaturityPayment:
+          true,
+      },
+    ];
+  }
+
+  const months =
+    getMonthsPerPayment(
+      frequency
+    );
+
+  const payments = [];
+
+  let current =
+    new Date(firstPayout);
+
+  while (
+    current < maturity
+  ) {
+    payments.push({
+      date: new Date(
+        current
+      ),
+      isMaturityPayment:
+        false,
+    });
+
+    current =
+      addMonths(
+        current,
+        months
+      );
+  }
+
+  /*
+    Add final maturity payment if
+    maturity is not already a payout.
+  */
+
+  const last =
+    payments[
+      payments.length - 1
+    ];
+
+  if (
+    !last ||
+    getDaysBetween(
+      last.date,
+      maturity
+    ) !== 0
+  ) {
+    payments.push({
+      date: maturity,
+      isMaturityPayment:
+        true,
+    });
+  } else {
+    last.isMaturityPayment =
+      true;
+  }
+
+  return payments;
+};
+
+// ==================================================
+// MAIN SCHEDULE
+// ==================================================
+
+export const calculateInterestSchedule = ({
+  faceValue,
+  quantity,
+  couponRate,
+  couponFrequency,
+  firstPayoutDate,
+  maturityDate,
+  principalRepayments = [],
+}) => {
+  const originalPrincipal =
+    Number(faceValue || 0) *
+    Number(quantity || 0);
+
+  const rate =
+    Number(couponRate || 0);
+
+  if (
+    originalPrincipal <= 0 ||
+    rate < 0 ||
+    !firstPayoutDate ||
+    !maturityDate
+  ) {
+    return [];
+  }
+
+  const repayments =
+    normalizeRepayments(
+      principalRepayments
+    );
+
+  const paymentDates =
+    buildPaymentDates({
+      firstPayoutDate,
+      maturityDate,
+      frequency:
+        couponFrequency,
+    });
+
+  if (
+    paymentDates.length === 0
+  ) {
+    return [];
+  }
+
+  /*
+    IMPORTANT:
+
+    Purchase date is intentionally
+    NOT used here.
+
+    First payout is the anchor.
+  */
+
+  let previousDate;
+
+  if (
+    couponFrequency ===
+    "at-maturity"
+  ) {
+    previousDate =
+      toDate(
+        firstPayoutDate
+      );
+  } else {
+    previousDate =
+      addMonths(
+        toDate(
+          firstPayoutDate
+        ),
+        -getMonthsPerPayment(
+          couponFrequency
+        )
+      );
+  }
+
+  const schedule = [];
+
+  for (
+    const payment of paymentDates
+  ) {
+    const periodEnd =
+      toDate(payment.date);
+
+    const period =
+      calculatePeriod({
+        periodStart:
+          previousDate,
+
+        periodEnd,
+
+        originalPrincipal,
+
+        couponRate: rate,
+
+        repayments,
+      });
+
+    if (period) {
+      schedule.push({
+        ...period,
+
+        date: periodEnd,
+
+        isMaturityPayment:
+          payment.isMaturityPayment,
+
+        status: "Pending",
+      });
+    }
+
+    previousDate =
+      periodEnd;
+  }
 
   return schedule;
-}
-
+};
 
 // ==================================================
-// TOTAL EXPECTED INTEREST
-//
-// Schedule ke saare periods ka
-// total expected interest.
+// PAYMENT STATUS
 // ==================================================
 
-export function calculateScheduledInterest(
-  bond,
+export const getPaymentStatus = (
+  payment,
   asOfDate = new Date()
-) {
+) => {
+  const currentDate =
+    toDate(asOfDate);
+
+  const start =
+    toDate(
+      payment.periodStart
+    );
+
+  const end =
+    toDate(
+      payment.periodEnd
+    );
+
+  if (
+    !currentDate ||
+    !start ||
+    !end
+  ) {
+    return "Pending";
+  }
+
+  if (
+    end <= currentDate
+  ) {
+    return "Paid";
+  }
+
+  if (
+    start < currentDate &&
+    currentDate < end
+  ) {
+    return "Running";
+  }
+
+  return "Pending";
+};
+
+// ==================================================
+// SCHEDULE + STATUS
+// ==================================================
+
+export const calculateScheduleWithStatus = ({
+  asOfDate = new Date(),
+  ...bond
+}) => {
+  return calculateInterestSchedule(
+    bond
+  ).map((payment) => ({
+    ...payment,
+
+    status:
+      getPaymentStatus(
+        payment,
+        asOfDate
+      ),
+  }));
+};
+
+// ==================================================
+// YEARLY SCHEDULE
+// ==================================================
+
+export const calculateYearlyInterestSchedule = ({
+  asOfDate = new Date(),
+  ...bond
+}) => {
   const schedule =
-    calculateInterestSchedule(
-      bond,
-      asOfDate
+    calculateScheduleWithStatus({
+      ...bond,
+      asOfDate,
+    });
+
+  const grouped = {};
+
+  for (
+    const payment of schedule
+  ) {
+    const year =
+      payment.date.getFullYear();
+
+    if (!grouped[year]) {
+      grouped[year] = {
+        year,
+
+        payments: [],
+
+        totalInterest: 0,
+
+        receivedInterest: 0,
+
+        remainingInterest: 0,
+
+        status: "Pending",
+      };
+    }
+
+    grouped[year].payments.push(
+      payment
     );
 
+    grouped[
+      year
+    ].totalInterest +=
+      Number(
+        payment.interest || 0
+      );
 
-  const total =
-    schedule.reduce(
-      (sum, item) =>
-        sum +
+    if (
+      payment.status ===
+      "Paid"
+    ) {
+      grouped[
+        year
+      ].receivedInterest +=
         Number(
-          item.interest
-        ),
-      0
+          payment.interest || 0
+        );
+    } else {
+      grouped[
+        year
+      ].remainingInterest +=
+        Number(
+          payment.interest || 0
+        );
+    }
+  }
+
+  return Object.values(
+    grouped
+  )
+    .map((yearGroup) => {
+      const payments =
+        yearGroup.payments;
+
+      const allPaid =
+        payments.length > 0 &&
+        payments.every(
+          (item) =>
+            item.status ===
+            "Paid"
+        );
+
+      const hasRunning =
+        payments.some(
+          (item) =>
+            item.status ===
+            "Running"
+        );
+
+      const hasPaid =
+        payments.some(
+          (item) =>
+            item.status ===
+            "Paid"
+        );
+
+      let status =
+        "Pending";
+
+      if (allPaid) {
+        status = "Paid";
+      } else if (
+        hasRunning ||
+        hasPaid
+      ) {
+        status = "Running";
+      }
+
+      return {
+        ...yearGroup,
+
+        totalInterest:
+          Number(
+            yearGroup.totalInterest.toFixed(
+              2
+            )
+          ),
+
+        receivedInterest:
+          Number(
+            yearGroup.receivedInterest.toFixed(
+              2
+            )
+          ),
+
+        remainingInterest:
+          Number(
+            yearGroup.remainingInterest.toFixed(
+              2
+            )
+          ),
+
+        status,
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.year - b.year
     );
+};
 
+// ==================================================
+// TOTAL INTEREST
+// ==================================================
 
+export const calculateScheduledInterest = (
+  bond
+) => {
   return Number(
-    total.toFixed(2)
+    calculateInterestSchedule(
+      bond
+    )
+      .reduce(
+        (sum, payment) =>
+          sum +
+          Number(
+            payment.interest || 0
+          ),
+        0
+      )
+      .toFixed(2)
   );
-}
-
+};
 
 // ==================================================
 // RECEIVED INTEREST
-//
-// IMPORTANT:
-//
-// Abhi ye payment date ke basis
-// par Received calculate karta hai.
-//
-// Actual Firebase received amount
-// add hone ke baad is function ko
-// transaction data ke saath update
-// karna hoga.
 // ==================================================
 
-export function calculateReceivedInterest(
+export const calculateReceivedInterest = (
   bond,
   asOfDate = new Date()
-) {
-  const schedule =
-    calculateInterestSchedule(
-      bond,
-      asOfDate
-    );
-
-
-  const total =
-    schedule
+) => {
+  return Number(
+    calculateScheduleWithStatus({
+      ...bond,
+      asOfDate,
+    })
       .filter(
-        (item) =>
-          item.status ===
-          "Received"
+        (payment) =>
+          payment.status ===
+          "Paid"
       )
       .reduce(
-        (sum, item) =>
+        (sum, payment) =>
           sum +
           Number(
-            item.interest
+            payment.interest || 0
           ),
         0
-      );
-
-
-  return Number(
-    total.toFixed(2)
+      )
+      .toFixed(2)
   );
-}
-
+};
 
 // ==================================================
 // PENDING INTEREST
 // ==================================================
 
-export function calculatePendingInterest(
+export const calculatePendingInterest = (
   bond,
   asOfDate = new Date()
-) {
-  const schedule =
-    calculateInterestSchedule(
-      bond,
-      asOfDate
-    );
-
-
-  const total =
-    schedule
+) => {
+  return Number(
+    calculateScheduleWithStatus({
+      ...bond,
+      asOfDate,
+    })
       .filter(
-        (item) =>
-          item.status ===
-          "Pending"
+        (payment) =>
+          payment.status !==
+          "Paid"
       )
       .reduce(
-        (sum, item) =>
+        (sum, payment) =>
           sum +
           Number(
-            item.interest
+            payment.interest || 0
           ),
         0
-      );
-
-
-  return Number(
-    total.toFixed(2)
+      )
+      .toFixed(2)
   );
-}
+};
 
+// ==================================================
+// PRINCIPAL SUMMARY
+// ==================================================
+
+export const calculatePrincipalSummary = (
+  bond
+) => {
+  const originalPrincipal =
+    Number(
+      bond.faceValue || 0
+    ) *
+    Number(
+      bond.quantity || 0
+    );
+
+  const repayments =
+    normalizeRepayments(
+      bond.principalRepayments
+    );
+
+  let remaining =
+    originalPrincipal;
+
+  const repaymentDetails =
+    repayments.map(
+      (repayment) => {
+        const paid =
+          Math.min(
+            repayment.amount,
+            remaining
+          );
+
+        remaining -= paid;
+
+        return {
+          date: repayment.date,
+
+          amount: Number(
+            paid.toFixed(2)
+          ),
+
+          remainingPrincipal:
+            Number(
+              Math.max(
+                0,
+                remaining
+              ).toFixed(2)
+            ),
+        };
+      }
+    );
+
+  const totalPaid =
+    originalPrincipal -
+    remaining;
+
+  return {
+    originalPrincipal:
+      Number(
+        originalPrincipal.toFixed(
+          2
+        )
+      ),
+
+    totalPrincipalPaid:
+      Number(
+        totalPaid.toFixed(2)
+      ),
+
+    remainingPrincipal:
+      Number(
+        remaining.toFixed(2)
+      ),
+
+    repayments:
+      repaymentDetails,
+  };
+};
 
 // ==================================================
 // NEXT PAYMENT
 // ==================================================
 
-export function getNextInterestPayment(
+export const getNextInterestPayment = (
   bond,
   asOfDate = new Date()
-) {
+) => {
   const schedule =
-    calculateInterestSchedule(
-      bond,
-      asOfDate
-    );
-
+    calculateScheduleWithStatus({
+      ...bond,
+      asOfDate,
+    });
 
   return (
     schedule.find(
-      (item) =>
-        item.status ===
-        "Pending"
+      (payment) =>
+        payment.status !==
+        "Paid"
     ) || null
   );
-}
-
+};
 
 // ==================================================
-// LAST RECEIVED PAYMENT
+// LAST RECEIVED
 // ==================================================
 
-export function getLastReceivedInterest(
+export const getLastReceivedInterest = (
   bond,
   asOfDate = new Date()
-) {
+) => {
   const schedule =
-    calculateInterestSchedule(
-      bond,
-      asOfDate
-    );
+    calculateScheduleWithStatus({
+      ...bond,
+      asOfDate,
+    });
 
-
-  const received =
+  const paid =
     schedule.filter(
-      (item) =>
-        item.status ===
-        "Received"
+      (payment) =>
+        payment.status ===
+        "Paid"
     );
 
-
-  if (
-    received.length === 0
-  ) {
-    return null;
-  }
-
-
-  return received[
-    received.length - 1
-  ];
-}
+  return paid.length
+    ? paid[paid.length - 1]
+    : null;
+};

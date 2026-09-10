@@ -8,6 +8,7 @@ import {
 import {
   getBonds,
   addBond as addBondService,
+  updateBond as updateBondService,
   deleteBond as deleteBondService,
 } from "../services/firebase/bondService";
 
@@ -25,35 +26,37 @@ export function BondProvider({ children }) {
   ========================================================= */
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(
-      async (user) => {
-        if (!user) {
-          setBonds([]);
-          setLoading(false);
-          return;
+    const unsubscribe =
+      auth.onAuthStateChanged(
+        async (user) => {
+          if (!user) {
+            setBonds([]);
+            setLoading(false);
+            return;
+          }
+
+          try {
+            setLoading(true);
+            setError("");
+
+            const data =
+              await getBonds();
+
+            setBonds(data);
+          } catch (err) {
+            console.error(
+              "Failed to fetch bonds:",
+              err
+            );
+
+            setError(
+              "Bonds load nahi ho pa rahe hain."
+            );
+          } finally {
+            setLoading(false);
+          }
         }
-
-        try {
-          setLoading(true);
-          setError("");
-
-          const data = await getBonds();
-
-          setBonds(data);
-        } catch (err) {
-          console.error(
-            "Failed to fetch bonds:",
-            err
-          );
-
-          setError(
-            "Bonds load nahi ho pa rahe hain."
-          );
-        } finally {
-          setLoading(false);
-        }
-      }
-    );
+      );
 
     return () => unsubscribe();
   }, []);
@@ -84,6 +87,43 @@ export function BondProvider({ children }) {
   };
 
   /* =========================================================
+     UPDATE BOND
+  ========================================================= */
+
+  const updateBond = async (
+    id,
+    bond
+  ) => {
+    try {
+      const updatedBond =
+        await updateBondService(
+          id,
+          bond
+        );
+
+      setBonds((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                ...updatedBond,
+              }
+            : item
+        )
+      );
+
+      return updatedBond;
+    } catch (err) {
+      console.error(
+        "Failed to update bond:",
+        err
+      );
+
+      throw err;
+    }
+  };
+
+  /* =========================================================
      DELETE BOND
   ========================================================= */
 
@@ -93,7 +133,8 @@ export function BondProvider({ children }) {
 
       setBonds((prev) =>
         prev.filter(
-          (bond) => bond.id !== id
+          (bond) =>
+            bond.id !== id
         )
       );
     } catch (err) {
@@ -113,6 +154,7 @@ export function BondProvider({ children }) {
         loading,
         error,
         addBond,
+        updateBond,
         deleteBond,
       }}
     >
@@ -126,7 +168,8 @@ export function BondProvider({ children }) {
 ========================================================= */
 
 export function useBonds() {
-  const context = useContext(BondContext);
+  const context =
+    useContext(BondContext);
 
   if (!context) {
     throw new Error(
