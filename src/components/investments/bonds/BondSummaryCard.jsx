@@ -100,21 +100,7 @@ function BondSummaryCard({ data }) {
       </div>
 
 
-      {/* --------------------------------
-          CURRENT VALUE
-      -------------------------------- */}
 
-      <div className="px-4 pt-5 sm:px-5">
-
-        <p className="text-xs font-medium text-slate-400">
-          Current Value
-        </p>
-
-        <p className="mt-1 text-2xl font-extrabold tracking-tight text-slate-100 sm:text-3xl">
-          {formatCurrency(currentValue)}
-        </p>
-
-      </div>
 
 
       {/* --------------------------------
@@ -133,7 +119,7 @@ function BondSummaryCard({ data }) {
         "
       >
 
-        {/* INVESTED */}
+        {/* TOTAL PRINCIPAL */}
 
         <div
           className="
@@ -144,7 +130,26 @@ function BondSummaryCard({ data }) {
         >
 
           <p className="text-[11px] font-medium text-slate-500">
-            Invested
+            TOTAL PRINCIPAL
+          </p>
+
+          <p className="mt-1 text-sm font-bold text-slate-200">
+            {formatCurrency(invested)}
+          </p>
+
+        </div>
+        {/* TOTAL INTREST */}
+
+        <div
+          className="
+            rounded-xl
+            bg-slate-800/60
+            p-3
+          "
+        >
+
+          <p className="text-[11px] font-medium text-slate-500">
+            TOTAL INTREST
           </p>
 
           <p className="mt-1 text-sm font-bold text-slate-200">
@@ -154,7 +159,7 @@ function BondSummaryCard({ data }) {
         </div>
 
 
-        {/* PROFIT */}
+        {/* PRINCIPAL RECIVED */}
 
         <div
           className="
@@ -165,7 +170,7 @@ function BondSummaryCard({ data }) {
         >
 
           <p className="text-[11px] font-medium text-slate-500">
-            Profit
+            PRINCIPAL RECIVED
           </p>
 
           <div className="mt-1 flex items-center gap-1">
@@ -202,7 +207,7 @@ function BondSummaryCard({ data }) {
         </div>
 
 
-        {/* RETURN */}
+        {/* INTREST RECIVED */}
 
         <div
           className="
@@ -213,7 +218,7 @@ function BondSummaryCard({ data }) {
         >
 
           <p className="text-[11px] font-medium text-slate-500">
-            Return
+            INTREST RECIVED
           </p>
 
           <p
@@ -235,7 +240,7 @@ function BondSummaryCard({ data }) {
         </div>
 
 
-        {/* HOLDINGS */}
+        {/* REMAINING PRINCIPAL */}
 
         <div
           className="
@@ -246,7 +251,34 @@ function BondSummaryCard({ data }) {
         >
 
           <p className="text-[11px] font-medium text-slate-500">
-            Holdings
+            PRNC REMAINS
+          </p>
+
+          <p className="mt-1 flex items-center gap-1 text-sm font-bold text-slate-200">
+            <IndianRupee
+              size={13}
+              className="text-slate-500"
+            />
+
+            {holdings}
+          </p>
+
+        </div>
+
+
+
+        {/* REMAINING INTREST */}
+
+        <div
+          className="
+            rounded-xl
+            bg-slate-800/60
+            p-3
+          "
+        >
+
+          <p className="text-[11px] font-medium text-slate-500">
+            INT REMAINS
           </p>
 
           <p className="mt-1 flex items-center gap-1 text-sm font-bold text-slate-200">
