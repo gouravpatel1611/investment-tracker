@@ -13,8 +13,16 @@ import {
 } from "../../context/MutualFundContext";
 
 import {
+  useBonds,
+} from "../../context/BondContext";
+
+import {
   getSGBPortfolio,
 } from "../../services/sgb/sgbPortfolioService";
+
+import {
+  calculateTotalBondFinancialSummary,
+} from "../../utils/bondCalculations";
 
 
 function formatCurrency(value) {
@@ -39,6 +47,16 @@ function PortfolioSummary() {
 
 
   /* --------------------------------
+     BONDS
+  -------------------------------- */
+
+  const {
+    bonds,
+    loading: bondLoading,
+  } = useBonds();
+
+
+  /* --------------------------------
      SGB
   -------------------------------- */
 
@@ -58,6 +76,7 @@ function PortfolioSummary() {
       totalGainPercent: 0,
     },
   });
+
 
   const [
     sgbLoading,
@@ -180,7 +199,7 @@ function PortfolioSummary() {
       ) || 0;
 
 
-    // Final SGB value shown in AssetBreakdown
+    // Final SGB value
     const sgbValueWithInterest =
       sgbCurrentValue +
       sgbInterest;
@@ -199,15 +218,73 @@ function PortfolioSummary() {
 
 
     /* ==============================
+       BONDS
+    ============================== */
+
+    const bondSummary =
+      calculateTotalBondFinancialSummary(
+        bonds || []
+      );
+
+
+    // --------------------------------
+    // Bond Invested
+    // --------------------------------
+    //
+    // Actual purchase amount
+    //
+    const bondsInvested =
+      (bonds || []).reduce(
+        (total, bond) =>
+          total +
+          (
+            Number(
+              bond.purchaseValue
+            ) || 0
+          ),
+        0
+      );
+
+
+    // --------------------------------
+    // Bond Current Value
+    // --------------------------------
+    //
+    // Total Principal
+    // + Interest Received
+    //
+    const bondsValue =
+      (
+        Number(
+          bondSummary.totalPrincipal
+        ) || 0
+      ) +
+      (
+        Number(
+          bondSummary.interestReceived
+        ) || 0
+      );
+
+
+    // --------------------------------
+    // Bond Profit / Loss
+    // --------------------------------
+
+    const bondsProfit =
+      bondsValue -
+      bondsInvested;
+
+
+    /* ==============================
        OTHER ASSETS
        ==============================
 
        Currently AssetBreakdown
        has these as 0.
 
-       Later when you add their
-       actual data, put the values here.
-    */
+       Later actual data can be
+       added here.
+    ============================== */
 
     const cpfValue = 0;
 
@@ -217,48 +294,50 @@ function PortfolioSummary() {
 
     const cryptoValue = 0;
 
-    const bondsValue = 0;
-
     const licValue = 0;
 
     const etfStockValue = 0;
 
 
     /* ==============================
-       TOTAL ASSETS
+       TOTAL INVESTED
     ============================== */
 
     const totalInvested =
       mutualFundInvested +
-      sgbInvested;
+      sgbInvested +
+      bondsInvested;
 
+
+    /* ==============================
+       TOTAL CURRENT VALUE
+    ============================== */
 
     const totalCurrentValue =
       mutualFundCurrentValue +
       sgbValueWithInterest +
+      bondsValue +
       cpfValue +
       fdValue +
       apyNpsValue +
       cryptoValue +
-      bondsValue +
       licValue +
       etfStockValue;
 
 
-    /*
-      SGB gain already includes
-      interest.
-
-      Therefore use:
-
-      SGB gain
-      + MF P/L
-    */
+    /* ==============================
+       TOTAL PROFIT / LOSS
+    ============================== */
 
     const totalProfitLoss =
       mutualFundProfit +
-      sgbGain;
+      sgbGain +
+      bondsProfit;
 
+
+    /* ==============================
+       TOTAL RETURN
+    ============================== */
 
     const totalReturnPercent =
       totalInvested > 0
@@ -285,6 +364,12 @@ function PortfolioSummary() {
 
       sgbValueWithInterest,
 
+      bondsValue,
+
+      bondsInvested,
+
+      bondsProfit,
+
       cpfValue,
 
       fdValue,
@@ -292,8 +377,6 @@ function PortfolioSummary() {
       apyNpsValue,
 
       cryptoValue,
-
-      bondsValue,
 
       licValue,
 
@@ -304,6 +387,7 @@ function PortfolioSummary() {
   }, [
     mutualFundHoldings,
     sgbPortfolio,
+    bonds,
   ]);
 
 
@@ -317,7 +401,8 @@ function PortfolioSummary() {
 
   if (
     mutualFundLoading ||
-    sgbLoading
+    sgbLoading ||
+    bondLoading
   ) {
 
     return (

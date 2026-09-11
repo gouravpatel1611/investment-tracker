@@ -1,372 +1,36 @@
-
 import {
-  PieChart,
-  BriefcaseBusiness,
-  WalletCards,
-  CircleGauge,
-  Bitcoin,
-  FileText,
-  Gem,
-  ShieldCheck,
-  TrendingUp,
-} from "lucide-react";
-
-import { useNavigate } from "react-router-dom";
-
-import {
-  useEffect,
   useMemo,
-  useState,
 } from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import {
   useMutualFunds,
 } from "../../context/MutualFundContext";
 
 import {
-  getSGBPortfolio,
-} from "../../services/sgb/sgbPortfolioService";
+  useBonds,
+} from "../../context/BondContext";
 
+import {
+  useDashboardSGB,
+} from "../../hooks/dashboard/useDashboardSGB";
 
-// ==========================================
-// FORMAT CURRENCY
-// ==========================================
+import {
+  formatCurrency,
+  calculateMutualFundSummary,
+} from "../../utils/dashboard/assetBreakdownCalculations";
 
-function formatCurrency(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
-}
+import {
+  calculateTotalBondFinancialSummary,
+} from "../../utils/bondCalculations";
 
+import {
+  assetBreakdownConfig,
+} from "./assetBreakdownConfig";
 
-// ==========================================
-// NUMBER HELPER
-// ==========================================
-
-function toNumber(value) {
-  const number = Number(value);
-
-  return Number.isFinite(number)
-    ? number
-    : 0;
-}
-
-
-// ==========================================
-// ROUND
-// ==========================================
-
-function round(value) {
-  return Number(
-    toNumber(value).toFixed(2)
-  );
-}
-
-
-// ==========================================
-// CALCULATE SGB INTEREST
-// ==========================================
-//
-// Same logic as SGB Portfolio Service
-//
-// Purchase Rate + ₹50
-// 2.5% yearly
-// 6 monthly payment
-//
-// Only completed 6-month periods are counted.
-// ==========================================
-
-function calculateSGBInterest(
-  purchaseValue,
-  issueDate,
-  units
-) {
-
-  const amount =
-    toNumber(purchaseValue);
-
-  const gram =
-    toNumber(units);
-
-
-  if (
-    !amount ||
-    !gram ||
-    !issueDate
-  ) {
-    return 0;
-  }
-
-
-  // ----------------------------------------
-  // Purchase Rate
-  // ----------------------------------------
-
-  const purchaseRate =
-    amount / gram;
-
-
-  // ----------------------------------------
-  // Interest calculation rate
-  // Purchase Rate + ₹50
-  // ----------------------------------------
-
-  const interestRate =
-    purchaseRate + 50;
-
-
-  // ----------------------------------------
-  // Interest Base
-  // ----------------------------------------
-
-  const interestBase =
-    interestRate * gram;
-
-
-  // ----------------------------------------
-  // Issue Date
-  // ----------------------------------------
-
-  const startDate =
-    new Date(
-      `${issueDate}T00:00:00`
-    );
-
-
-  const today =
-    new Date();
-
-
-  if (
-    Number.isNaN(
-      startDate.getTime()
-    )
-  ) {
-    return 0;
-  }
-
-
-  // ----------------------------------------
-  // Investment date future hai
-  // ----------------------------------------
-
-  if (
-    today <= startDate
-  ) {
-    return 0;
-  }
-
-
-  // ----------------------------------------
-  // Calculate 6-month periods
-  // ----------------------------------------
-
-  let halfYearPeriods =
-    (
-      today.getFullYear() -
-      startDate.getFullYear()
-    ) * 2 +
-    (
-      today.getMonth() -
-      startDate.getMonth()
-    ) / 6;
-
-
-  halfYearPeriods =
-    Math.floor(
-      halfYearPeriods
-    );
-
-
-  // ----------------------------------------
-  // Exact anniversary check
-  // ----------------------------------------
-
-  const anniversary =
-    new Date(startDate);
-
-
-  anniversary.setMonth(
-    anniversary.getMonth() +
-    halfYearPeriods * 6
-  );
-
-
-  if (
-    anniversary > today
-  ) {
-
-    halfYearPeriods -= 1;
-
-  }
-
-
-  if (
-    halfYearPeriods <= 0
-  ) {
-    return 0;
-  }
-
-
-  // ----------------------------------------
-  // 6 Month Interest
-  // ----------------------------------------
-
-  const halfYearInterest =
-    interestBase *
-    0.025 /
-    2;
-
-
-  // ----------------------------------------
-  // Total Interest
-  // ----------------------------------------
-
-  return round(
-    halfYearInterest *
-    halfYearPeriods
-  );
-}
-
-
-// ==========================================
-// CALCULATE ONE SGB HOLDING
-// ==========================================
-
-function calculateSGBHolding(
-  transaction
-) {
-
-  const units =
-    toNumber(
-      transaction.units
-    );
-
-
-  const purchaseRate =
-    toNumber(
-      transaction.purchaseRate
-    );
-
-
-  const purchaseValue =
-    toNumber(
-      transaction.purchaseValue
-    );
-
-
-  const currentRate =
-    toNumber(
-      transaction.currentRate
-    );
-
-
-  // ----------------------------------------
-  // Current Market Value
-  // ----------------------------------------
-
-  const currentValue =
-    units *
-    currentRate;
-
-
-  // ----------------------------------------
-  // Interest
-  // ----------------------------------------
-
-  const interest =
-    calculateSGBInterest(
-      purchaseValue,
-      transaction.issueDate,
-      units
-    );
-
-
-  // ----------------------------------------
-  // Profit without Interest
-  // ----------------------------------------
-
-  const profit =
-    currentValue -
-    purchaseValue;
-
-
-  // ----------------------------------------
-  // Total Gain
-  // ----------------------------------------
-
-  const gain =
-    profit +
-    interest;
-
-
-  // ----------------------------------------
-  // Current Value + Interest
-  // ----------------------------------------
-
-  const currentValueWithInterest =
-    currentValue +
-    interest;
-
-
-  // ----------------------------------------
-  // Total Gain %
-  // ----------------------------------------
-
-  const totalGainPercent =
-    purchaseValue > 0
-      ? (
-          gain /
-          purchaseValue
-        ) * 100
-      : 0;
-
-
-  return {
-
-    units:
-      round(units),
-
-    purchaseRate:
-      round(purchaseRate),
-
-    purchaseValue:
-      round(purchaseValue),
-
-    currentRate:
-      round(currentRate),
-
-    currentValue:
-      round(currentValue),
-
-    interest:
-      round(interest),
-
-    currentValueWithInterest:
-      round(
-        currentValueWithInterest
-      ),
-
-    profit:
-      round(profit),
-
-    gain:
-      round(gain),
-
-    totalGainPercent:
-      round(
-        totalGainPercent
-      ),
-
-  };
-}
-
-
-// ==========================================
-// ASSET BREAKDOWN
-// ==========================================
 
 function AssetBreakdown({
   onAssetClick,
@@ -383,55 +47,34 @@ function AssetBreakdown({
   const {
     holdings:
       mutualFundHoldings,
+
     loading:
       mutualFundLoading,
+
   } = useMutualFunds();
 
 
   // ========================================
-  // SGB STATE
+  // BONDS
   // ========================================
 
-  const [
+  const {
+    bonds,
+    loading:
+      bondLoading,
+
+  } = useBonds();
+
+
+  // ========================================
+  // SGB
+  // ========================================
+
+  const {
     sgbData,
-    setSgbData,
-  ] = useState({
-
-    holdings: [],
-
-    summary: {
-
-      seriesCount: 0,
-
-      units: 0,
-
-      purchaseRate: 0,
-
-      purchaseValue: 0,
-
-      currentRate: 0,
-
-      currentValue: 0,
-
-      interest: 0,
-
-      profit: 0,
-
-      gain: 0,
-
-      currentValueWithInterest: 0,
-
-      totalGainPercent: 0,
-
-    },
-
-  });
-
-
-  const [
     sgbLoading,
-    setSgbLoading,
-  ] = useState(true);
+
+  } = useDashboardSGB();
 
 
   // ========================================
@@ -439,625 +82,148 @@ function AssetBreakdown({
   // ========================================
 
   const mutualFundSummary =
+    useMemo(
+      () =>
+        calculateMutualFundSummary(
+          mutualFundHoldings
+        ),
+      [
+        mutualFundHoldings,
+      ]
+    );
+
+
+  // ========================================
+  // BOND SUMMARY
+  // ========================================
+
+  const bondSummary =
+    useMemo(
+      () =>
+        calculateTotalBondFinancialSummary(
+          bonds || []
+        ),
+      [
+        bonds,
+      ]
+    );
+
+
+  // ========================================
+  // BOND CURRENT VALUE
+  // ========================================
+  //
+  // Value =
+  // Principal Received
+  // +
+  // Interest Received
+  //
+  // ========================================
+
+  const bondValue =
+    bondSummary.totalPrincipal +
+    bondSummary.interestReceived;
+
+
+  // ========================================
+  // PREPARE ASSETS
+  // ========================================
+
+  const assets =
     useMemo(() => {
 
-      const value =
-        mutualFundHoldings.reduce(
-          (
-            total,
-            fund
-          ) =>
-            total +
-            (
-              Number(
-                fund.currentValue
-              ) || 0
-            ),
-          0
-        );
+      return assetBreakdownConfig.map(
+        (asset) => {
 
-
-      return {
-
-        value,
-
-        holdings:
-          mutualFundHoldings.length,
-
-      };
-
-    }, [
-      mutualFundHoldings,
-    ]);
-
-
-  // ========================================
-  // LOAD SGB PORTFOLIO
-  // ========================================
-
-  useEffect(() => {
-
-    let isMounted = true;
-
-
-    const loadSGB =
-      async () => {
-
-        try {
-
-          setSgbLoading(
-            true
-          );
-
-
-          const data =
-            await getSGBPortfolio();
-
+          // ----------------------------------
+          // MUTUAL FUNDS
+          // ----------------------------------
 
           if (
-            !isMounted
+            asset.id ===
+            "mutualFunds"
           ) {
-            return;
+
+            return {
+
+              ...asset,
+
+              value:
+                mutualFundSummary.value,
+
+              holdings:
+                mutualFundSummary.holdings,
+
+            };
+
           }
 
 
-          // ==================================
-          // Recalculate using complete logic
-          // ==================================
-
-          const calculatedHoldings =
-            (
-              data?.holdings ||
-              []
-            ).map(
-              (holding) => {
-
-                return calculateSGBHolding(
-                  holding
-                );
-
-              }
-            );
-
-
-          // ==================================
-          // Summary calculation
-          // ==================================
-
-          const totalUnits =
-            calculatedHoldings.reduce(
-              (
-                total,
-                item
-              ) =>
-                total +
-                toNumber(
-                  item.units
-                ),
-              0
-            );
-
-
-          const totalPurchaseValue =
-            calculatedHoldings.reduce(
-              (
-                total,
-                item
-              ) =>
-                total +
-                toNumber(
-                  item.purchaseValue
-                ),
-              0
-            );
-
-
-          const totalCurrentValue =
-            calculatedHoldings.reduce(
-              (
-                total,
-                item
-              ) =>
-                total +
-                toNumber(
-                  item.currentValue
-                ),
-              0
-            );
-
-
-          const totalInterest =
-            calculatedHoldings.reduce(
-              (
-                total,
-                item
-              ) =>
-                total +
-                toNumber(
-                  item.interest
-                ),
-              0
-            );
-
-
-          const totalProfit =
-            calculatedHoldings.reduce(
-              (
-                total,
-                item
-              ) =>
-                total +
-                toNumber(
-                  item.profit
-                ),
-              0
-            );
-
-
-          const totalGain =
-            calculatedHoldings.reduce(
-              (
-                total,
-                item
-              ) =>
-                total +
-                toNumber(
-                  item.gain
-                ),
-              0
-            );
-
-
-          const currentValueWithInterest =
-            totalCurrentValue +
-            totalInterest;
-
-
-          const totalGainPercent =
-            totalPurchaseValue > 0
-              ? (
-                  totalGain /
-                  totalPurchaseValue
-                ) * 100
-              : 0;
-
-
-          const purchaseRate =
-            totalUnits > 0
-              ? totalPurchaseValue /
-                totalUnits
-              : 0;
-
-
-          const currentRate =
-            totalUnits > 0
-              ? totalCurrentValue /
-                totalUnits
-              : 0;
-
-
-          setSgbData({
-
-            holdings:
-              data?.holdings ||
-              [],
-
-            summary: {
-
-              seriesCount:
-                calculatedHoldings.length,
-
-              units:
-                round(
-                  totalUnits
-                ),
-
-              purchaseRate:
-                round(
-                  purchaseRate
-                ),
-
-              purchaseValue:
-                round(
-                  totalPurchaseValue
-                ),
-
-              currentRate:
-                round(
-                  currentRate
-                ),
-
-              currentValue:
-                round(
-                  totalCurrentValue
-                ),
-
-              interest:
-                round(
-                  totalInterest
-                ),
-
-              profit:
-                round(
-                  totalProfit
-                ),
-
-              gain:
-                round(
-                  totalGain
-                ),
-
-              currentValueWithInterest:
-                round(
-                  currentValueWithInterest
-                ),
-
-              totalGainPercent:
-                round(
-                  totalGainPercent
-                ),
-
-            },
-
-          });
-
-        } catch (error) {
-
-          console.error(
-            "Dashboard SGB Error:",
-            error
-          );
-
+          // ----------------------------------
+          // SGB
+          // ----------------------------------
 
           if (
-            isMounted
+            asset.id ===
+            "sgb"
           ) {
 
-            setSgbData({
+            return {
 
-              holdings: [],
+              ...asset,
 
-              summary: {
+              value:
+                sgbData.summary
+                  .currentValueWithInterest,
 
-                seriesCount: 0,
+              holdings:
+                sgbData.summary
+                  .seriesCount,
 
-                units: 0,
-
-                purchaseRate: 0,
-
-                purchaseValue: 0,
-
-                currentRate: 0,
-
-                currentValue: 0,
-
-                interest: 0,
-
-                profit: 0,
-
-                gain: 0,
-
-                currentValueWithInterest: 0,
-
-                totalGainPercent: 0,
-
-              },
-
-            });
+            };
 
           }
 
-        } finally {
+
+          // ----------------------------------
+          // BONDS
+          // ----------------------------------
 
           if (
-            isMounted
+            asset.id ===
+            "bonds"
           ) {
 
-            setSgbLoading(
-              false
-            );
+            return {
+
+              ...asset,
+
+              value:
+                bondValue,
+
+              holdings:
+                bonds?.length || 0,
+
+            };
 
           }
+
+
+          // ----------------------------------
+          // OTHER ASSETS
+          // ----------------------------------
+
+          return asset;
 
         }
-
-      };
-
-
-    loadSGB();
-
-
-    return () => {
-
-      isMounted = false;
-
-    };
-
-  }, []);
-
-
-  // ========================================
-  // ASSETS
-  // ========================================
-
-  const assets = [
-
-    // --------------------------------------
-    // MUTUAL FUNDS
-    // --------------------------------------
-
-    {
-
-      id:
-        "mutualFunds",
-
-      name:
-        "MUTUAL FUNDS",
-
-      type:
-        "Equity & Hybrid",
-
-      icon:
-        PieChart,
-
-      iconClass:
-        "bg-purple-500/15 text-purple-300",
-
-      value:
-        mutualFundSummary.value,
-
-      holdings:
-        mutualFundSummary.holdings,
-
-    },
-
-
-    // --------------------------------------
-    // CPF
-    // --------------------------------------
-
-    {
-
-      id:
-        "cpf",
-
-      name:
-        "CPF",
-
-      type:
-        "Provident Fund",
-
-      icon:
-        BriefcaseBusiness,
-
-      iconClass:
-        "bg-cyan-500/15 text-cyan-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-
-    // --------------------------------------
-    // FD
-    // --------------------------------------
-
-    {
-
-      id:
-        "fd",
-
-      name:
-        "INT-FD",
-
-      type:
-        "Fixed Deposit",
-
-      icon:
-        WalletCards,
-
-      iconClass:
-        "bg-amber-500/15 text-amber-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-
-    // --------------------------------------
-    // APY NPS
-    // --------------------------------------
-
-    {
-
-      id:
-        "apyNps",
-
-      name:
-        "APY-NPS",
-
-      type:
-        "PENSION",
-
-      icon:
-        CircleGauge,
-
-      iconClass:
-        "bg-pink-500/15 text-pink-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-
-    // --------------------------------------
-    // CRYPTO
-    // --------------------------------------
-
-    {
-
-      id:
-        "crypto",
-
-      name:
-        "CRYPTO",
-
-      type:
-        "Digital Assets",
-
-      icon:
-        Bitcoin,
-
-      iconClass:
-        "bg-violet-500/15 text-violet-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-
-    // --------------------------------------
-    // BONDS
-    // --------------------------------------
-
-    {
-
-      id:
-        "bonds",
-
-      name:
-        "BONDS",
-
-      type:
-        "Fixed Income",
-
-      icon:
-        FileText,
-
-      iconClass:
-        "bg-blue-500/15 text-blue-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-
-    // --------------------------------------
-    // SGB
-    // --------------------------------------
-
-    {
-
-      id:
-        "sgb",
-
-      name:
-        "SGB",
-
-      type:
-        "Sovereign Gold Bond",
-
-      icon:
-        Gem,
-
-      iconClass:
-        "bg-yellow-500/15 text-yellow-300",
-
-      // IMPORTANT:
-      // Dashboard par Current Value
-      // + Interest dikhega
-
-      value:
-        sgbData.summary
-          .currentValueWithInterest,
-
-      holdings:
-        sgbData.summary
-          .seriesCount,
-
-    },
-
-
-    // --------------------------------------
-    // LIC
-    // --------------------------------------
-
-    {
-
-      id:
-        "lic",
-
-      name:
-        "LIC-PLI",
-
-      type:
-        "Life & Postal Insurance",
-
-      icon:
-        ShieldCheck,
-
-      iconClass:
-        "bg-emerald-500/15 text-emerald-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-
-    // --------------------------------------
-    // ETF STOCK
-    // --------------------------------------
-
-    {
-
-      id:
-        "etfStock",
-
-      name:
-        "ETF-STOCK",
-
-      type:
-        "ETF & Stock",
-
-      icon:
-        TrendingUp,
-
-      iconClass:
-        "bg-sky-500/15 text-sky-300",
-
-      value:
-        0,
-
-      holdings:
-        0,
-
-    },
-
-  ];
+      );
+
+    }, [
+      mutualFundSummary,
+      sgbData,
+      bondValue,
+      bonds,
+    ]);
 
 
   // ==========================================
@@ -1099,7 +265,6 @@ function AssetBreakdown({
 
         return;
       }
-
 
 
       // --------------------------------------
@@ -1178,6 +343,11 @@ function AssetBreakdown({
               asset.id ===
               "sgb" &&
               sgbLoading
+            ) ||
+            (
+              asset.id ===
+              "bonds" &&
+              bondLoading
             );
 
 
@@ -1319,6 +489,7 @@ function AssetBreakdown({
                       ) : (
 
                         <>
+
                           {
                             asset.holdings
                           }{" "}
@@ -1329,6 +500,7 @@ function AssetBreakdown({
                               ? "holding"
                               : "holdings"
                           }
+
                         </>
 
                       )}
