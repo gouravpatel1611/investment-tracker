@@ -181,6 +181,7 @@ export function calculateBondFinancialSummary(
         totalPrincipal.toFixed(2)
       ),
 
+
     totalInterest:
       Number(
         totalInterest.toFixed(2)
@@ -248,7 +249,7 @@ export function calculateTotalBondFinancialSummary(
 
 
         result.totalPrincipal +=
-          summary.totalPrincipal;
+          summary.principalAmount;
 
         result.totalInterest +=
           summary.totalInterest;
@@ -279,13 +280,14 @@ export function calculateTotalBondFinancialSummary(
       }
     );
 
-
   return {
 
     totalPrincipal:
       Number(
         total.totalPrincipal.toFixed(2)
       ),
+
+      
 
     totalInterest:
       Number(

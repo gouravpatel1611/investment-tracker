@@ -31,12 +31,10 @@ function Bonds() {
   ========================================================= */
 
   const financialSummary = useMemo(() => {
-
-    return calculateTotalBondFinancialSummary(
-      bonds
-    );
-
+    return calculateTotalBondFinancialSummary(bonds);
   }, [bonds]);
+
+
 
 
   /* =========================================================
@@ -187,9 +185,8 @@ function Bonds() {
       ================================================= */}
 
       <BondSummaryCard
-        summary={{
+        data={{
           ...financialSummary,
-
           holdings: bonds.length,
         }}
       />

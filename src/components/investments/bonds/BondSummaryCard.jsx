@@ -41,7 +41,7 @@ function SummaryItem({
         gap-2
         rounded-xl
         bg-slate-800/60
-        p-3
+        p-2
       "
     >
 
