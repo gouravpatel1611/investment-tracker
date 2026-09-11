@@ -1,19 +1,24 @@
 import {
   ArrowDownToLine,
   CalendarDays,
-  CheckCircle2,
   IndianRupee,
   Plus,
 } from "lucide-react";
 
 import {
-  calculateInterestSchedule,
   calculateYearlyInterestSchedule,
   calculatePrincipalSummary,
 } from "../../../utils/bondInterestSchedule";
 
 import BondYearGroup
   from "./BondYearGroup";
+
+import BondPrincipalRepaymentSummary from "./BondPrincipalRepaymentSummary";
+import BondFinancialSummary from "./BondFinancialSummary";
+
+import {
+  calculateBondFinancialSummary,
+} from "../../../utils/bondCalculations";
 
 // ==================================================
 // CURRENCY
@@ -72,14 +77,7 @@ function formatDate(value) {
 function BondTransactionCard({
   bond,
 }) {
-  // ==================================================
-  // PAYMENT SCHEDULE
-  // ==================================================
 
-  const paymentSchedule =
-    calculateInterestSchedule(
-      bond
-    );
 
   // ==================================================
   // YEARLY
@@ -103,69 +101,10 @@ function BondTransactionCard({
   // INTEREST SUMMARY
   // ==================================================
 
-  const receivedInterest =
-    paymentSchedule
-      .filter(
-        (payment) =>
-          payment.status ===
-          "Paid"
-      )
-      .reduce(
-        (sum, payment) =>
-          sum +
-          Number(
-            payment.interest || 0
-          ),
-        0
-      );
 
-  const remainingInterest =
-    paymentSchedule
-      .filter(
-        (payment) =>
-          payment.status !==
-          "Paid"
-      )
-      .reduce(
-        (sum, payment) =>
-          sum +
-          Number(
-            payment.interest || 0
-          ),
-        0
-      );
+ const financialSummary =
+  calculateBondFinancialSummary(bond);
 
-  const totalInterest =
-    paymentSchedule.reduce(
-      (sum, payment) =>
-        sum +
-        Number(
-          payment.interest || 0
-        ),
-      0
-    );
-
-  const receivedPayments =
-    paymentSchedule.filter(
-      (payment) =>
-        payment.status ===
-        "Paid"
-    ).length;
-
-  const remainingPayments =
-    paymentSchedule.filter(
-      (payment) =>
-        payment.status !==
-        "Paid"
-    ).length;
-
-  const principalAmount =
-    Number(
-      bond.faceValue || 0
-    ) *
-    Number(
-      bond.quantity || 0
-    );
 
   return (
     <div
@@ -192,6 +131,7 @@ function BondTransactionCard({
           px-4
           py-4
           sm:px-5
+          mb-3
         "
       >
         <div
@@ -278,290 +218,24 @@ function BondTransactionCard({
           INTEREST SUMMARY
       ================================================== */}
 
-      <div
-        className="
-          grid
-          grid-cols-2
-          gap-3
-          p-4
-          sm:grid-cols-3
-          sm:px-5
-        "
-      >
-        {/* RECEIVED */}
-
-        <SummaryBox
-          label="Interest Received"
-          value={formatCurrency(
-            receivedInterest
-          )}
-          valueClass="text-emerald-400"
-        />
-
-        {/* REMAINING */}
-
-        <SummaryBox
-          label="Remaining Interest"
-          value={formatCurrency(
-            remainingInterest
-          )}
-          valueClass="text-amber-400"
-        />
-
-        {/* RECEIVED PAYMENTS */}
-
-        <SummaryBox
-          label="Received Payments"
-          value={receivedPayments}
-          valueClass="text-emerald-400"
-        />
-
-        {/* REMAINING PAYMENTS */}
-
-        <SummaryBox
-          label="Remaining Payments"
-          value={remainingPayments}
-          valueClass="text-amber-400"
-        />
-
-        {/* TOTAL */}
-
-        <SummaryBox
-          label="Total Interest"
-          value={formatCurrency(
-            totalInterest
-          )}
-          valueClass="text-slate-200"
-        />
-
-        {/* ORIGINAL PRINCIPAL */}
-
-        <SummaryBox
-          label="Original Principal"
-          value={formatCurrency(
-            principalAmount
-          )}
-          valueClass="text-slate-200"
-        />
+      <div className="m-3">
+        <BondFinancialSummary
+          {...financialSummary}
+          formatCurrency={formatCurrency}
+      />
       </div>
+
+     
 
       {/* ==================================================
           PRINCIPAL REPAYMENT SUMMARY
       ================================================== */}
-
-      {principalSummary.repayments
-        .length > 0 && (
-        <div
-          className="
-            mx-4
-            mb-4
-            overflow-hidden
-            rounded-xl
-            border
-            border-slate-800
-            bg-slate-950
-            sm:mx-5
-          "
-        >
-          {/* HEADER */}
-
-          <div
-            className="
-              border-b
-              border-slate-800
-              px-4
-              py-3
-            "
-          >
-            <div
-              className="
-                flex
-                items-center
-                justify-between
-                gap-3
-              "
-            >
-              <div>
-                <div
-                  className="
-                    flex
-                    items-center
-                    gap-2
-                  "
-                >
-                  <CheckCircle2
-                    size={15}
-                    className="
-                      text-emerald-400
-                    "
-                  />
-
-                  <h3
-                    className="
-                      text-sm
-                      font-bold
-                      text-slate-200
-                    "
-                  >
-                    Principal Repayments
-                  </h3>
-                </div>
-
-                <p
-                  className="
-                    mt-1
-                    text-[10px]
-                    text-slate-600
-                  "
-                >
-                  Principal paid during
-                  bond period
-                </p>
-              </div>
-
-              <div className="text-right">
-                <p
-                  className="
-                    text-[10px]
-                    text-slate-600
-                  "
-                >
-                  Remaining
-                </p>
-
-                <p
-                  className="
-                    text-sm
-                    font-bold
-                    text-white
-                  "
-                >
-                  {formatCurrency(
-                    principalSummary.remainingPrincipal
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* LIST */}
-
-          <div
-            className="
-              divide-y
-              divide-slate-800
-            "
-          >
-            {principalSummary.repayments.map(
-              (
-                repayment,
-                index
-              ) => (
-                <div
-                  key={`${repayment.date.getTime()}-${index}`}
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    px-4
-                    py-3
-                  "
-                >
-                  <div>
-                    <p
-                      className="
-                        text-xs
-                        font-semibold
-                        text-slate-300
-                      "
-                    >
-                      {formatDate(
-                        repayment.date
-                      )}
-                    </p>
-
-                    <p
-                      className="
-                        mt-0.5
-                        text-[10px]
-                        text-slate-600
-                      "
-                    >
-                      Principal payment #
-                      {index + 1}
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <p
-                      className="
-                        text-sm
-                        font-bold
-                        text-emerald-400
-                      "
-                    >
-                      {formatCurrency(
-                        repayment.amount
-                      )}
-                    </p>
-
-                    <p
-                      className="
-                        mt-0.5
-                        text-[10px]
-                        text-slate-600
-                      "
-                    >
-                      Balance{" "}
-                      {formatCurrency(
-                        repayment.remainingPrincipal
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-
-          {/* TOTAL */}
-
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-              border-t
-              border-slate-800
-              bg-slate-900
-              px-4
-              py-3
-            "
-          >
-            <span
-              className="
-                text-[11px]
-                font-medium
-                text-slate-500
-              "
-            >
-              Total Principal Paid
-            </span>
-
-            <span
-              className="
-                text-sm
-                font-bold
-                text-white
-              "
-            >
-              {formatCurrency(
-                principalSummary.totalPrincipalPaid
-              )}
-            </span>
-          </div>
-        </div>
-      )}
+      <div className="mt-3 mb-3"></div>
+      <BondPrincipalRepaymentSummary
+        principalSummary={principalSummary}
+        formatCurrency={formatCurrency}
+        formatDate={formatDate}
+      />
 
       {/* ==================================================
           INTEREST SCHEDULE
@@ -688,7 +362,7 @@ function BondTransactionCard({
                     yearData
                   }
                   defaultOpen={
-                    index === 0
+                    false
                   }
                 />
               )
@@ -783,45 +457,5 @@ function BondTransactionCard({
   );
 }
 
-// ==================================================
-// SUMMARY BOX
-// ==================================================
-
-function SummaryBox({
-  label,
-  value,
-  valueClass,
-}) {
-  return (
-    <div
-      className="
-        rounded-xl
-        bg-slate-800/60
-        p-3
-      "
-    >
-      <p
-        className="
-          text-[10px]
-          font-medium
-          text-slate-500
-        "
-      >
-        {label}
-      </p>
-
-      <p
-        className={`
-          mt-1
-          text-sm
-          font-bold
-          ${valueClass}
-        `}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
 
 export default BondTransactionCard;

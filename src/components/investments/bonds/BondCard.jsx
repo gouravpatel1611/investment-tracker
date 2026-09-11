@@ -10,11 +10,14 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
-import {
-  calculateBondProfit,
-} from "../../../utils/bondCalculations";
+
 
 import { useBonds } from "../../../context/BondContext";
+import BondFinancialSummary from "./BondFinancialSummary";
+
+import {
+  calculateBondFinancialSummary,
+} from "../../../utils/bondCalculations";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -96,13 +99,10 @@ function BondCard({
     deleteBond,
   } = useBonds();
 
-  const profit =
-    calculateBondProfit(
-      bond
-    );
 
-  const isProfit =
-    profit >= 0;
+   const financialSummary =
+    calculateBondFinancialSummary(bond);
+
 
   /* =========================================================
      EDIT
@@ -369,52 +369,12 @@ function BondCard({
           className="mt-4 w-full text-left"
         >
 
-          <div className="grid grid-cols-2 gap-3">
 
-            <div className="rounded-xl bg-slate-800/60 p-3">
+            <BondFinancialSummary
+                {...financialSummary}
+                formatCurrency={formatCurrency}
+            />
 
-              <p className="text-[10px] font-medium text-slate-500">
-                Interest Received
-              </p>
-
-              <p
-                className={`
-                  mt-1
-                  text-base
-                  font-extrabold
-                  sm:text-lg
-                  ${
-                    isProfit
-                      ? "text-emerald-400"
-                      : "text-red-400"
-                  }
-                `}
-              >
-                {isProfit
-                  ? "+"
-                  : ""}
-                {formatCurrency(
-                  profit
-                )}
-              </p>
-
-            </div>
-
-            <div className="rounded-xl bg-slate-800/60 p-3">
-
-              <p className="text-[10px] font-medium text-slate-500">
-                Principal
-              </p>
-
-              <p className="mt-1 text-base font-extrabold text-slate-100 sm:text-lg">
-                {formatCurrency(
-                  bond.purchaseValue
-                )}
-              </p>
-
-            </div>
-
-          </div>
 
           {/* DETAILS */}
 

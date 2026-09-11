@@ -1,18 +1,40 @@
-function toNumber(value) {
-  return Number(value) || 0;
-}
+import {
+  calculateScheduledInterest,
+  calculateReceivedInterest,
+  calculatePendingInterest,
+  calculatePrincipalSummary,
+} from "./bondInterestSchedule";
 
+/* =========================================================
+   DATE ONLY
+========================================================= */
 
-// --------------------------------------------------
-// Date Helpers
-// --------------------------------------------------
+function toDateOnly(value) {
+  if (!value) return null;
 
-function toDate(value) {
-  if (!value) {
-    return null;
+  let date;
+
+  if (value instanceof Date) {
+    date = new Date(value);
+  } else if (
+    value &&
+    typeof value.toDate === "function"
+  ) {
+    date = value.toDate();
+  } else if (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    const [year, month, day] = value.split("-");
+
+    date = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day)
+    );
+  } else {
+    date = new Date(value);
   }
-
-  const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -24,546 +46,271 @@ function toDate(value) {
 }
 
 
-function addMonths(date, months) {
-  const result = new Date(date);
+/* =========================================================
+   INDIVIDUAL BOND SUMMARY
+========================================================= */
 
-  result.setMonth(
-    result.getMonth() + months
-  );
-
-  return result;
-}
-
-
-// --------------------------------------------------
-// Annual Interest
-// --------------------------------------------------
-
-export function calculateAnnualInterest(bond) {
-  const faceValue =
-    toNumber(bond.faceValue);
-
-  const quantity =
-    toNumber(bond.quantity);
-
-  const couponRate =
-    toNumber(bond.couponRate);
-
-  return (
-    faceValue *
-    quantity *
-    (couponRate / 100)
-  );
-}
-
-
-// --------------------------------------------------
-// Interest Per Payment
-// --------------------------------------------------
-
-export function calculateInterestPerPayment(bond) {
-  const annualInterest =
-    calculateAnnualInterest(bond);
-
-  const frequency =
-    String(bond.couponFrequency || "")
-      .toLowerCase()
-      .trim();
-
-  switch (frequency) {
-    case "monthly":
-      return annualInterest / 12;
-
-    case "quarterly":
-      return annualInterest / 4;
-
-    case "half-yearly":
-    case "half yearly":
-    case "semi-annually":
-    case "semi annually":
-      return annualInterest / 2;
-
-    case "yearly":
-    case "annual":
-    case "annually":
-      return annualInterest;
-
-    default:
-      return 0;
-  }
-}
-
-
-// --------------------------------------------------
-// Payments Per Year
-// --------------------------------------------------
-
-export function getPaymentsPerYear(
-  couponFrequency
-) {
-  const frequency =
-    String(couponFrequency || "")
-      .toLowerCase()
-      .trim();
-
-  switch (frequency) {
-    case "monthly":
-      return 12;
-
-    case "quarterly":
-      return 4;
-
-    case "half-yearly":
-    case "half yearly":
-    case "semi-annually":
-    case "semi annually":
-      return 2;
-
-    case "yearly":
-    case "annual":
-    case "annually":
-      return 1;
-
-    default:
-      return 0;
-  }
-}
-
-
-// --------------------------------------------------
-// Days Between Dates
-// --------------------------------------------------
-
-export function getDaysBetween(
-  startDate,
-  endDate
-) {
-  const start = toDate(startDate);
-  const end = toDate(endDate);
-
-  if (!start || !end) {
-    return 0;
-  }
-
-  const difference =
-    end.getTime() -
-    start.getTime();
-
-  return Math.max(
-    0,
-    Math.floor(
-      difference /
-        (1000 * 60 * 60 * 24)
-    )
-  );
-}
-
-
-// --------------------------------------------------
-// Purchase Value
-// Face Value × Quantity
-// --------------------------------------------------
-
-export function calculateBondPurchaseValue(
-  bond
-) {
-  const faceValue =
-    toNumber(bond.faceValue);
-
-  const quantity =
-    toNumber(bond.quantity);
-
-  return faceValue * quantity;
-}
-
-
-// --------------------------------------------------
-// Interest For Bond
-//
-// Example:
-//
-// First Payout = 09-Oct-2025
-//
-// Period 1:
-// 09-Sep-2025 → 08-Oct-2025
-//
-// Period 2:
-// 09-Oct-2025 → 08-Nov-2025
-//
-// Period 3:
-// 09-Nov-2025 → 08-Dec-2025
-//
-// Current incomplete period:
-// Start date → Current Date
-// --------------------------------------------------
-
-export function calculateExpectedInterest(
+export function calculateBondFinancialSummary(
   bond,
   asOfDate = new Date()
 ) {
-  const purchaseDate =
-    toDate(bond.purchaseDate);
+  if (!bond) {
+    return {
+      totalPrincipal: 0,
+      totalInterest: 0,
+      principalReceived: 0,
+      interestReceived: 0,
+      principalRemaining: 0,
+      interestRemaining: 0,
+    };
+  }
 
-  const firstPayoutDate =
-    toDate(bond.firstPayoutDate);
 
-  const maturityDate =
-    toDate(bond.maturityDate);
+  /* --------------------------------
+     TOTAL PRINCIPAL
+
+     Firestore:
+     faceValue × quantity
+  -------------------------------- */
+
+  const faceValue =
+    Number(bond.faceValue) || 0;
+
+  const quantity =
+    Number(bond.quantity) || 0;
+
+  const totalPrincipal =
+    faceValue * quantity;
+
+
+  /* --------------------------------
+     INTEREST
+  -------------------------------- */
+
+  const totalInterest =
+    Number(
+      calculateScheduledInterest(bond)
+    ) || 0;
+
+  const interestReceived =
+    Number(
+      calculateReceivedInterest(
+        bond,
+        asOfDate
+      )
+    ) || 0;
+
+  const interestRemaining =
+    Number(
+      calculatePendingInterest(
+        bond,
+        asOfDate
+      )
+    ) || 0;
+
+
+  /* --------------------------------
+     PRINCIPAL REPAYMENTS
+  -------------------------------- */
+
+  const principalSummary =
+    calculatePrincipalSummary(bond);
+
+  const repayments =
+    principalSummary?.repayments || [];
+
 
   const currentDate =
-    toDate(asOfDate);
+    toDateOnly(asOfDate) ||
+    toDateOnly(new Date());
 
-  if (
-    !purchaseDate ||
-    !firstPayoutDate ||
-    !currentDate
-  ) {
-    return 0;
-  }
 
-  const annualInterest =
-    calculateAnnualInterest(bond);
+  let principalReceived = 0;
 
-  if (annualInterest <= 0) {
-    return 0;
-  }
 
-  /*
-    Interest calculation
-    purchase date se pehle nahi.
-  */
+  repayments.forEach((repayment) => {
 
-  if (currentDate <= purchaseDate) {
-    return 0;
-  }
+    const repaymentDate =
+      toDateOnly(repayment.date);
 
-  /*
-    Maturity ke baad interest
-    maturity date tak hi.
-  */
+    if (!repaymentDate) return;
 
-  let calculationEnd =
-    currentDate;
 
-  if (
-    maturityDate &&
-    calculationEnd > maturityDate
-  ) {
-    calculationEnd = maturityDate;
-  }
+    /*
+      Aaj ki repayment bhi received
+      maani jayegi.
+    */
 
-  /*
-    First interest period:
+    if (repaymentDate <= currentDate) {
 
-    First Payout - 1 Month
+      principalReceived +=
+        Number(repayment.amount) || 0;
 
-    Example:
-    09-Oct-2025
-    ↓
-    09-Sep-2025
-  */
+    }
 
-  let periodStart =
-    addMonths(
-      firstPayoutDate,
-      -1
+  });
+
+
+  /* --------------------------------
+     PROTECTION
+  -------------------------------- */
+
+  principalReceived =
+    Math.min(
+      totalPrincipal,
+      principalReceived
     );
 
-  /*
-    Agar purchase date first
-    period ke beech me hai,
-    to interest purchase date
-    se start hoga.
-  */
 
-  if (purchaseDate > periodStart) {
-    periodStart = purchaseDate;
-  }
-
-  /*
-    Purchase date future me hai
-    to interest nahi.
-  */
-
-  if (periodStart >= calculationEnd) {
-    return 0;
-  }
-
-  const dailyInterest =
-    annualInterest / 365;
-
-  let totalInterest = 0;
-
-  while (
-    periodStart < calculationEnd
-  ) {
-    /*
-      Monthly period ka end
-
-      09-Sep → 09-Oct
-
-      Actual interest:
-      09-Sep → 08-Oct
-    */
-
-    const normalPeriodEnd =
-      addMonths(
-        periodStart,
-        1
-      );
-
-    let periodEnd =
-      normalPeriodEnd;
-
-    /*
-      Current month incomplete hai
-      to current date tak calculate.
-    */
-
-    if (
-      periodEnd > calculationEnd
-    ) {
-      periodEnd = calculationEnd;
-    }
-
-    const days =
-      getDaysBetween(
-        periodStart,
-        periodEnd
-      );
-
-    totalInterest +=
-      dailyInterest * days;
-
-    /*
-      Current incomplete period
-      complete nahi hua.
-    */
-
-    if (
-      normalPeriodEnd >
-      calculationEnd
-    ) {
-      break;
-    }
-
-    /*
-      Next interest period.
-    */
-
-    periodStart =
-      normalPeriodEnd;
-  }
-
-  return totalInterest;
-}
-
-
-// --------------------------------------------------
-// Interest Details
-// --------------------------------------------------
-
-export function calculateBondInterestDetails(
-  bond,
-  asOfDate = new Date()
-) {
-  const purchaseDate =
-    toDate(bond.purchaseDate);
-
-  const firstPayoutDate =
-    toDate(bond.firstPayoutDate);
-
-  const maturityDate =
-    toDate(bond.maturityDate);
-
-  const currentDate =
-    toDate(asOfDate);
-
-  if (
-    !purchaseDate ||
-    !firstPayoutDate ||
-    !currentDate
-  ) {
-    return {
-      totalInterest: 0,
-      completedInterest: 0,
-      currentInterest: 0,
-    };
-  }
-
-  const annualInterest =
-    calculateAnnualInterest(bond);
-
-  if (annualInterest <= 0) {
-    return {
-      totalInterest: 0,
-      completedInterest: 0,
-      currentInterest: 0,
-    };
-  }
-
-  if (currentDate <= purchaseDate) {
-    return {
-      totalInterest: 0,
-      completedInterest: 0,
-      currentInterest: 0,
-    };
-  }
-
-  let calculationEnd =
-    currentDate;
-
-  if (
-    maturityDate &&
-    calculationEnd > maturityDate
-  ) {
-    calculationEnd = maturityDate;
-  }
-
-  let periodStart =
-    addMonths(
-      firstPayoutDate,
-      -1
+  const principalRemaining =
+    Math.max(
+      0,
+      totalPrincipal -
+        principalReceived
     );
 
-  if (purchaseDate > periodStart) {
-    periodStart = purchaseDate;
-  }
 
-  const dailyInterest =
-    annualInterest / 365;
-
-  let completedInterest = 0;
-  let currentInterest = 0;
-
-  while (
-    periodStart < calculationEnd
-  ) {
-    const normalPeriodEnd =
-      addMonths(
-        periodStart,
-        1
-      );
-
-    let periodEnd =
-      normalPeriodEnd;
-
-    const isCompletedPeriod =
-      normalPeriodEnd <=
-      calculationEnd;
-
-    if (!isCompletedPeriod) {
-      periodEnd = calculationEnd;
-    }
-
-    const days =
-      getDaysBetween(
-        periodStart,
-        periodEnd
-      );
-
-    const interest =
-      dailyInterest * days;
-
-    if (isCompletedPeriod) {
-      completedInterest +=
-        interest;
-    } else {
-      currentInterest +=
-        interest;
-    }
-
-    if (!isCompletedPeriod) {
-      break;
-    }
-
-    periodStart =
-      normalPeriodEnd;
-  }
+  /* --------------------------------
+     RESULT
+  -------------------------------- */
 
   return {
+
+    principalAmount: 
+      Number(
+        totalPrincipal.toFixed(2)
+      ),
+
     totalInterest:
-      completedInterest +
-      currentInterest,
+      Number(
+        totalInterest.toFixed(2)
+      ),
 
-    completedInterest,
+    principalReceived:
+      Number(
+        principalReceived.toFixed(2)
+      ),
 
-    currentInterest,
+    interestReceived:
+      Number(
+        interestReceived.toFixed(2)
+      ),
+
+    principalRemaining:
+      Number(
+        principalRemaining.toFixed(2)
+      ),
+
+    interestRemaining:
+      Number(
+        interestRemaining.toFixed(2)
+      ),
+
   };
 }
 
 
-// --------------------------------------------------
-// Pending Interest
-// --------------------------------------------------
+/* =========================================================
+   ALL BONDS SUMMARY
+========================================================= */
 
-export function calculatePendingInterest(
-  bond,
-  receivedInterest = 0,
+export function calculateTotalBondFinancialSummary(
+  bonds = [],
   asOfDate = new Date()
 ) {
-  const expectedInterest =
-    calculateExpectedInterest(
-      bond,
-      asOfDate
+
+  if (
+    !Array.isArray(bonds) ||
+    bonds.length === 0
+  ) {
+
+    return {
+      totalPrincipal: 0,
+      totalInterest: 0,
+      principalReceived: 0,
+      interestReceived: 0,
+      principalRemaining: 0,
+      interestRemaining: 0,
+    };
+
+  }
+
+
+  const total =
+    bonds.reduce(
+      (result, bond) => {
+
+        const summary =
+          calculateBondFinancialSummary(
+            bond,
+            asOfDate
+          );
+
+
+        result.totalPrincipal +=
+          summary.totalPrincipal;
+
+        result.totalInterest +=
+          summary.totalInterest;
+
+        result.principalReceived +=
+          summary.principalReceived;
+
+        result.interestReceived +=
+          summary.interestReceived;
+
+        result.principalRemaining +=
+          summary.principalRemaining;
+
+        result.interestRemaining +=
+          summary.interestRemaining;
+
+
+        return result;
+
+      },
+      {
+        totalPrincipal: 0,
+        totalInterest: 0,
+        principalReceived: 0,
+        interestReceived: 0,
+        principalRemaining: 0,
+        interestRemaining: 0,
+      }
     );
 
-  const received =
-    toNumber(receivedInterest);
 
-  return Math.max(
-    0,
-    expectedInterest - received
-  );
-}
+  return {
 
+    totalPrincipal:
+      Number(
+        total.totalPrincipal.toFixed(2)
+      ),
 
-// --------------------------------------------------
-// Current Value
-// --------------------------------------------------
+    totalInterest:
+      Number(
+        total.totalInterest.toFixed(2)
+      ),
 
-export function calculateBondCurrentValue(
-  bond
-) {
-  /*
-    Abhi current value stored nahi hai,
-    isliye Face Value × Quantity
-    ko principal/current base value
-    maana jayega.
-  */
+    principalReceived:
+      Number(
+        total.principalReceived.toFixed(2)
+      ),
 
-  return calculateBondPurchaseValue(
-    bond
-  );
-}
+    interestReceived:
+      Number(
+        total.interestReceived.toFixed(2)
+      ),
 
+    principalRemaining:
+      Number(
+        total.principalRemaining.toFixed(2)
+      ),
 
-// --------------------------------------------------
-// Profit
-// --------------------------------------------------
+    interestRemaining:
+      Number(
+        total.interestRemaining.toFixed(2)
+      ),
 
-export function calculateBondProfit(
-  bond
-) {
-  /*
-    Abhi market/current value
-    available nahi hai.
-
-    Isliye principal profit = 0.
-    Interest ko profit me mix nahi
-    kar rahe hain.
-  */
-
-  return 0;
-}
-
-
-// --------------------------------------------------
-// Profit Percentage
-// --------------------------------------------------
-
-export function calculateBondProfitPercent(
-  bond
-) {
-  return 0;
+  };
 }

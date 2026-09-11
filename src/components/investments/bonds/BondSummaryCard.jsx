@@ -1,10 +1,16 @@
 import {
-  IndianRupee,
-  TrendingUp,
-  TrendingDown,
-  Landmark,
+  Banknote,
+  CircleDollarSign,
   Wallet,
+  Landmark,
+  TrendingUp,
+  Clock3,
 } from "lucide-react";
+
+
+/* =========================================================
+   CURRENCY
+========================================================= */
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -14,20 +20,119 @@ function formatCurrency(value) {
   }).format(Number(value) || 0);
 }
 
-function formatPercent(value) {
-  return `${Number(value || 0).toFixed(2)}%`;
+
+/* =========================================================
+   SUMMARY ITEM
+========================================================= */
+
+function SummaryItem({
+  icon: Icon,
+  label,
+  value,
+  iconClass = "text-slate-400",
+  valueClass = "text-slate-200",
+}) {
+  return (
+    <div
+      className="
+        flex
+        min-w-0
+        items-center
+        gap-2
+        rounded-xl
+        bg-slate-800/60
+        p-3
+      "
+    >
+
+      {/* ICON */}
+
+      <div
+        className={`
+          flex
+          h-6
+          w-6
+          shrink-0
+          items-center
+          justify-center
+          rounded-md
+          bg-slate-700/70
+          ${iconClass}
+        `}
+      >
+        <Icon size={12} />
+      </div>
+
+
+      {/* CONTENT */}
+
+      <div className="min-w-0 flex-1">
+
+        <p
+          className="
+            break-words
+            text-[10px]
+            font-medium
+            uppercase
+            leading-tight
+            tracking-wide
+            text-slate-500
+          "
+        >
+          {label}
+        </p>
+
+        <p
+          className={`
+            mt-1
+            truncate
+            text-sm
+            font-bold
+            leading-tight
+            ${valueClass}
+          `}
+        >
+          {value}
+        </p>
+
+      </div>
+
+    </div>
+  );
 }
 
-function BondSummaryCard({ data }) {
-  const {
-    invested = 0,
-    currentValue = 0,
-    profit = 0,
-    returnPercent = 0,
-    holdings = 0,
-  } = data || {};
 
-  const isProfit = Number(profit) >= 0;
+/* =========================================================
+   COMPONENT
+========================================================= */
+
+function BondSummaryCard({
+  data,
+  summary,
+}) {
+
+  /*
+    summary preferred hai.
+
+    Agar parent se summary nahi aati,
+    to data fallback rahega.
+  */
+
+  const financialSummary =
+    summary || data || {};
+
+
+  const {
+    totalPrincipal = 0,
+    totalInterest = 0,
+    principalReceived = 0,
+    interestReceived = 0,
+    principalRemaining = 0,
+    interestRemaining = 0,
+
+    holdings = 0,
+  } = financialSummary;
+
 
   return (
     <div
@@ -41,9 +146,9 @@ function BondSummaryCard({ data }) {
       "
     >
 
-      {/* --------------------------------
+      {/* =================================================
           TOP
-      -------------------------------- */}
+      ================================================= */}
 
       <div
         className="
@@ -75,6 +180,7 @@ function BondSummaryCard({ data }) {
             <Landmark size={20} />
           </div>
 
+
           <div>
 
             <p className="text-xs text-slate-400">
@@ -92,6 +198,7 @@ function BondSummaryCard({ data }) {
 
         </div>
 
+
         <Wallet
           size={19}
           className="text-slate-500"
@@ -100,20 +207,16 @@ function BondSummaryCard({ data }) {
       </div>
 
 
-
-
-
-      {/* --------------------------------
-          STATS
-      -------------------------------- */}
+      {/* =================================================
+          FINANCIAL SUMMARY
+      ================================================= */}
 
       <div
         className="
           grid
           grid-cols-2
-          gap-3
+          gap-2
           p-4
-          sm:grid-cols-4
           sm:px-5
           sm:pb-5
         "
@@ -121,181 +224,74 @@ function BondSummaryCard({ data }) {
 
         {/* TOTAL PRINCIPAL */}
 
-        <div
-          className="
-            rounded-xl
-            bg-slate-800/60
-            p-3
-          "
-        >
-
-          <p className="text-[11px] font-medium text-slate-500">
-            TOTAL PRINCIPAL
-          </p>
-
-          <p className="mt-1 text-sm font-bold text-slate-200">
-            {formatCurrency(invested)}
-          </p>
-
-        </div>
-        {/* TOTAL INTREST */}
-
-        <div
-          className="
-            rounded-xl
-            bg-slate-800/60
-            p-3
-          "
-        >
-
-          <p className="text-[11px] font-medium text-slate-500">
-            TOTAL INTREST
-          </p>
-
-          <p className="mt-1 text-sm font-bold text-slate-200">
-            {formatCurrency(invested)}
-          </p>
-
-        </div>
+        <SummaryItem
+          icon={Wallet}
+          label="Total Principal"
+          value={formatCurrency(totalPrincipal)}
+          iconClass="text-sky-400"
+          valueClass="text-slate-200"
+        />
 
 
-        {/* PRINCIPAL RECIVED */}
+        {/* TOTAL INTEREST */}
 
-        <div
-          className="
-            rounded-xl
-            bg-slate-800/60
-            p-3
-          "
-        >
-
-          <p className="text-[11px] font-medium text-slate-500">
-            PRINCIPAL RECIVED
-          </p>
-
-          <div className="mt-1 flex items-center gap-1">
-
-            {isProfit ? (
-              <TrendingUp
-                size={14}
-                className="text-emerald-400"
-              />
-            ) : (
-              <TrendingDown
-                size={14}
-                className="text-red-400"
-              />
-            )}
-
-            <p
-              className={`
-                text-sm
-                font-bold
-                ${
-                  isProfit
-                    ? "text-emerald-400"
-                    : "text-red-400"
-                }
-              `}
-            >
-              {isProfit ? "+" : ""}
-              {formatCurrency(profit)}
-            </p>
-
-          </div>
-
-        </div>
+        <SummaryItem
+          icon={CircleDollarSign}
+          label="Total Interest"
+          value={formatCurrency(totalInterest)}
+          iconClass="text-violet-400"
+          valueClass="text-slate-200"
+        />
 
 
-        {/* INTREST RECIVED */}
+        {/* PRINCIPAL RECEIVED */}
 
-        <div
-          className="
-            rounded-xl
-            bg-slate-800/60
-            p-3
-          "
-        >
-
-          <p className="text-[11px] font-medium text-slate-500">
-            INTREST RECIVED
-          </p>
-
-          <p
-            className={`
-              mt-1
-              text-sm
-              font-bold
-              ${
-                isProfit
-                  ? "text-emerald-400"
-                  : "text-red-400"
-              }
-            `}
-          >
-            {isProfit ? "+" : ""}
-            {formatPercent(returnPercent)}
-          </p>
-
-        </div>
+        <SummaryItem
+          icon={Banknote}
+          label="Principal Received"
+          value={formatCurrency(principalReceived)}
+          iconClass="text-emerald-400"
+          valueClass="text-emerald-400"
+        />
 
 
-        {/* REMAINING PRINCIPAL */}
+        {/* INTEREST RECEIVED */}
 
-        <div
-          className="
-            rounded-xl
-            bg-slate-800/60
-            p-3
-          "
-        >
-
-          <p className="text-[11px] font-medium text-slate-500">
-            PRNC REMAINS
-          </p>
-
-          <p className="mt-1 flex items-center gap-1 text-sm font-bold text-slate-200">
-            <IndianRupee
-              size={13}
-              className="text-slate-500"
-            />
-
-            {holdings}
-          </p>
-
-        </div>
+        <SummaryItem
+          icon={TrendingUp}
+          label="Interest Received"
+          value={formatCurrency(interestReceived)}
+          iconClass="text-emerald-400"
+          valueClass="text-emerald-400"
+        />
 
 
+        {/* PRINCIPAL REMAINING */}
 
-        {/* REMAINING INTREST */}
+        <SummaryItem
+          icon={Landmark}
+          label="Principal Remain"
+          value={formatCurrency(principalRemaining)}
+          iconClass="text-amber-400"
+          valueClass="text-amber-400"
+        />
 
-        <div
-          className="
-            rounded-xl
-            bg-slate-800/60
-            p-3
-          "
-        >
 
-          <p className="text-[11px] font-medium text-slate-500">
-            INT REMAINS
-          </p>
+        {/* INTEREST REMAINING */}
 
-          <p className="mt-1 flex items-center gap-1 text-sm font-bold text-slate-200">
-            <IndianRupee
-              size={13}
-              className="text-slate-500"
-            />
-
-            {holdings}
-          </p>
-
-        </div>
+        <SummaryItem
+          icon={Clock3}
+          label="Interest Remain"
+          value={formatCurrency(interestRemaining)}
+          iconClass="text-amber-400"
+          valueClass="text-amber-400"
+        />
 
       </div>
 
     </div>
   );
 }
+
 
 export default BondSummaryCard;

@@ -9,8 +9,15 @@ import {
   useBonds,
 } from "../../context/BondContext";
 
+import {
+  calculateTotalBondFinancialSummary,
+} from "../../utils/bondCalculations";
+
+
 function Bonds() {
+
   const navigate = useNavigate();
+
 
   const {
     bonds,
@@ -18,65 +25,30 @@ function Bonds() {
     error,
   } = useBonds();
 
-  /* --------------------------------
-     SUMMARY
-  -------------------------------- */
 
-  const summary = useMemo(() => {
+  /* =========================================================
+     ALL BONDS SUMMARY
+  ========================================================= */
 
-    return bonds.reduce(
-      (total, bond) => {
+  const financialSummary = useMemo(() => {
 
-        const invested =
-          Number(bond.purchaseValue) ||
-          (
-            Number(bond.quantity) || 0
-          ) *
-          (
-            Number(bond.purchasePrice) || 0
-          );
-
-        const currentValue =
-          Number(bond.currentValue) ||
-          invested;
-
-        const profit =
-          currentValue - invested;
-
-        total.invested += invested;
-        total.currentValue += currentValue;
-        total.profit += profit;
-
-        return total;
-      },
-      {
-        invested: 0,
-        currentValue: 0,
-        profit: 0,
-      }
+    return calculateTotalBondFinancialSummary(
+      bonds
     );
 
   }, [bonds]);
 
 
-  const returnPercent =
-    summary.invested > 0
-      ? (
-          summary.profit /
-          summary.invested
-        ) * 100
-      : 0;
-
-
-  /* --------------------------------
+  /* =========================================================
      LOADING
-  -------------------------------- */
+  ========================================================= */
 
   if (loading) {
     return (
       <div className="space-y-5">
 
         <div>
+
           <h1 className="text-2xl font-extrabold text-dark">
             Bonds
           </h1>
@@ -84,7 +56,9 @@ function Bonds() {
           <p className="mt-1 text-sm text-slate-400">
             Loading your investments...
           </p>
+
         </div>
+
 
         <div
           className="
@@ -96,9 +70,11 @@ function Bonds() {
             text-center
           "
         >
+
           <p className="text-sm font-semibold text-slate-300">
             Loading bonds...
           </p>
+
         </div>
 
       </div>
@@ -106,19 +82,22 @@ function Bonds() {
   }
 
 
-  /* --------------------------------
+  /* =========================================================
      ERROR
-  -------------------------------- */
+  ========================================================= */
 
   if (error) {
     return (
       <div className="space-y-5">
 
         <div>
+
           <h1 className="text-2xl font-extrabold text-dark">
             Bonds
           </h1>
+
         </div>
+
 
         <div
           className="
@@ -129,9 +108,11 @@ function Bonds() {
             p-5
           "
         >
+
           <p className="text-sm font-semibold text-red-400">
             {error}
           </p>
+
         </div>
 
       </div>
@@ -142,9 +123,9 @@ function Bonds() {
   return (
     <div className="space-y-5">
 
-      {/* --------------------------------
+      {/* =================================================
           HEADER
-      -------------------------------- */}
+      ================================================= */}
 
       <div
         className="
@@ -200,32 +181,23 @@ function Bonds() {
       </div>
 
 
-      {/* --------------------------------
+      {/* =================================================
           SUMMARY
-      -------------------------------- */}
+          ALL BONDS
+      ================================================= */}
 
       <BondSummaryCard
-        data={{
-          invested:
-            summary.invested,
+        summary={{
+          ...financialSummary,
 
-          currentValue:
-            summary.currentValue,
-
-          profit:
-            summary.profit,
-
-          returnPercent,
-
-          holdings:
-            bonds.length,
+          holdings: bonds.length,
         }}
       />
 
 
-      {/* --------------------------------
+      {/* =================================================
           HOLDINGS
-      -------------------------------- */}
+      ================================================= */}
 
       <div className="space-y-3">
 
@@ -293,10 +265,12 @@ function Bonds() {
                   )
               )
               .map((bond) => (
+
                 <BondCard
                   key={bond.id}
                   bond={bond}
                 />
+
               ))}
 
           </div>
@@ -308,5 +282,6 @@ function Bonds() {
     </div>
   );
 }
+
 
 export default Bonds;
