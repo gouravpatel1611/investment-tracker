@@ -19,10 +19,12 @@ import SGB from "../pages/investments/SGB";
 import AddSGB from "../pages/investments/AddSGB";
 import AddBond from "../pages/bonds/AddBond";
 import Bonds from "../pages/bonds/Bonds";
-import BondDetails  from "../pages/bonds/BondDetails";
-
+import BondDetails from "../pages/bonds/BondDetails";
 
 import Migration from "../pages/Migration";
+
+// CPF
+import CPF from "../pages/cpf/CPF";
 
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -45,6 +47,7 @@ function AppRoutes() {
               path="/migration"
               element={<Migration />}
             />
+
             <Route
               path="/portfolio"
               element={<Portfolio />}
@@ -78,7 +81,7 @@ function AppRoutes() {
             <Route
               path="/sgb"
               element={<SGB />}
-            />  
+            />
 
             <Route
               path="/sgb/add"
@@ -90,7 +93,7 @@ function AppRoutes() {
               element={<AddBond />}
             />
 
-             <Route
+            <Route
               path="/bonds"
               element={<Bonds />}
             />
@@ -98,6 +101,12 @@ function AppRoutes() {
             <Route
               path="/bonds/:id"
               element={<BondDetails />}
+            />
+
+            {/* CPF */}
+            <Route
+              path="/cpf"
+              element={<CPF />}
             />
 
             <Route

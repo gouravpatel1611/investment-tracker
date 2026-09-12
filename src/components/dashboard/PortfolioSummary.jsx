@@ -21,28 +21,49 @@ import {
 } from "../../services/sgb/sgbPortfolioService";
 
 import {
+  getCPFRecord,
+} from "../../services/firebase/cpfService";
+
+import {
+  calculateCPF,
+  calculateNVSCPF,
+} from "../../utils/cpf/cpfCalculations";
+
+import {
   calculateTotalBondFinancialSummary,
 } from "../../utils/bondCalculations";
 
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
+
+  return new Intl.NumberFormat(
+    "en-IN",
+    {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }
+  ).format(
+    Number(value) || 0
+  );
+
 }
 
 
 function PortfolioSummary() {
+
 
   /* --------------------------------
      MUTUAL FUNDS
   -------------------------------- */
 
   const {
-    holdings: mutualFundHoldings,
-    loading: mutualFundLoading,
+    holdings:
+      mutualFundHoldings,
+
+    loading:
+      mutualFundLoading,
+
   } = useMutualFunds();
 
 
@@ -52,7 +73,10 @@ function PortfolioSummary() {
 
   const {
     bonds,
-    loading: bondLoading,
+
+    loading:
+      bondLoading,
+
   } = useBonds();
 
 
@@ -64,17 +88,29 @@ function PortfolioSummary() {
     sgbPortfolio,
     setSgbPortfolio,
   ] = useState({
+
     holdings: [],
+
     summary: {
+
       seriesCount: 0,
+
       units: 0,
+
       purchaseValue: 0,
+
       currentValue: 0,
+
       interest: 0,
+
       profit: 0,
+
       gain: 0,
+
       totalGainPercent: 0,
+
     },
+
   });
 
 
@@ -89,48 +125,140 @@ function PortfolioSummary() {
     let mounted = true;
 
 
-    const loadSGB = async () => {
+    const loadSGB =
+      async () => {
 
-      try {
+        try {
 
-        setSgbLoading(true);
-
-        const data =
-          await getSGBPortfolio();
-
-
-        if (mounted) {
-          setSgbPortfolio(
-            data || {
-              holdings: [],
-              summary: {},
-            }
+          setSgbLoading(
+            true
           );
+
+
+          const data =
+            await getSGBPortfolio();
+
+
+          if (mounted) {
+
+            setSgbPortfolio(
+              data || {
+
+                holdings: [],
+
+                summary: {},
+
+              }
+            );
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "Failed to load SGB portfolio:",
+            error
+          );
+
+        } finally {
+
+          if (mounted) {
+
+            setSgbLoading(
+              false
+            );
+
+          }
+
         }
 
-      } catch (error) {
-
-        console.error(
-          "Failed to load SGB portfolio:",
-          error
-        );
-
-      } finally {
-
-        if (mounted) {
-          setSgbLoading(false);
-        }
-
-      }
-
-    };
+      };
 
 
     loadSGB();
 
 
     return () => {
+
       mounted = false;
+
+    };
+
+  }, []);
+
+
+  /* --------------------------------
+     CPF
+  -------------------------------- */
+
+  const [
+    cpfData,
+    setCpfData,
+  ] = useState(null);
+
+
+  const [
+    cpfLoading,
+    setCpfLoading,
+  ] = useState(true);
+
+
+  useEffect(() => {
+
+    let mounted = true;
+
+
+    const loadCPF =
+      async () => {
+
+        try {
+
+          setCpfLoading(
+            true
+          );
+
+
+          const data =
+            await getCPFRecord();
+
+
+          if (mounted) {
+
+            setCpfData(
+              data
+            );
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "Failed to load CPF:",
+            error
+          );
+
+        } finally {
+
+          if (mounted) {
+
+            setCpfLoading(
+              false
+            );
+
+          }
+
+        }
+
+      };
+
+
+    loadCPF();
+
+
+    return () => {
+
+      mounted = false;
+
     };
 
   }, []);
@@ -140,249 +268,355 @@ function PortfolioSummary() {
      ASSET BREAKDOWN VALUES
   -------------------------------- */
 
-  const assetSummary = useMemo(() => {
-
-    /* ==============================
-       MUTUAL FUNDS
-    ============================== */
-
-    const mutualFundInvested =
-      mutualFundHoldings.reduce(
-        (total, fund) =>
-          total +
-          (Number(
-            fund.investedAmount
-          ) || 0),
-        0
-      );
+  const assetSummary =
+    useMemo(() => {
 
 
-    const mutualFundCurrentValue =
-      mutualFundHoldings.reduce(
-        (total, fund) =>
-          total +
-          (Number(
-            fund.currentValue
-          ) || 0),
-        0
-      );
+      /* ==============================
+         MUTUAL FUNDS
+      ============================== */
+
+      const mutualFundInvested =
+        mutualFundHoldings.reduce(
+          (
+            total,
+            fund
+          ) =>
+
+            total +
+            (
+              Number(
+                fund.investedAmount
+              ) || 0
+            ),
+
+          0
+
+        );
 
 
-    const mutualFundProfit =
-      mutualFundCurrentValue -
-      mutualFundInvested;
+      const mutualFundCurrentValue =
+        mutualFundHoldings.reduce(
+          (
+            total,
+            fund
+          ) =>
+
+            total +
+            (
+              Number(
+                fund.currentValue
+              ) || 0
+            ),
+
+          0
+
+        );
 
 
-    /* ==============================
-       SGB
-    ============================== */
-
-    const sgbSummary =
-      sgbPortfolio?.summary || {};
+      const mutualFundProfit =
+        mutualFundCurrentValue -
+        mutualFundInvested;
 
 
-    const sgbInvested =
-      Number(
-        sgbSummary.purchaseValue
-      ) || 0;
+      /* ==============================
+         SGB
+      ============================== */
+
+      const sgbSummary =
+        sgbPortfolio?.summary ||
+        {};
 
 
-    const sgbCurrentValue =
-      Number(
-        sgbSummary.currentValue
-      ) || 0;
+      const sgbInvested =
+        Number(
+          sgbSummary.purchaseValue
+        ) || 0;
 
 
-    const sgbInterest =
-      Number(
-        sgbSummary.interest
-      ) || 0;
+      const sgbCurrentValue =
+        Number(
+          sgbSummary.currentValue
+        ) || 0;
 
 
-    // Final SGB value
-    const sgbValueWithInterest =
-      sgbCurrentValue +
-      sgbInterest;
+      const sgbInterest =
+        Number(
+          sgbSummary.interest
+        ) || 0;
 
 
-    const sgbProfit =
-      Number(
-        sgbSummary.profit
-      ) || 0;
+      // Final SGB value
+
+      const sgbValueWithInterest =
+        sgbCurrentValue +
+        sgbInterest;
 
 
-    const sgbGain =
-      Number(
-        sgbSummary.gain
-      ) || 0;
+      const sgbProfit =
+        Number(
+          sgbSummary.profit
+        ) || 0;
 
 
-    /* ==============================
-       BONDS
-    ============================== */
-
-    const bondSummary =
-      calculateTotalBondFinancialSummary(
-        bonds || []
-      );
+      const sgbGain =
+        Number(
+          sgbSummary.gain
+        ) || 0;
 
 
-    // --------------------------------
-    // Bond Invested
-    // --------------------------------
-    //
-    // Actual purchase amount
-    //
-    const bondsInvested = bondSummary.totalPrincipal
+      /* ==============================
+         BONDS
+      ============================== */
+
+      const bondSummary =
+        calculateTotalBondFinancialSummary(
+          bonds || []
+        );
 
 
-    // --------------------------------
-    // Bond Current Value
-    // --------------------------------
-    //
-    // Total Principal
-    // + Interest Received
-    //
-    const bondsValue =
-      (
+      // --------------------------------
+      // Bond Invested
+      // --------------------------------
+      //
+      // Actual purchase amount
+      //
+      const bondsInvested =
         Number(
           bondSummary.totalPrincipal
-        ) || 0
-      ) +
-      (
-        Number(
-          bondSummary.interestReceived
-        ) || 0
-      );
+        ) || 0;
 
 
-    // --------------------------------
-    // Bond Profit / Loss
-    // --------------------------------
+      // --------------------------------
+      // Bond Current Value
+      // --------------------------------
+      //
+      // Total Principal
+      // + Interest Received
+      //
 
-    const bondsProfit =
-      bondsValue -
-      bondsInvested;
-
-
-    /* ==============================
-       OTHER ASSETS
-       ==============================
-
-       Currently AssetBreakdown
-       has these as 0.
-
-       Later actual data can be
-       added here.
-    ============================== */
-
-    const cpfValue = 0;
-
-    const fdValue = 0;
-
-    const apyNpsValue = 0;
-
-    const cryptoValue = 0;
-
-    const licValue = 0;
-
-    const etfStockValue = 0;
+      const bondsValue =
+        (
+          Number(
+            bondSummary.totalPrincipal
+          ) || 0
+        ) +
+        (
+          Number(
+            bondSummary.interestReceived
+          ) || 0
+        );
 
 
-    /* ==============================
-       TOTAL INVESTED
-    ============================== */
+      // --------------------------------
+      // Bond Profit / Loss
+      // --------------------------------
 
-    const totalInvested =
-      mutualFundInvested +
-      sgbInvested +
-      bondsInvested;
-
-
-    /* ==============================
-       TOTAL CURRENT VALUE
-    ============================== */
-
-    const totalCurrentValue =
-      mutualFundCurrentValue +
-      sgbValueWithInterest +
-      bondsValue +
-      cpfValue +
-      fdValue +
-      apyNpsValue +
-      cryptoValue +
-      licValue +
-      etfStockValue;
+      const bondsProfit =
+        bondsValue -
+        bondsInvested;
 
 
-    /* ==============================
-       TOTAL PROFIT / LOSS
-    ============================== */
+      /* ==============================
+         CPF
+      ============================== */
 
-    const totalProfitLoss =
-      mutualFundProfit +
-      sgbGain +
-      bondsProfit;
+      let cpfValue = 0;
 
 
-    /* ==============================
-       TOTAL RETURN
-    ============================== */
-
-    const totalReturnPercent =
-      totalInvested > 0
-        ? (
-            totalProfitLoss /
-            totalInvested
-          ) * 100
-        : 0;
+      if (cpfData) {
 
 
-    return {
+        // --------------------------------
+        // OWN CPF
+        // --------------------------------
 
-      totalInvested,
+        const ownCPF =
+          calculateCPF({
 
-      totalCurrentValue,
+            openingBalance:
+              cpfData.own
+                ?.openingBalance || 0,
 
-      totalProfitLoss,
+            monthlyDeposit:
+              cpfData.own
+                ?.monthlyContribution || 0,
 
-      totalReturnPercent,
+            interestRates:
+              cpfData.own
+                ?.interestRates || {},
 
-      /* Individual assets */
+            financialYear:
+              cpfData.financialYear,
 
-      mutualFundCurrentValue,
+          });
 
-      sgbValueWithInterest,
 
-      bondsValue,
+        // --------------------------------
+        // NVS CPF
+        // --------------------------------
 
-      bondsInvested,
+        const nvsCPF =
+          calculateNVSCPF({
 
-      bondsProfit,
+            openingBalance:
+              cpfData.nvs
+                ?.openingBalance || 0,
 
-      cpfValue,
+            basicPay:
+              cpfData.nvs
+                ?.basicPay || 0,
 
-      fdValue,
+            interestRates:
+              cpfData.nvs
+                ?.interestRates || {},
 
-      apyNpsValue,
+            financialYear:
+              cpfData.financialYear,
 
-      cryptoValue,
+          });
 
-      licValue,
 
-      etfStockValue,
+        // --------------------------------
+        // FINAL CPF VALUE
+        // --------------------------------
 
-    };
+        cpfValue =
+          ownCPF.closingBalance +
+          nvsCPF.closingBalance;
 
-  }, [
-    mutualFundHoldings,
-    sgbPortfolio,
-    bonds,
-  ]);
+      }
+
+
+      /* ==============================
+         OTHER ASSETS
+      ============================== */
+
+      const fdValue =
+        0;
+
+
+      const apyNpsValue =
+        0;
+
+
+      const cryptoValue =
+        0;
+
+
+      const licValue =
+        0;
+
+
+      const etfStockValue =
+        0;
+
+
+      /* ==============================
+         TOTAL INVESTED
+      ============================== */
+
+      const totalInvested =
+        mutualFundInvested +
+        sgbInvested +
+        bondsInvested;
+
+
+      /* ==============================
+         TOTAL CURRENT VALUE
+      ============================== */
+
+      const totalCurrentValue =
+        mutualFundCurrentValue +
+        sgbValueWithInterest +
+        bondsValue +
+        cpfValue +
+        fdValue +
+        apyNpsValue +
+        cryptoValue +
+        licValue +
+        etfStockValue;
+
+
+      /* ==============================
+         TOTAL PROFIT / LOSS
+      ============================== */
+
+      const totalProfitLoss =
+        mutualFundProfit +
+        sgbGain +
+        bondsProfit;
+
+
+      /* ==============================
+         TOTAL RETURN
+      ============================== */
+
+      const totalReturnPercent =
+        totalInvested > 0
+
+          ? (
+              totalProfitLoss /
+              totalInvested
+            ) * 100
+
+          : 0;
+
+
+      return {
+
+        totalInvested,
+
+        totalCurrentValue,
+
+        totalProfitLoss,
+
+        totalReturnPercent,
+
+
+        /* Individual assets */
+
+        mutualFundCurrentValue,
+
+        sgbValueWithInterest,
+
+        bondsValue,
+
+        bondsInvested,
+
+        bondsProfit,
+
+        cpfValue,
+
+        fdValue,
+
+        apyNpsValue,
+
+        cryptoValue,
+
+        licValue,
+
+        etfStockValue,
+
+      };
+
+
+    }, [
+
+      mutualFundHoldings,
+
+      sgbPortfolio,
+
+      bonds,
+
+      cpfData,
+
+    ]);
 
 
   const isProfit =
-    assetSummary.totalProfitLoss >= 0;
+    assetSummary.totalProfitLoss >=
+    0;
 
 
   /* --------------------------------
@@ -390,12 +624,16 @@ function PortfolioSummary() {
   -------------------------------- */
 
   if (
+
     mutualFundLoading ||
     sgbLoading ||
-    bondLoading
+    bondLoading ||
+    cpfLoading
+
   ) {
 
     return (
+
       <section
         className="
           overflow-hidden
@@ -408,7 +646,11 @@ function PortfolioSummary() {
         "
       >
 
-        <div className="animate-pulse">
+        <div
+          className="
+            animate-pulse
+          "
+        >
 
           <div
             className="
@@ -419,6 +661,7 @@ function PortfolioSummary() {
             "
           />
 
+
           <div
             className="
               mt-3
@@ -428,6 +671,7 @@ function PortfolioSummary() {
               bg-slate-700
             "
           />
+
 
           <div
             className="
@@ -459,6 +703,7 @@ function PortfolioSummary() {
         </div>
 
       </section>
+
     );
 
   }
@@ -469,6 +714,7 @@ function PortfolioSummary() {
   -------------------------------- */
 
   return (
+
     <section
       className="
         overflow-hidden
@@ -480,6 +726,7 @@ function PortfolioSummary() {
         sm:p-7
       "
     >
+
 
       {/* HEADER */}
 
@@ -493,9 +740,15 @@ function PortfolioSummary() {
 
         <div>
 
-          <p className="text-sm text-slate-300">
+          <p
+            className="
+              text-sm
+              text-slate-300
+            "
+          >
             Total portfolio value
           </p>
+
 
           <p
             className="
@@ -506,9 +759,11 @@ function PortfolioSummary() {
               sm:text-4xl
             "
           >
+
             {formatCurrency(
               assetSummary.totalCurrentValue
             )}
+
           </p>
 
         </div>
@@ -546,6 +801,7 @@ function PortfolioSummary() {
         "
       >
 
+
         {/* INVESTED */}
 
         <Stat
@@ -560,13 +816,22 @@ function PortfolioSummary() {
 
         <Stat
           label="Total P/L"
+
           value={`${
-            isProfit ? "+" : ""
+            isProfit
+              ? "+"
+              : ""
           }${formatCurrency(
             assetSummary.totalProfitLoss
           )}`}
-          positive={isProfit}
-          negative={!isProfit}
+
+          positive={
+            isProfit
+          }
+
+          negative={
+            !isProfit
+          }
         />
 
 
@@ -574,13 +839,22 @@ function PortfolioSummary() {
 
         <Stat
           label="Return"
+
           value={`${
-            isProfit ? "+" : ""
+            isProfit
+              ? "+"
+              : ""
           }${assetSummary.totalReturnPercent.toFixed(
             2
           )}%`}
-          positive={isProfit}
-          negative={!isProfit}
+
+          positive={
+            isProfit
+          }
+
+          negative={
+            !isProfit
+          }
         />
 
 
@@ -594,7 +868,9 @@ function PortfolioSummary() {
       </div>
 
     </section>
+
   );
+
 }
 
 
@@ -610,6 +886,7 @@ function Stat({
 }) {
 
   return (
+
     <div
       className="
         rounded-2xl
@@ -626,6 +903,7 @@ function Stat({
       >
         {label}
       </p>
+
 
       <p
         className={`
@@ -646,17 +924,22 @@ function Stat({
           }
 
           ${
-            !positive && !negative
+            !positive &&
+            !negative
               ? "text-white"
               : ""
           }
         `}
       >
+
         {value}
+
       </p>
 
     </div>
+
   );
+
 }
 
 

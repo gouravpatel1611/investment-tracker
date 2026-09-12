@@ -1,5 +1,7 @@
 import {
+  useEffect,
   useMemo,
+  useState,
 } from "react";
 
 import {
@@ -17,6 +19,15 @@ import {
 import {
   useDashboardSGB,
 } from "../../hooks/dashboard/useDashboardSGB";
+
+import {
+  getCPFRecord,
+} from "../../services/firebase/cpfService";
+
+import {
+  calculateCPF,
+  calculateNVSCPF,
+} from "../../utils/cpf/cpfCalculations";
 
 import {
   formatCurrency,
@@ -78,6 +89,69 @@ function AssetBreakdown({
 
 
   // ========================================
+  // CPF
+  // ========================================
+
+  const [
+    cpfData,
+    setCpfData,
+  ] = useState(null);
+
+
+  const [
+    cpfLoading,
+    setCpfLoading,
+  ] = useState(true);
+
+
+  useEffect(() => {
+
+    let mounted = true;
+
+
+    const loadCPF = async () => {
+
+      try {
+
+        setCpfLoading(true);
+
+        const data =
+          await getCPFRecord();
+
+
+        if (mounted) {
+          setCpfData(data);
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Failed to load CPF:",
+          error
+        );
+
+      } finally {
+
+        if (mounted) {
+          setCpfLoading(false);
+        }
+
+      }
+
+    };
+
+
+    loadCPF();
+
+
+    return () => {
+      mounted = false;
+    };
+
+  }, []);
+
+
+  // ========================================
   // MUTUAL FUND SUMMARY
   // ========================================
 
@@ -121,8 +195,97 @@ function AssetBreakdown({
   // ========================================
 
   const bondValue =
-    bondSummary.totalPrincipal +
-    bondSummary.interestReceived;
+    (
+      Number(
+        bondSummary.totalPrincipal
+      ) || 0
+    ) +
+    (
+      Number(
+        bondSummary.interestReceived
+      ) || 0
+    );
+
+
+  // ========================================
+  // CPF SUMMARY
+  // ========================================
+
+  const cpfSummary =
+    useMemo(() => {
+
+      if (!cpfData) {
+
+        return {
+          ownClosingBalance: 0,
+          nvsClosingBalance: 0,
+          totalClosingBalance: 0,
+        };
+
+      }
+
+
+      // ------------------------------------
+      // OWN CPF
+      // ------------------------------------
+
+      const ownCPF =
+        calculateCPF({
+
+          openingBalance:
+            cpfData.own?.openingBalance || 0,
+
+          monthlyDeposit:
+            cpfData.own?.monthlyContribution || 0,
+
+          interestRates:
+            cpfData.own?.interestRates || {},
+
+          financialYear:
+            cpfData.financialYear,
+
+        });
+
+
+      // ------------------------------------
+      // NVS CPF
+      // ------------------------------------
+
+      const nvsCPF =
+        calculateNVSCPF({
+
+          openingBalance:
+            cpfData.nvs?.openingBalance || 0,
+
+          basicPay:
+            cpfData.nvs?.basicPay || 0,
+
+          interestRates:
+            cpfData.nvs?.interestRates || {},
+
+          financialYear:
+            cpfData.financialYear,
+
+        });
+
+
+      return {
+
+        ownClosingBalance:
+          ownCPF.closingBalance,
+
+        nvsClosingBalance:
+          nvsCPF.closingBalance,
+
+        totalClosingBalance:
+          ownCPF.closingBalance +
+          nvsCPF.closingBalance,
+
+      };
+
+    }, [
+      cpfData,
+    ]);
 
 
   // ========================================
@@ -173,12 +336,12 @@ function AssetBreakdown({
               ...asset,
 
               value:
-                sgbData.summary
-                  .currentValueWithInterest,
+                sgbData?.summary
+                  ?.currentValueWithInterest || 0,
 
               holdings:
-                sgbData.summary
-                  .seriesCount,
+                sgbData?.summary
+                  ?.seriesCount || 0,
 
             };
 
@@ -210,6 +373,30 @@ function AssetBreakdown({
 
 
           // ----------------------------------
+          // CPF
+          // ----------------------------------
+
+          if (
+            asset.id ===
+            "cpf"
+          ) {
+
+            return {
+
+              ...asset,
+
+              value:
+                cpfSummary.totalClosingBalance,
+
+              holdings:
+                2,
+
+            };
+
+          }
+
+
+          // ----------------------------------
           // OTHER ASSETS
           // ----------------------------------
 
@@ -223,6 +410,7 @@ function AssetBreakdown({
       sgbData,
       bondValue,
       bonds,
+      cpfSummary,
     ]);
 
 
@@ -278,6 +466,23 @@ function AssetBreakdown({
 
         navigate(
           "/bonds"
+        );
+
+        return;
+      }
+
+
+      // --------------------------------------
+      // CPF
+      // --------------------------------------
+
+      if (
+        asset.id ===
+        "cpf"
+      ) {
+
+        navigate(
+          "/cpf"
         );
 
         return;
@@ -348,6 +553,11 @@ function AssetBreakdown({
               asset.id ===
               "bonds" &&
               bondLoading
+            ) ||
+            (
+              asset.id ===
+              "cpf" &&
+              cpfLoading
             );
 
 
