@@ -233,17 +233,7 @@ function PortfolioSummary() {
     //
     // Actual purchase amount
     //
-    const bondsInvested =
-      (bonds || []).reduce(
-        (total, bond) =>
-          total +
-          (
-            Number(
-              bond.purchaseValue
-            ) || 0
-          ),
-        0
-      );
+    const bondsInvested = bondSummary.totalPrincipal
 
 
     // --------------------------------
