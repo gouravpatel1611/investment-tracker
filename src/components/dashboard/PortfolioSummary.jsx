@@ -422,6 +422,7 @@ function PortfolioSummary() {
       ============================== */
 
       let cpfValue = 0;
+      let cpfProfit = 0;
 
 
       if (cpfData) {
@@ -485,6 +486,10 @@ function PortfolioSummary() {
           ownCPF.closingBalance +
           nvsCPF.closingBalance;
 
+        cpfProfit = 
+          ownCPF.totalInterest +
+          nvsCPF.totalInterest;
+
       }
 
 
@@ -531,6 +536,7 @@ function PortfolioSummary() {
         sgbValueWithInterest +
         bondsValue +
         cpfValue +
+        cpfProfit+
         fdValue +
         apyNpsValue +
         cryptoValue +
@@ -545,7 +551,8 @@ function PortfolioSummary() {
       const totalProfitLoss =
         mutualFundProfit +
         sgbGain +
-        bondsProfit;
+        bondsProfit+
+        cpfProfit;
 
 
       /* ==============================
@@ -587,7 +594,7 @@ function PortfolioSummary() {
         bondsProfit,
 
         cpfValue,
-
+        cpfProfit,
         fdValue,
 
         apyNpsValue,

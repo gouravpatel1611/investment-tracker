@@ -26,6 +26,9 @@ import Migration from "../pages/Migration";
 // CPF
 import CPF from "../pages/cpf/CPF";
 
+import IntFd from "../pages/intFd/IntFd"
+import IntFdForm from "../pages/intFd/IntFdForm"
+
 import ProtectedRoute from "./ProtectedRoute";
 
 function AppRoutes() {
@@ -107,6 +110,23 @@ function AppRoutes() {
             <Route
               path="/cpf"
               element={<CPF />}
+            />
+
+            <Route
+              path="/int-fd"
+              element={<IntFd />}
+            />
+
+            <Route
+              path="/int-fd/add"
+              element={<IntFdForm />}
+            />
+
+            <Route
+              path="/int-fd/edit/:fdId"
+              element={
+                <IntFdForm />
+              }
             />
 
             <Route

@@ -12,12 +12,18 @@ import{
   BondProvider
 } from "./context/BondContext";
 
+import {
+  IntFdProvider
+} from "./context/IntFdContext"
+
 function App() {
   return (
     <AuthProvider>
       <MutualFundProvider>
         <BondProvider>
-          <AppRoutes />
+             <IntFdProvider>
+                <AppRoutes />
+             </IntFdProvider>
         </BondProvider>
       </MutualFundProvider>
     </AuthProvider>
