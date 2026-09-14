@@ -1,21 +1,23 @@
 import {
   IndianRupee,
   WalletCards,
-  TrendingUp,
   UserRound,
   Building2,
+  TrendingUp,
 } from "lucide-react";
 
 import {
-  formatCurrency,
+  formatCurrencyRound,
 } from "../../../utils/cpf/cpfHelpers";
 
 
-function SummaryItem({
+
+function SummaryRow({
   label,
-  value,
-  icon,
+  closingBalance,
+  totalInterest,
   type = "default",
+  icon,
 }) {
   const styles = {
     own: {
@@ -25,8 +27,10 @@ function SummaryItem({
         "bg-blue-900/50 text-blue-300",
       label:
         "text-blue-300",
-      value:
+      closing:
         "text-blue-100",
+      interest:
+        "text-blue-200",
     },
 
     nvs: {
@@ -36,8 +40,10 @@ function SummaryItem({
         "bg-violet-900/50 text-violet-300",
       label:
         "text-violet-300",
-      value:
+      closing:
         "text-violet-100",
+      interest:
+        "text-violet-200",
     },
 
     total: {
@@ -47,8 +53,10 @@ function SummaryItem({
         "bg-emerald-900/50 text-emerald-300",
       label:
         "text-emerald-300",
-      value:
+      closing:
         "text-emerald-100",
+      interest:
+        "text-emerald-200",
     },
 
     default: {
@@ -58,8 +66,10 @@ function SummaryItem({
         "bg-slate-700 text-slate-300",
       label:
         "text-slate-400",
-      value:
+      closing:
         "text-slate-100",
+      interest:
+        "text-slate-200",
     },
   };
 
@@ -69,22 +79,28 @@ function SummaryItem({
   return (
     <div
       className={`
-        min-w-0
+        grid
+        grid-cols-[1.05fr_1fr_1fr]
+        items-center
+        gap-2
         rounded-xl
         border
-        px-3
-        py-3
+        px-2.5
+        py-2.5
+        sm:px-3
+        sm:py-3
         ${currentStyle.wrapper}
       `}
     >
+      {/* Name */}
       <div
         className="
           flex
+          min-w-0
           items-center
           gap-2
         "
       >
-        {/* Icon */}
         <div
           className={`
             flex
@@ -100,7 +116,6 @@ function SummaryItem({
           {icon}
         </div>
 
-        {/* Label */}
         <p
           className={`
             truncate
@@ -115,20 +130,63 @@ function SummaryItem({
         </p>
       </div>
 
-      {/* Value */}
-      <p
-        className={`
-          mt-2
-          truncate
-          text-base
-          font-bold
-          leading-tight
-          ${currentStyle.value}
-          sm:text-lg
-        `}
-      >
-        {formatCurrency(value)}
-      </p>
+
+      {/* Closing Balance */}
+      <div className="min-w-0">
+        <p
+          className="
+            text-[9px]
+            font-medium
+            text-slate-100
+            sm:text-[10px]
+          "
+        >
+          Closing
+        </p>
+
+        <p
+          className={`
+            mt-0.5
+            truncate
+            text-[12px]
+            font-bold
+            leading-tight
+            sm:text-sm
+            ${currentStyle.closing}
+          `}
+        >
+          {formatCurrencyRound(closingBalance)}
+        </p>
+      </div>
+
+
+      {/* Total Interest */}
+      <div className="min-w-0">
+        <p
+          className="
+            text-[9px]
+            font-medium
+            text-slate-100
+            sm:text-[10px]
+          "
+        >
+          Interest
+        </p>
+
+        <p
+          className={`
+            mt-0.5
+            truncate
+            text-[12px]
+            font-bold
+            leading-tight
+            sm:text-sm
+            ${currentStyle.interest}
+          `}
+        >
+          {formatCurrencyRound(totalInterest)}
+        </p>
+      </div>
     </div>
   );
 }
@@ -136,8 +194,12 @@ function SummaryItem({
 
 export default function CFPSummaryCard({
   ownClosingBalance = 0,
+
   nvsClosingBalance = 0,
+
   totalClosingBalance = 0,
+  ownInterest =0,
+  nvsInterest =0,
   financialYear,
 }) {
   return (
@@ -207,7 +269,7 @@ export default function CFPSummaryCard({
                   sm:text-lg
                 "
               >
-                CPF Summary
+                CPF SUMMARY
               </h2>
 
               <p
@@ -234,7 +296,7 @@ export default function CFPSummaryCard({
               justify-center
               rounded-xl
               bg-slate-800
-              text-slate-400
+              text-slate-100
             "
           >
             <IndianRupee size={17} />
@@ -244,25 +306,27 @@ export default function CFPSummaryCard({
       </div>
 
 
+
+
+
       {/* =====================================================
-          SUMMARY FIELDS
+          SUMMARY ROWS
       ====================================================== */}
       <div
         className="
-          grid
-          grid-cols-2
-          gap-2.5
+          space-y-2
           p-3.5
-          sm:grid-cols-3
-          sm:gap-3
+          pt-2
           sm:p-4
+          sm:pt-2
         "
       >
 
         {/* Own CPF */}
-        <SummaryItem
+        <SummaryRow
           label="Own CPF"
-          value={ownClosingBalance}
+          closingBalance={ownClosingBalance}
+          totalInterest={ownInterest}
           type="own"
           icon={
             <UserRound size={14} />
@@ -271,9 +335,10 @@ export default function CFPSummaryCard({
 
 
         {/* NVS CPF */}
-        <SummaryItem
+        <SummaryRow
           label="NVS CPF"
-          value={nvsClosingBalance}
+          closingBalance={nvsClosingBalance}
+          totalInterest={nvsInterest}
           type="nvs"
           icon={
             <Building2 size={14} />
@@ -282,21 +347,15 @@ export default function CFPSummaryCard({
 
 
         {/* Total */}
-        <div
-          className="
-            col-span-2
-            sm:col-span-1
-          "
-        >
-          <SummaryItem
-            label="Total Closing Balance"
-            value={totalClosingBalance}
-            type="total"
-            icon={
-              <TrendingUp size={14} />
-            }
-          />
-        </div>
+        <SummaryRow
+          label="Total"
+          closingBalance={totalClosingBalance}
+          totalInterest={ownInterest + nvsInterest}
+          type="total"
+          icon={
+            <TrendingUp size={14} />
+          }
+        />
 
       </div>
 
@@ -329,7 +388,7 @@ export default function CFPSummaryCard({
         />
 
         <span>
-          Combined CPF balance for FY{" "}
+          Combined CPF balance & interest for FY{" "}
           {financialYear}
         </span>
       </div>

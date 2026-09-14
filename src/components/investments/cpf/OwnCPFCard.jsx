@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import {
-  formatCurrency,
+  formatCurrencyRound,
   formatDate,
   formatPercent,
 } from "../../../utils/cpf/cpfHelpers";
@@ -281,12 +281,138 @@ export default function OwnCPFCard({
         </div>
 
 
+
+      </div>
+
+
+      {/* =====================================================
+          DETAILS - 2 COLUMN
+      ====================================================== */}
+      <div
+        className="
+          grid
+          grid-cols-2
+          gap-2.5
+          p-3.5
+          sm:gap-3
+          sm:p-4
+        "
+      >
+
+        {/* Opening Balance */}
+        <InfoItem
+          label="Opening BAL"
+          value={formatCurrencyRound(
+            data?.openingBalance
+          )}
+          type="opening"
+          icon={
+            <Landmark size={13} />
+          }
+        />
+
+
+        {/* Opening Date */}
+        <InfoItem
+          label="AS ON"
+          value={formatDate(
+            data?.openingDate
+          )}
+          type="date"
+          icon={
+            <CalendarDays size={13} />
+          }
+        />
+
+
+        {/* Interest on Opening */}
+        <InfoItem
+          label="Int. ON OPENING"
+          value={formatCurrencyRound(
+            calculation?.interestOnOpeningBalance
+          )}
+          type="interest"
+          icon={
+            <Percent size={13} />
+          }
+        />
+
+
+        {/* Monthly Contribution */}
+        <InfoItem
+          label="Monthly"
+          value={formatCurrencyRound(
+            data?.monthlyContribution
+          )}
+          type="contribution"
+          icon={
+            <Wallet size={13} />
+          }
+        />
+
+
+
+
+        {/* Interest on Deposit */}
+        <InfoItem
+          label="Int. ON Deposit"
+          value={formatCurrencyRound(
+            calculation?.interestOnDeposits
+          )}
+          type="interest"
+          icon={
+            <Percent size={13} />
+          }
+        />
+        
+        {/* Deposit During Year */}
+        <InfoItem
+          label="Year Deposit"
+          value={formatCurrencyRound(
+            calculation?.totalDeposit
+          )}
+          type="deposit"
+          icon={
+            <Wallet size={13} />
+          }
+        />
+
+        {/* Total Interest */}
+        <InfoItem
+          label="Total Interest"
+          value={formatCurrencyRound(
+            calculation?.totalInterest
+          )}
+          type="interest"
+          icon={
+            <PiggyBank size={13} />
+          }
+        />
+
+
+
+
+        {/* Closing Date */}
+        <InfoItem
+          label="Closing AS ON"
+          value={formatDate(
+            data?.closingDate
+          )}
+          type="date"
+          icon={
+            <CalendarDays size={13} />
+          }
+        />
+
+      </div>
+
         {/* =================================================
             CLOSING BALANCE
         ================================================== */}
         <div
           className="
-            mt-4
+            my-2
+            mx-3
             rounded-xl
             border
             border-blue-800/60
@@ -317,7 +443,7 @@ export default function OwnCPFCard({
                   text-blue-300/80
                 "
               >
-                Closing
+                Closing BALANCE
               </p>
 
               <p
@@ -330,7 +456,7 @@ export default function OwnCPFCard({
                   sm:text-2xl
                 "
               >
-                {formatCurrency(
+                {formatCurrencyRound(
                   calculation?.closingBalance
                 )}
               </p>
@@ -371,8 +497,10 @@ export default function OwnCPFCard({
               <p
                 className="
                   mt-1.5
-                  text-[10px]
-                  text-slate-500
+                  text-[15px]
+                  text-slate-100
+                  font-medium
+                  tracking-wide
                 "
               >
                 {formatDate(
@@ -383,128 +511,6 @@ export default function OwnCPFCard({
 
           </div>
         </div>
-      </div>
-
-
-      {/* =====================================================
-          DETAILS - 2 COLUMN
-      ====================================================== */}
-      <div
-        className="
-          grid
-          grid-cols-2
-          gap-2.5
-          p-3.5
-          sm:gap-3
-          sm:p-4
-        "
-      >
-
-        {/* Opening Balance */}
-        <InfoItem
-          label="Opening"
-          value={formatCurrency(
-            data?.openingBalance
-          )}
-          type="opening"
-          icon={
-            <Landmark size={13} />
-          }
-        />
-
-
-        {/* Opening Date */}
-        <InfoItem
-          label="Open Date"
-          value={formatDate(
-            data?.openingDate
-          )}
-          type="date"
-          icon={
-            <CalendarDays size={13} />
-          }
-        />
-
-
-        {/* Interest on Opening */}
-        <InfoItem
-          label="Opening Int."
-          value={formatCurrency(
-            calculation?.interestOnOpeningBalance
-          )}
-          type="interest"
-          icon={
-            <Percent size={13} />
-          }
-        />
-
-
-        {/* Deposit During Year */}
-        <InfoItem
-          label="Year Deposit"
-          value={formatCurrency(
-            calculation?.totalDeposit
-          )}
-          type="deposit"
-          icon={
-            <Wallet size={13} />
-          }
-        />
-
-
-        {/* Interest on Deposit */}
-        <InfoItem
-          label="Deposit Int."
-          value={formatCurrency(
-            calculation?.interestOnDeposits
-          )}
-          type="interest"
-          icon={
-            <Percent size={13} />
-          }
-        />
-
-
-        {/* Total Interest */}
-        <InfoItem
-          label="Total Int."
-          value={formatCurrency(
-            calculation?.totalInterest
-          )}
-          type="interest"
-          icon={
-            <PiggyBank size={13} />
-          }
-        />
-
-
-        {/* Monthly Contribution */}
-        <InfoItem
-          label="Monthly"
-          value={formatCurrency(
-            data?.monthlyContribution
-          )}
-          type="contribution"
-          icon={
-            <Wallet size={13} />
-          }
-        />
-
-
-        {/* Closing Date */}
-        <InfoItem
-          label="Close Date"
-          value={formatDate(
-            data?.closingDate
-          )}
-          type="date"
-          icon={
-            <CalendarDays size={13} />
-          }
-        />
-
-      </div>
-
 
       {/* =====================================================
           MONTHLY EXPANDABLE SECTION

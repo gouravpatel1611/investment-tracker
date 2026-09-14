@@ -632,6 +632,13 @@ export default function CPF() {
             totalClosingBalance={
               summary.totalClosingBalance
             }
+
+            ownInterest = {
+              ownCalculation.totalInterest
+            }
+            nvsInterest = {
+              nvsCalculation.totalInterest
+            }
           />
 
 

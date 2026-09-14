@@ -11,6 +11,15 @@ export function formatCurrency(
   ).format(Number(value) || 0);
 }
 
+export function formatCurrencyRound(value = 0) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Math.round(Number(value) || 0));
+}
+
+
 export function formatNumber(
   value = 0
 ) {

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import {
-  formatCurrency,
+  formatCurrencyRound,
   formatDate,
   formatPercent,
 } from "../../../utils/cpf/cpfHelpers";
@@ -318,13 +318,113 @@ export default function NVSCPFCard({
           </button>
         </div>
 
-        {/* =================================================
+
+      </div>
+
+      {/* =====================================================
+          DETAILS
+      ====================================================== */}
+
+      <div
+        className="
+          grid
+          grid-cols-2
+          gap-2.5
+          p-3.5
+          sm:gap-3
+          sm:p-4
+        "
+      >
+        {/* 1. OPENING BALANCE */}
+
+        <InfoItem
+          label="OPENING BAL"
+          value={formatCurrencyRound(
+            data?.openingBalance
+          )}
+          type="opening"
+          icon={
+            <Landmark size={13} />
+          }
+        />
+
+        {/* 2. OPENING DATE */}
+
+        <InfoItem
+          label="AS ON"
+          value={formatDate(
+            data?.openingDate
+          )}
+          type="date"
+          icon={
+            <CalendarDays size={13} />
+          }
+        />
+
+        {/* 3. OPENING INTEREST */}
+
+        <InfoItem
+          label="INT ON OPENING"
+          value={formatCurrencyRound(
+            openingInterest
+          )}
+          type="interest"
+          icon={
+            <Percent size={13} />
+          }
+        />
+
+        {/* 4. BASIC PAY */}
+
+        <InfoItem
+          label="Basic Pay"
+          value={formatCurrencyRound(
+            data?.basicPay
+          )}
+          type="pay"
+          icon={
+            <BriefcaseBusiness
+              size={13}
+            />
+          }
+        />
+
+        {/* 5. MONTHLY CONTRIBUTION */}
+
+        <InfoItem
+          label="Contribution"
+          value={formatCurrencyRound(
+            monthlyContribution
+          )}
+          type="contribution"
+          icon={
+            <Wallet size={13} />
+          }
+        />
+
+        {/* 6. YEAR CONTRIBUTION */}
+
+        <InfoItem
+          label="G Contribution"
+          value={formatCurrencyRound(
+            annualContribution
+          )}
+          type="deposit"
+          icon={
+            <Wallet size={13} />
+          }
+        />
+
+
+      </div>
+
+              {/* =================================================
             CLOSING BALANCE
         ================================================== */}
 
         <div
           className="
-            mt-4
+            m-3
             rounded-xl
             border
             border-violet-800/60
@@ -355,7 +455,7 @@ export default function NVSCPFCard({
                   text-violet-300/80
                 "
               >
-                Closing
+                Closing BALANCE
               </p>
 
               <p
@@ -368,7 +468,7 @@ export default function NVSCPFCard({
                   sm:text-2xl
                 "
               >
-                {formatCurrency(
+                {formatCurrencyRound(
                   calculation?.closingBalance
                 )}
               </p>
@@ -409,8 +509,10 @@ export default function NVSCPFCard({
               <p
                 className="
                   mt-1.5
-                  text-[10px]
-                  text-slate-500
+                  text-[15px]
+                  text-slate-100
+                  font-medium
+                  tracking-wide
                 "
               >
                 {formatDate(
@@ -420,115 +522,7 @@ export default function NVSCPFCard({
             </div>
           </div>
         </div>
-      </div>
 
-      {/* =====================================================
-          DETAILS
-      ====================================================== */}
-
-      <div
-        className="
-          grid
-          grid-cols-2
-          gap-2.5
-          p-3.5
-          sm:gap-3
-          sm:p-4
-        "
-      >
-        {/* 1. OPENING BALANCE */}
-
-        <InfoItem
-          label="Opening"
-          value={formatCurrency(
-            data?.openingBalance
-          )}
-          type="opening"
-          icon={
-            <Landmark size={13} />
-          }
-        />
-
-        {/* 2. OPENING DATE */}
-
-        <InfoItem
-          label="Open Date"
-          value={formatDate(
-            data?.openingDate
-          )}
-          type="date"
-          icon={
-            <CalendarDays size={13} />
-          }
-        />
-
-        {/* 3. OPENING INTEREST */}
-
-        <InfoItem
-          label="Opening Int."
-          value={formatCurrency(
-            openingInterest
-          )}
-          type="interest"
-          icon={
-            <Percent size={13} />
-          }
-        />
-
-        {/* 4. BASIC PAY */}
-
-        <InfoItem
-          label="Basic Pay"
-          value={formatCurrency(
-            data?.basicPay
-          )}
-          type="pay"
-          icon={
-            <BriefcaseBusiness
-              size={13}
-            />
-          }
-        />
-
-        {/* 5. MONTHLY CONTRIBUTION */}
-
-        <InfoItem
-          label="Monthly Contribution"
-          value={formatCurrency(
-            monthlyContribution
-          )}
-          type="contribution"
-          icon={
-            <Wallet size={13} />
-          }
-        />
-
-        {/* 6. YEAR CONTRIBUTION */}
-
-        <InfoItem
-          label="Year Contribution"
-          value={formatCurrency(
-            annualContribution
-          )}
-          type="deposit"
-          icon={
-            <Wallet size={13} />
-          }
-        />
-
-        {/* 7. CLOSE DATE */}
-
-        <InfoItem
-          label="Close Date"
-          value={formatDate(
-            data?.closingDate
-          )}
-          type="date"
-          icon={
-            <CalendarDays size={13} />
-          }
-        />
-      </div>
     </section>
   );
 }
