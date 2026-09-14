@@ -78,20 +78,6 @@ function Dashboard() {
       </section>
 
 
-      {/* ASSET ALLOCATION */}
-      <section className="surface p-4 sm:p-5">
-
-        <SectionHeader
-          title="Asset allocation"
-          subtitle="Current portfolio mix"
-        />
-
-        <div className="mt-5">
-          <AssetAllocation />
-        </div>
-
-      </section>
-
 
      
 

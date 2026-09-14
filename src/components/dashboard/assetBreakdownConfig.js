@@ -94,62 +94,7 @@ export const assetBreakdownConfig = [
   },
 
 
-  // ========================================
-  // APY NPS
-  // ========================================
 
-  {
-    id:
-      "apyNps",
-
-    name:
-      "APY-NPS",
-
-    type:
-      "PENSION",
-
-    icon:
-      CircleGauge,
-
-    iconClass:
-      "bg-pink-500/15 text-pink-300",
-
-    value:
-      0,
-
-    holdings:
-      0,
-
-  },
-
-
-  // ========================================
-  // CRYPTO
-  // ========================================
-
-  {
-    id:
-      "crypto",
-
-    name:
-      "CRYPTO",
-
-    type:
-      "Digital Assets",
-
-    icon:
-      Bitcoin,
-
-    iconClass:
-      "bg-violet-500/15 text-violet-300",
-
-    value:
-      0,
-
-    holdings:
-      0,
-
-  },
 
 
   // ========================================
@@ -213,7 +158,7 @@ export const assetBreakdownConfig = [
       "lic",
 
     name:
-      "LIC-PLI",
+      "LIC-PLI-OTHER",
 
     type:
       "Life & Postal Insurance",
