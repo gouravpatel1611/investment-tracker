@@ -20,6 +20,11 @@ import {
 } from "./context/LicPliContext";
 import { SGBProvider } from "./context/SGBContext";
 
+import {
+  ETFStockProvider,
+} from "./context/ETFStockContext";
+
+
 
 function App() {
   return (
@@ -29,7 +34,9 @@ function App() {
              <IntFdProvider>
                 <LicPliProvider>
                     <SGBProvider>
+                      <ETFStockProvider>
                         <AppRoutes />
+                      </ETFStockProvider>
                     </SGBProvider>
                 </LicPliProvider>
              </IntFdProvider>

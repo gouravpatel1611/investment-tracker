@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Navigate,
@@ -11,12 +12,16 @@ import Dashboard from "../pages/Dashboard";
 import Portfolio from "../pages/Portfolio";
 import Transactions from "../pages/Transactions";
 import Settings from "../pages/Settings";
+
 import MutualFunds from "../pages/MutualFunds";
 import MutualFundForm from "../components/investments/mutualFunds/MutualFundForm";
 import MutualFundDetails from "../pages/MutualFundDetails";
+
 import Login from "../pages/Login";
+
 import SGB from "../pages/investments/SGB";
 import AddSGB from "../pages/investments/AddSGB";
+
 import AddBond from "../pages/bonds/AddBond";
 import Bonds from "../pages/bonds/Bonds";
 import BondDetails from "../pages/bonds/BondDetails";
@@ -26,19 +31,18 @@ import Migration from "../pages/Migration";
 // CPF
 import CPF from "../pages/cpf/CPF";
 
-import IntFd from "../pages/intFd/IntFd"
-import IntFdForm from "../pages/intFd/IntFdForm"
-
+import IntFd from "../pages/intFd/IntFd";
+import IntFdForm from "../pages/intFd/IntFdForm";
 
 import LicPli from "../pages/licPli/LicPli";
 import LicPliForm from "../pages/licPli/LicPliForm";
 
-
-
+// ETF / Stock
+import ETFStock from "../pages/etfStock/ETFStock";
+import ETFStockDetails from "../pages/etfStock/ETFStockDetails";
+import ETFStockTransactionForm from "../components/etfStock/ETFStockTransactionForm"
 
 import ProtectedRoute from "./ProtectedRoute";
-
-
 
 function AppRoutes() {
   return (
@@ -46,6 +50,7 @@ function AppRoutes() {
       <Routes>
 
         {/* Protected App */}
+
         <Route element={<ProtectedRoute />}>
 
           <Route element={<AppShell />}>
@@ -65,6 +70,10 @@ function AppRoutes() {
               element={<Portfolio />}
             />
 
+            {/* -----------------------------
+                MUTUAL FUNDS
+            ----------------------------- */}
+
             <Route
               path="/mutual-funds"
               element={<MutualFunds />}
@@ -80,6 +89,29 @@ function AppRoutes() {
               element={<MutualFundForm />}
             />
 
+            {/* -----------------------------
+                ETF / STOCK
+            ----------------------------- */}
+
+            <Route
+              path="/etf-stock"
+              element={<ETFStock />}
+            />
+
+            <Route
+              path="/etf-stock/:symbol"
+              element={<ETFStockDetails />}
+            />
+            <Route
+              path="/etf-stock/add"
+              element={<ETFStockTransactionForm />}
+            />
+
+
+            {/* -----------------------------
+                TRANSACTIONS
+            ----------------------------- */}
+
             <Route
               path="/transactions"
               element={<Transactions />}
@@ -90,6 +122,10 @@ function AppRoutes() {
               element={<Settings />}
             />
 
+            {/* -----------------------------
+                SGB
+            ----------------------------- */}
+
             <Route
               path="/sgb"
               element={<SGB />}
@@ -99,6 +135,10 @@ function AppRoutes() {
               path="/sgb/add"
               element={<AddSGB />}
             />
+
+            {/* -----------------------------
+                BONDS
+            ----------------------------- */}
 
             <Route
               path="/bonds/add"
@@ -115,11 +155,18 @@ function AppRoutes() {
               element={<BondDetails />}
             />
 
-            {/* CPF */}
+            {/* -----------------------------
+                CPF
+            ----------------------------- */}
+
             <Route
               path="/cpf"
               element={<CPF />}
             />
+
+            {/* -----------------------------
+                INT / FD
+            ----------------------------- */}
 
             <Route
               path="/int-fd"
@@ -133,11 +180,12 @@ function AppRoutes() {
 
             <Route
               path="/int-fd/edit/:fdId"
-              element={
-                <IntFdForm />
-              }
+              element={<IntFdForm />}
             />
 
+            {/* -----------------------------
+                LIC / PLI
+            ----------------------------- */}
 
             <Route
               path="/lic-pli"
@@ -154,6 +202,10 @@ function AppRoutes() {
               element={<LicPliForm />}
             />
 
+            {/* -----------------------------
+                FALLBACK
+            ----------------------------- */}
+
             <Route
               path="*"
               element={
@@ -168,6 +220,8 @@ function AppRoutes() {
 
         </Route>
 
+        {/* LOGIN */}
+
         <Route
           path="/login"
           element={<Login />}
@@ -179,3 +233,4 @@ function AppRoutes() {
 }
 
 export default AppRoutes;
+
