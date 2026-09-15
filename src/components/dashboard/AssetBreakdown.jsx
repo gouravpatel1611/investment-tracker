@@ -571,6 +571,22 @@ function AssetBreakdown({
         return;
       }
 
+      // --------------------------------------
+      // etf-stock
+      // --------------------------------------
+
+      if (
+        asset.id ===
+        "etfStock"
+      ) {
+
+        navigate(
+          "/etf-stock"
+        );
+
+        return;
+      }
+
 
       // --------------------------------------
       // OTHER ASSETS
