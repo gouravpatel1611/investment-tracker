@@ -34,6 +34,11 @@ import {
 } from "../../utils/bondCalculations";
 
 
+import {
+  useLicPli,
+} from "../../context/LicPliContext";
+
+
 function formatCurrency(value) {
 
   return new Intl.NumberFormat(
@@ -262,6 +267,34 @@ function PortfolioSummary() {
     };
 
   }, []);
+
+
+
+
+
+    /* ==============================
+   LIC / PLI / OTHER
+============================== */
+      const {
+    policies: licPliPolicies,
+    loading: licPliLoading,
+  } = useLicPli();
+
+
+  const licPliTotalPaid =
+    (licPliPolicies || []).reduce(
+      (total, policy) =>
+        total +
+        (
+          Number(
+            policy.totalPaid
+          ) || 0
+        ),
+      0
+    );
+
+
+
 
 
   /* --------------------------------
@@ -524,7 +557,10 @@ function PortfolioSummary() {
       const totalInvested =
         mutualFundInvested +
         sgbInvested +
-        bondsInvested;
+        bondsInvested+
+        cpfValue+
+        fdValue+
+        licPliTotalPaid;
 
 
       /* ==============================
@@ -538,8 +574,6 @@ function PortfolioSummary() {
         cpfValue +
         cpfProfit+
         fdValue +
-        apyNpsValue +
-        cryptoValue +
         licValue +
         etfStockValue;
 

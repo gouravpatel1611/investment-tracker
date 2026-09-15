@@ -18,6 +18,7 @@ import {
 import {
   LicPliProvider
 } from "./context/LicPliContext";
+import { SGBProvider } from "./context/SGBContext";
 
 
 function App() {
@@ -27,7 +28,9 @@ function App() {
         <BondProvider>
              <IntFdProvider>
                 <LicPliProvider>
-                  <AppRoutes />
+                    <SGBProvider>
+                        <AppRoutes />
+                    </SGBProvider>
                 </LicPliProvider>
              </IntFdProvider>
         </BondProvider>

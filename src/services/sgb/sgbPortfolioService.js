@@ -1,5 +1,10 @@
-import { getSGBTransactions } from "../firebase/sgbService";
-import { findSGBBySeriesCode } from "../api/sgbService";
+import {
+  getSGBTransactions,
+} from "../firebase/sgbService";
+
+import {
+  findSGBsBySeriesCodes,
+} from "../api/sgbService";
 
 // ==========================================================
 // HELPERS
@@ -8,11 +13,15 @@ import { findSGBBySeriesCode } from "../api/sgbService";
 const toNumber = (value) => {
   const number = Number(value);
 
-  return Number.isFinite(number) ? number : 0;
+  return Number.isFinite(number)
+    ? number
+    : 0;
 };
 
 const round = (value) => {
-  return Number(Number(value).toFixed(2));
+  return Number(
+    Number(value).toFixed(2)
+  );
 };
 
 // ==========================================================
@@ -22,12 +31,16 @@ const round = (value) => {
 const emptySummary = {
   seriesCount: 0,
   units: 0,
+
   purchaseRate: 0,
   purchaseValue: 0,
+
   currentRate: 0,
   currentValue: 0,
+
   profit: 0,
   interest: 0,
+
   gain: 0,
   totalGainPercent: 0,
 };
@@ -40,16 +53,12 @@ const emptySummary = {
 // 2.5% yearly
 // Credit every 6 months
 //
+// Interest calculation rate:
+// Purchase Rate + ₹50 per gram
+//
 // IMPORTANT:
-// Interest calculation ke liye purchase rate me
-// ₹50 per gram add kiya ja raha hai.
-//
-// Example:
-// Purchase Rate = ₹5147
-// Interest Rate = ₹5197
-//
-// Actual Purchase Value change nahi hoti.
-// ₹50 sirf interest calculation ke liye add hota hai.
+// Actual purchase value change nahi hoti.
+// ₹50 sirf interest calculation ke liye use hota hai.
 // ==========================================================
 
 const calculateInterest = (
@@ -57,10 +66,17 @@ const calculateInterest = (
   issueDate,
   units
 ) => {
-  const amount = toNumber(purchaseValue);
-  const gram = toNumber(units);
+  const amount =
+    toNumber(purchaseValue);
 
-  if (!amount || !gram || !issueDate) {
+  const gram =
+    toNumber(units);
+
+  if (
+    !amount ||
+    !gram ||
+    !issueDate
+  ) {
     return 0;
   }
 
@@ -87,22 +103,28 @@ const calculateInterest = (
     interestRate * gram;
 
   // --------------------------------------------------------
-  // Dates
+  // Start date
   // --------------------------------------------------------
 
   const startDate =
-    new Date(`${issueDate}T00:00:00`);
+    new Date(
+      `${issueDate}T00:00:00`
+    );
 
   const today =
     new Date();
 
   if (
-    Number.isNaN(startDate.getTime())
+    Number.isNaN(
+      startDate.getTime()
+    )
   ) {
     return 0;
   }
 
-  if (today <= startDate) {
+  if (
+    today <= startDate
+  ) {
     return 0;
   }
 
@@ -111,15 +133,21 @@ const calculateInterest = (
   // --------------------------------------------------------
 
   let halfYearPeriods =
-    (today.getFullYear() -
-      startDate.getFullYear()) *
+    (
+      today.getFullYear() -
+      startDate.getFullYear()
+    ) *
       2 +
-    (today.getMonth() -
-      startDate.getMonth()) /
+    (
+      today.getMonth() -
+      startDate.getMonth()
+    ) /
       6;
 
   halfYearPeriods =
-    Math.floor(halfYearPeriods);
+    Math.floor(
+      halfYearPeriods
+    );
 
   // --------------------------------------------------------
   // Exact date check
@@ -133,11 +161,15 @@ const calculateInterest = (
       halfYearPeriods * 6
   );
 
-  if (anniversary > today) {
+  if (
+    anniversary > today
+  ) {
     halfYearPeriods -= 1;
   }
 
-  if (halfYearPeriods <= 0) {
+  if (
+    halfYearPeriods <= 0
+  ) {
     return 0;
   }
 
@@ -147,10 +179,10 @@ const calculateInterest = (
   // --------------------------------------------------------
 
   const halfYearInterest =
-    interestBase * 0.025 / 2;
+    (interestBase * 0.025) / 2;
 
   // --------------------------------------------------------
-  // Total Interest
+  // Total interest
   // --------------------------------------------------------
 
   return round(
@@ -172,16 +204,22 @@ const calculateSGB = (
   // --------------------------------------------------------
 
   const units =
-    toNumber(transaction.units);
+    toNumber(
+      transaction.units
+    );
 
   const purchaseRate =
-    toNumber(transaction.purchaseRate);
+    toNumber(
+      transaction.purchaseRate
+    );
 
   const purchaseValue =
-    toNumber(transaction.purchaseValue);
+    toNumber(
+      transaction.purchaseValue
+    );
 
   // --------------------------------------------------------
-  // Current market rate from API
+  // Current market rate from NSE
   // --------------------------------------------------------
 
   const currentRate =
@@ -205,7 +243,7 @@ const calculateSGB = (
     purchaseValue;
 
   // --------------------------------------------------------
-  // Interest received
+  // Interest
   // --------------------------------------------------------
 
   const interest =
@@ -223,23 +261,28 @@ const calculateSGB = (
     profit + interest;
 
   // --------------------------------------------------------
-  // Total gain percentage
+  // Total gain %
   // --------------------------------------------------------
 
   const totalGainPercent =
     purchaseValue > 0
-      ? (gain / purchaseValue) * 100
+      ? (
+          gain /
+          purchaseValue
+        ) * 100
       : 0;
 
   // --------------------------------------------------------
-  // FINAL DATA FOR CARD
+  // Final holding
   // --------------------------------------------------------
 
   return {
-    id: transaction.id,
+    id:
+      transaction.id,
 
     seriesNo:
-      transaction.seriesCode || "",
+      transaction.seriesCode ||
+      "",
 
     units:
       round(units),
@@ -269,10 +312,12 @@ const calculateSGB = (
       round(totalGainPercent),
 
     issueDate:
-      transaction.issueDate || "",
+      transaction.issueDate ||
+      "",
 
     maturityDate:
-      transaction.maturityDate || "",
+      transaction.maturityDate ||
+      "",
   };
 };
 
@@ -300,7 +345,9 @@ const calculateSummary = (
     holdings.reduce(
       (total, item) =>
         total +
-        toNumber(item.units),
+        toNumber(
+          item.units
+        ),
       0
     );
 
@@ -340,7 +387,9 @@ const calculateSummary = (
     holdings.reduce(
       (total, item) =>
         total +
-        toNumber(item.profit),
+        toNumber(
+          item.profit
+        ),
       0
     );
 
@@ -352,7 +401,9 @@ const calculateSummary = (
     holdings.reduce(
       (total, item) =>
         total +
-        toNumber(item.interest),
+        toNumber(
+          item.interest
+        ),
       0
     );
 
@@ -364,7 +415,9 @@ const calculateSummary = (
     holdings.reduce(
       (total, item) =>
         total +
-        toNumber(item.gain),
+        toNumber(
+          item.gain
+        ),
       0
     );
 
@@ -374,7 +427,8 @@ const calculateSummary = (
 
   const purchaseRate =
     units > 0
-      ? purchaseValue / units
+      ? purchaseValue /
+        units
       : 0;
 
   // --------------------------------------------------------
@@ -383,7 +437,8 @@ const calculateSummary = (
 
   const currentRate =
     units > 0
-      ? currentValue / units
+      ? currentValue /
+        units
       : 0;
 
   // --------------------------------------------------------
@@ -392,11 +447,14 @@ const calculateSummary = (
 
   const totalGainPercent =
     purchaseValue > 0
-      ? (gain / purchaseValue) * 100
+      ? (
+          gain /
+          purchaseValue
+        ) * 100
       : 0;
 
   // --------------------------------------------------------
-  // FINAL SUMMARY
+  // Final summary
   // --------------------------------------------------------
 
   return {
@@ -428,7 +486,9 @@ const calculateSummary = (
       round(gain),
 
     totalGainPercent:
-      round(totalGainPercent),
+      round(
+        totalGainPercent
+      ),
   };
 };
 
@@ -436,94 +496,110 @@ const calculateSummary = (
 // MAIN FUNCTION
 // ==========================================================
 
-export const getSGBPortfolio = async () => {
-  // --------------------------------------------------------
-  // Get transactions from Firebase
-  // --------------------------------------------------------
+export const getSGBPortfolio =
+  async () => {
+    // ------------------------------------------------------
+    // Get Firebase transactions
+    // ------------------------------------------------------
 
-  const transactions =
-    await getSGBTransactions();
+    const transactions =
+      await getSGBTransactions();
 
-  // --------------------------------------------------------
-  // No data
-  // --------------------------------------------------------
+    // ------------------------------------------------------
+    // No transactions
+    // ------------------------------------------------------
 
-  if (
-    !transactions ||
-    transactions.length === 0
-  ) {
-    return {
-      holdings: [],
-      summary: {
-        ...emptySummary,
-      },
-    };
-  }
+    if (
+      !transactions ||
+      transactions.length === 0
+    ) {
+      return {
+        holdings: [],
 
-  // --------------------------------------------------------
-  // Calculate every SGB
-  // --------------------------------------------------------
+        summary: {
+          ...emptySummary,
+        },
+      };
+    }
 
-  const holdings = [];
+    // ------------------------------------------------------
+    // Get unique series codes
+    // ------------------------------------------------------
 
-  for (
-    const transaction of transactions
-  ) {
+    const seriesCodes = [
+      ...new Set(
+        transactions
+          .map(
+            (transaction) =>
+              transaction.seriesCode
+          )
+          .filter(Boolean)
+      ),
+    ];
+
+    // ------------------------------------------------------
+    // ONE NSE REQUEST FOR ALL SERIES
+    // ------------------------------------------------------
+
+    let marketDataMap = {};
+
     try {
-      // Get current market data
-      const apiData =
-        await findSGBBySeriesCode(
-          transaction.seriesCode
+      marketDataMap =
+        await findSGBsBySeriesCodes(
+          seriesCodes
         );
-
-      // Calculate final data
-      const calculatedSGB =
-        calculateSGB(
-          transaction,
-          apiData
-        );
-
-      holdings.push(
-        calculatedSGB
-      );
-
     } catch (error) {
       console.error(
-        `Failed to fetch SGB: ${transaction.seriesCode}`,
+        "Failed to fetch SGB market data:",
         error
       );
-
-      // API fail hone par bhi holding show hogi
-      const calculatedSGB =
-        calculateSGB(
-          transaction,
-          null
-        );
-
-      holdings.push(
-        calculatedSGB
-      );
     }
-  }
 
-  // --------------------------------------------------------
-  // Summary
-  // --------------------------------------------------------
+    // ------------------------------------------------------
+    // Calculate every SGB
+    // ------------------------------------------------------
 
-  const summary =
-    calculateSummary(
-      holdings
-    );
+    const holdings =
+      transactions.map(
+        (transaction) => {
+          const normalizedCode =
+            String(
+              transaction.seriesCode ||
+                ""
+            )
+              .trim()
+              .toUpperCase();
 
-  // --------------------------------------------------------
-  // Final result
-  // --------------------------------------------------------
+          const apiData =
+            marketDataMap[
+              normalizedCode
+            ] || null;
 
-  return {
-    holdings,
-    summary,
+          return calculateSGB(
+            transaction,
+            apiData
+          );
+        }
+      );
+
+    // ------------------------------------------------------
+    // Summary
+    // ------------------------------------------------------
+
+    const summary =
+      calculateSummary(
+        holdings
+      );
+
+    // ------------------------------------------------------
+    // Final result
+    // ------------------------------------------------------
+
+    return {
+      holdings,
+      summary,
+    };
   };
-};
 
 // ==========================================================
 // EXPORT HELPERS

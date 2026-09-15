@@ -24,6 +24,24 @@ export default function LicPliSummaryCard({
     },
   ];
 
+  const totalPremium = rows.reduce(
+    (total, row) =>
+      total +
+      Number(
+        summary?.[row.key]?.premiumAmount
+      || 0),
+    0
+  );
+
+  const totalPaid = rows.reduce(
+    (total, row) =>
+      total +
+      Number(
+        summary?.[row.key]?.paid
+      || 0),
+    0
+  );
+
   return (
     <section
       className="
@@ -36,6 +54,7 @@ export default function LicPliSummaryCard({
         shadow-xl
       "
     >
+      {/* Header */}
       <div
         className="
           flex
@@ -84,6 +103,7 @@ export default function LicPliSummaryCard({
         </div>
       </div>
 
+      {/* Rows */}
       <div className="divide-y divide-slate-800">
         {rows.map((row) => (
           <div
@@ -144,6 +164,75 @@ export default function LicPliSummaryCard({
             </div>
           </div>
         ))}
+
+        {/* Total */}
+        <div
+          className="
+            grid
+            grid-cols-[70px_1fr_1fr]
+            items-center
+            gap-2
+            border-t
+            border-slate-700
+            bg-slate-800/40
+            px-4
+            py-3
+          "
+        >
+          <span
+            className="
+              text-xs
+              font-extrabold
+              text-white
+            "
+          >
+            TOTAL
+          </span>
+
+          <div>
+            <p
+              className="
+                text-[9px]
+                font-semibold
+                text-slate-500
+              "
+            >
+              PREMIUM
+            </p>
+
+            <p
+              className="
+                text-sm
+                font-extrabold
+                text-white
+              "
+            >
+              {formatCurrency(totalPremium)}
+            </p>
+          </div>
+
+          <div>
+            <p
+              className="
+                text-[9px]
+                font-semibold
+                text-slate-500
+              "
+            >
+              PAID
+            </p>
+
+            <p
+              className="
+                text-sm
+                font-extrabold
+                text-emerald-400
+              "
+            >
+              {formatCurrency(totalPaid)}
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

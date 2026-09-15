@@ -1,4 +1,3 @@
-
 import {
   CalendarDays,
   IndianRupee,
@@ -21,6 +20,11 @@ import {
   calculateTotalPaid,
 } from "../../utils/licPli/licPliCalculations";
 
+
+/* =================================================
+   INITIAL FORM
+   ================================================= */
+
 function getInitialForm(policy) {
   if (policy) {
     return {
@@ -37,6 +41,9 @@ function getInitialForm(policy) {
 
       installmentPaid:
         policy.installmentPaid || "",
+
+      gstAmountPaid:
+        policy.gstAmountPaid || "",
 
       premiumDate:
         policy.premiumDate || "",
@@ -57,11 +64,18 @@ function getInitialForm(policy) {
 
     installmentPaid: "",
 
+    gstAmountPaid: "",
+
     premiumDate: "",
 
     maturityDate: "",
   };
 }
+
+
+/* =================================================
+   MAIN FORM
+   ================================================= */
 
 export default function LicPliForm({
   editingPolicy,
@@ -82,10 +96,22 @@ export default function LicPliForm({
     );
   }, [editingPolicy]);
 
+
+  /* =================================================
+     TOTAL PAID
+     Premium × Installments + GST
+     ================================================= */
+
   const totalPaid = calculateTotalPaid(
     form.premiumAmount,
-    form.installmentPaid
+    form.installmentPaid,
+    form.gstAmountPaid
   );
+
+
+  /* =================================================
+     HANDLE CHANGE
+     ================================================= */
 
   function handleChange(event) {
     const {
@@ -99,32 +125,46 @@ export default function LicPliForm({
     }));
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
 
-    if (
-      !form.policyNo.trim() ||
-      !form.schemeName.trim()
-    ) {
-      return;
+  /* =================================================
+     SUBMIT
+     ================================================= */
+
+    function handleSubmit(event) {
+      event.preventDefault();
+
+      if (
+        !form.policyNo.trim() ||
+        !form.schemeName.trim()
+      ) {
+        return;
+      }
+
+      const policyData = {
+        ...form,
+        totalPaid: totalPaid,
+      };
+
+      if (editingPolicy) {
+        updatePolicy(
+          editingPolicy.id,
+          policyData
+        );
+      } else {
+        addPolicy(policyData);
+      }
+
+      onClose();
     }
 
-    if (editingPolicy) {
-      updatePolicy(
-        editingPolicy.id,
-        form
-      );
-    } else {
-      addPolicy(form);
-    }
-
-    onClose();
-  }
 
   return (
     <div className="pb-5">
 
-      {/* Main Form Card */}
+      {/* =================================================
+         MAIN FORM CARD
+         ================================================= */}
+
       <div
         className="
           relative
@@ -140,7 +180,10 @@ export default function LicPliForm({
         "
       >
 
-        {/* Top Color Glow */}
+        {/* =================================================
+           TOP COLOR GLOW
+           ================================================= */}
+
         <div
           className="
             pointer-events-none
@@ -169,9 +212,13 @@ export default function LicPliForm({
           "
         />
 
+
         <div className="relative p-4">
 
-          {/* Header */}
+          {/* =================================================
+             HEADER
+             ================================================= */}
+
           <div
             className="
               mb-4
@@ -212,6 +259,7 @@ export default function LicPliForm({
                 <ShieldCheck size={18} />
               </div>
 
+
               <div className="min-w-0">
 
                 <h2
@@ -227,11 +275,12 @@ export default function LicPliForm({
                     : "Add Policy"}
                 </h2>
 
+
                 <p
                   className="
                     mt-0.5
                     text-[10px]
-                    text-slate-500
+                    text-white
                   "
                 >
                   {editingPolicy
@@ -240,9 +289,14 @@ export default function LicPliForm({
                 </p>
 
               </div>
+
             </div>
 
-            {/* Close Button */}
+
+            {/* =================================================
+               CLOSE BUTTON
+               ================================================= */}
+
             <button
               type="button"
               onClick={onClose}
@@ -257,7 +311,7 @@ export default function LicPliForm({
                 border
                 border-slate-700
                 bg-slate-800/80
-                text-slate-400
+                text-white
                 transition
                 hover:bg-slate-700
                 hover:text-white
@@ -269,13 +323,20 @@ export default function LicPliForm({
 
           </div>
 
-          {/* Form */}
+
+          {/* =================================================
+             FORM
+             ================================================= */}
+
           <form
             onSubmit={handleSubmit}
             className="space-y-3"
           >
 
-            {/* Type */}
+            {/* =================================================
+               TYPE
+               ================================================= */}
+
             <Field label="Type">
 
               <select
@@ -301,7 +362,11 @@ export default function LicPliForm({
 
             </Field>
 
-            {/* Policy Number */}
+
+            {/* =================================================
+               POLICY NUMBER
+               ================================================= */}
+
             <Field label="Policy No.">
 
               <input
@@ -315,7 +380,11 @@ export default function LicPliForm({
 
             </Field>
 
-            {/* Scheme Name */}
+
+            {/* =================================================
+               SCHEME NAME
+               ================================================= */}
+
             <Field label="Scheme Name">
 
               <input
@@ -329,7 +398,11 @@ export default function LicPliForm({
 
             </Field>
 
-            {/* Premium + Installments */}
+
+            {/* =================================================
+               PREMIUM + INSTALLMENTS
+               ================================================= */}
+
             <div
               className="
                 grid
@@ -339,6 +412,7 @@ export default function LicPliForm({
             >
 
               {/* Premium Amount */}
+
               <Field label="Premium Amount">
 
                 <div className="relative">
@@ -368,7 +442,9 @@ export default function LicPliForm({
 
               </Field>
 
+
               {/* Installment Paid */}
+
               <Field label="Installment Paid">
 
                 <input
@@ -385,7 +461,45 @@ export default function LicPliForm({
 
             </div>
 
-            {/* Total Paid */}
+
+            {/* =================================================
+               GST AMOUNT PAID
+               ================================================= */}
+
+            <Field label="GST Amount Paid">
+
+              <div className="relative">
+
+                <IndianRupee
+                  size={14}
+                  className="
+                    absolute
+                    left-3
+                    top-1/2
+                    -translate-y-1/2
+                    text-indigo-400
+                  "
+                />
+
+                <input
+                  type="number"
+                  name="gstAmountPaid"
+                  value={form.gstAmountPaid}
+                  onChange={handleChange}
+                  min="0"
+                  placeholder="0"
+                  className={`${inputClass} pl-8`}
+                />
+
+              </div>
+
+            </Field>
+
+
+            {/* =================================================
+               TOTAL PAID
+               ================================================= */}
+
             <div
               className="
                 relative
@@ -414,6 +528,7 @@ export default function LicPliForm({
                 "
               />
 
+
               <div
                 className="
                   relative
@@ -438,17 +553,19 @@ export default function LicPliForm({
                     Total Paid
                   </p>
 
+
                   <p
                     className="
                       mt-0.5
                       text-[10px]
-                      text-slate-500
+                      text-white
                     "
                   >
-                    Premium × Installments
+                    Premium × Installments + GST
                   </p>
 
                 </div>
+
 
                 <p
                   className="
@@ -468,7 +585,11 @@ export default function LicPliForm({
 
             </div>
 
-            {/* Dates Section */}
+
+            {/* =================================================
+               DATES SECTION
+               ================================================= */}
+
             <div
               className="
                 rounded-xl
@@ -480,6 +601,7 @@ export default function LicPliForm({
             >
 
               {/* Section Header */}
+
               <div
                 className="
                   mb-2.5
@@ -500,13 +622,14 @@ export default function LicPliForm({
                     font-bold
                     uppercase
                     tracking-wider
-                    text-slate-400
+                    text-white
                   "
                 >
                   Policy Dates
                 </p>
 
               </div>
+
 
               <div
                 className="
@@ -517,6 +640,7 @@ export default function LicPliForm({
               >
 
                 {/* Premium Date */}
+
                 <DatePickerField
                   label="Premium Date"
                   value={form.premiumDate}
@@ -528,7 +652,9 @@ export default function LicPliForm({
                   }
                 />
 
+
                 {/* Maturity Date */}
+
                 <DatePickerField
                   label="Maturity Date"
                   value={form.maturityDate}
@@ -544,7 +670,11 @@ export default function LicPliForm({
 
             </div>
 
-            {/* Save Button */}
+
+            {/* =================================================
+               SAVE BUTTON
+               ================================================= */}
+
             <button
               type="submit"
               className="
@@ -601,12 +731,16 @@ function DatePickerField({
 }) {
   const inputRef = useRef(null);
 
+
   /*
     Convert:
     2026-09-14
+
     to:
+
     14/Sep/2026
   */
+
   function formatDisplayDate(dateValue) {
     if (!dateValue) {
       return "";
@@ -632,9 +766,11 @@ function DatePickerField({
       .replace(/ /g, "/");
   }
 
+
   /*
     Open browser native date picker
   */
+
   function openDatePicker(event) {
     event.preventDefault();
 
@@ -644,9 +780,11 @@ function DatePickerField({
       return;
     }
 
+
     /*
       Chrome / Edge / modern browsers
     */
+
     if (
       typeof input.showPicker === "function"
     ) {
@@ -658,13 +796,16 @@ function DatePickerField({
       }
     }
 
+
     /*
       Fallback
     */
+
     input.focus();
 
     input.click();
   }
+
 
   return (
     <Field label={label}>
@@ -677,7 +818,10 @@ function DatePickerField({
         onMouseDown={openDatePicker}
       >
 
-        {/* Formatted Date Display */}
+        {/* =================================================
+           FORMATTED DATE DISPLAY
+           ================================================= */}
+
         <div
           className="
             pointer-events-none
@@ -696,24 +840,32 @@ function DatePickerField({
         >
 
           <span>
+
             {value ? (
               formatDisplayDate(value)
             ) : (
-              <span className="text-slate-600">
+              <span className="text-white">
                 Select date
               </span>
             )}
+
           </span>
 
+
           {/* Calendar Icon */}
+
           <CalendarDays
             size={15}
-            className="text-slate-500"
+            className="text-white"
           />
 
         </div>
 
-        {/* Actual Native Date Input */}
+
+        {/* =================================================
+           ACTUAL NATIVE DATE INPUT
+           ================================================= */}
+
         <input
           ref={inputRef}
           type="date"
@@ -769,7 +921,7 @@ function Field({
           font-bold
           uppercase
           tracking-wider
-          text-slate-500
+          text-white
         "
       >
         {label}
@@ -798,10 +950,9 @@ const inputClass = `
   text-white
   outline-none
   transition
-  placeholder:text-slate-600
+  placeholder:text-white
   focus:border-indigo-500/60
   focus:bg-slate-900
   focus:ring-1
   focus:ring-indigo-500/20
 `;
-

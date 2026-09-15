@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from "react";
 
@@ -17,12 +16,8 @@ import SGBSummaryCard from "../../components/investments/sgb/SGBSummaryCard";
 import SGBCard from "../../components/investments/sgb/SGBCard";
 
 import {
-  getSGBPortfolio,
-} from "../../services/sgb/sgbPortfolioService";
-
-import {
-  deleteSGBTransaction,
-} from "../../services/firebase/sgbService";
+  useSGB,
+} from "../../context/SGBContext";
 
 // ==========================================================
 // SGB PAGE
@@ -33,77 +28,25 @@ const SGB = () => {
     useNavigate();
 
   // ========================================================
-  // STATE
+  // SGB CONTEXT
   // ========================================================
 
-  const [
-    sgbHoldings,
-    setSgbHoldings,
-  ] = useState([]);
-
-  const [
+  const {
+    holdings: sgbHoldings,
     summary,
-    setSummary,
-  ] = useState(null);
-
-  const [
     loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
     error,
-    setError,
-  ] = useState("");
+    deleteSGB,
+  } = useSGB();
+
+  // ========================================================
+  // DELETE STATE
+  // ========================================================
 
   const [
     deletingId,
     setDeletingId,
   ] = useState(null);
-
-  // ========================================================
-  // LOAD PORTFOLIO
-  // ========================================================
-
-  const loadPortfolio =
-    async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const data =
-          await getSGBPortfolio();
-
-        setSgbHoldings(
-          data.holdings
-        );
-
-        setSummary(
-          data.summary
-        );
-
-      } catch (err) {
-        console.error(
-          "SGB Portfolio Error:",
-          err
-        );
-
-        setError(
-          err?.message ||
-            "Unable to load SGB portfolio."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-  // ========================================================
-  // INITIAL LOAD
-  // ========================================================
-
-  useEffect(() => {
-    loadPortfolio();
-  }, []);
 
   // ========================================================
   // ADD SGB
@@ -137,45 +80,26 @@ const SGB = () => {
       try {
 
         // --------------------------------------------------
-        // Show deleting state
+        // SHOW DELETING STATE
         // --------------------------------------------------
 
         setDeletingId(
           sgb.id
         );
 
-        setError("");
-
         // --------------------------------------------------
-        // Delete from Firebase
+        // DELETE THROUGH CONTEXT
         // --------------------------------------------------
 
-        await deleteSGBTransaction(
+        await deleteSGB(
           sgb.id
         );
-
-        // --------------------------------------------------
-        // Reload everything
-        //
-        // Firebase data
-        // API current rate
-        // Interest
-        // Profit
-        // Summary
-        // --------------------------------------------------
-
-        await loadPortfolio();
 
       } catch (err) {
 
         console.error(
           "Failed to delete SGB:",
           err
-        );
-
-        setError(
-          err?.message ||
-            "Unable to delete SGB. Please try again."
         );
 
       } finally {
@@ -222,7 +146,9 @@ const SGB = () => {
 
         </div>
 
-        {/* ADD BUTTON */}
+        {/* =================================================
+            ADD BUTTON
+        ================================================= */}
 
         <button
           type="button"
@@ -269,15 +195,14 @@ const SGB = () => {
       ) : (
 
         <>
+
           {/* ============================================== */}
           {/* SUMMARY */}
           {/* ============================================== */}
 
-          {summary && (
-            <SGBSummaryCard
-              summary={summary}
-            />
-          )}
+          <SGBSummaryCard
+            summary={summary}
+          />
 
           {/* ============================================== */}
           {/* HOLDINGS HEADER */}
@@ -342,6 +267,7 @@ const SGB = () => {
             /* ============================================ */
 
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+
               {[...sgbHoldings]
                 .sort(
                   (a, b) =>
@@ -349,6 +275,7 @@ const SGB = () => {
                     new Date(b.issueDate)
                 )
                 .map((sgb) => (
+
                   <div
                     key={sgb.id}
                     className={
@@ -357,17 +284,22 @@ const SGB = () => {
                         : ""
                     }
                   >
+
                     <SGBCard
                       sgb={sgb}
                       onDelete={handleDeleteSGB}
                     />
+
                   </div>
+
                 ))}
+
             </div>
 
           )}
 
         </>
+
       )}
 
     </div>

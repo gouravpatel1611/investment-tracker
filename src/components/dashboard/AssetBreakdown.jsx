@@ -42,6 +42,12 @@ import {
   assetBreakdownConfig,
 } from "./assetBreakdownConfig";
 
+import {
+  useLicPli,
+} from "../../context/LicPliContext";
+
+
+
 
 function AssetBreakdown({
   onAssetClick,
@@ -288,6 +294,28 @@ function AssetBreakdown({
     ]);
 
 
+
+        /* ==============================
+       LIC / PLI / OTHER
+    ============================== */
+      const {
+        policies: licPliPolicies,
+        loading: licPliLoading,
+      } = useLicPli();
+    
+    
+      const licPliTotalPaid =
+        (licPliPolicies || []).reduce(
+          (total, policy) =>
+            total +
+            (
+              Number(
+                policy.totalPaid
+              ) || 0
+            ),
+          0
+        );
+    
   // ========================================
   // PREPARE ASSETS
   // ========================================
@@ -390,6 +418,28 @@ function AssetBreakdown({
 
               holdings:
                 2,
+
+            };
+
+          }
+          // ----------------------------------
+          // lic pli
+          // ----------------------------------
+
+          if (
+            asset.id ===
+            "lic"
+          ) {
+
+            return {
+
+              ...asset,
+
+              value:
+                licPliTotalPaid,
+
+              holdings:
+                3,
 
             };
 

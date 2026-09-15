@@ -1,11 +1,16 @@
 export function calculateTotalPaid(
-  premiumAmount = 0,
-  installmentPaid = 0
+  premiumAmount,
+  installmentPaid,
+  gstAmountPaid
 ) {
-  const premium = Number(premiumAmount) || 0;
-  const installments = Number(installmentPaid) || 0;
+  const premiumTotal =
+    Number(premiumAmount || 0) *
+    Number(installmentPaid || 0);
 
-  return premium * installments;
+  const gstTotal =
+    Number(gstAmountPaid || 0);
+
+  return premiumTotal + gstTotal;
 }
 
 export function calculateSummary(policies = []) {

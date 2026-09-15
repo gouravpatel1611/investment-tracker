@@ -1,4 +1,3 @@
-
 import {
   addDoc,
   collection,
@@ -68,6 +67,9 @@ export async function addLicPliPolicy(policy) {
 
       installmentPaid:
         Number(policy.installmentPaid) || 0,
+
+      gstAmountPaid:
+        Number(policy.gstAmountPaid) || 0,
 
       totalPaid:
         Number(policy.totalPaid) || 0,
@@ -167,13 +169,27 @@ export async function updateLicPliPolicy(
       installmentPaid:
         Number(policy.installmentPaid) || 0,
 
+      gstAmountPaid:
+        Number(policy.gstAmountPaid) || 0,
+
       totalPaid:
         Number(policy.totalPaid) || 0,
 
       updatedAt: serverTimestamp(),
     };
 
+    /*
+      Firestore document id ko
+      document ke andar save nahi karna.
+    */
+
     delete dataToUpdate.id;
+
+    /*
+      createdAt ko update nahi karna.
+      Original creation time same rahega.
+    */
+
     delete dataToUpdate.createdAt;
 
     await updateDoc(
@@ -241,4 +257,3 @@ export async function deleteLicPliPolicy(id) {
     throw error;
   }
 }
-

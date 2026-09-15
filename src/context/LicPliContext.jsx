@@ -1,4 +1,3 @@
-
 import {
   createContext,
   useContext,
@@ -85,19 +84,30 @@ export function LicPliProvider({ children }) {
   ======================================================= */
 
   async function addPolicy(data) {
-    const totalPaid = calculateTotalPaid(
-      data.premiumAmount,
-      data.installmentPaid
-    );
+    const premiumAmount =
+      Number(data.premiumAmount) || 0;
+
+    const installmentPaid =
+      Number(data.installmentPaid) || 0;
+
+    const gstAmountPaid =
+      Number(data.gstAmountPaid) || 0;
+
+    const totalPaid =
+      calculateTotalPaid(
+        premiumAmount,
+        installmentPaid,
+        gstAmountPaid
+      );
 
     const policyData = {
       ...data,
 
-      premiumAmount:
-        Number(data.premiumAmount) || 0,
+      premiumAmount,
 
-      installmentPaid:
-        Number(data.installmentPaid) || 0,
+      installmentPaid,
+
+      gstAmountPaid,
 
       totalPaid,
     };
@@ -118,19 +128,30 @@ export function LicPliProvider({ children }) {
   ======================================================= */
 
   async function updatePolicy(id, data) {
-    const totalPaid = calculateTotalPaid(
-      data.premiumAmount,
-      data.installmentPaid
-    );
+    const premiumAmount =
+      Number(data.premiumAmount) || 0;
+
+    const installmentPaid =
+      Number(data.installmentPaid) || 0;
+
+    const gstAmountPaid =
+      Number(data.gstAmountPaid) || 0;
+
+    const totalPaid =
+      calculateTotalPaid(
+        premiumAmount,
+        installmentPaid,
+        gstAmountPaid
+      );
 
     const policyData = {
       ...data,
 
-      premiumAmount:
-        Number(data.premiumAmount) || 0,
+      premiumAmount,
 
-      installmentPaid:
-        Number(data.installmentPaid) || 0,
+      installmentPaid,
+
+      gstAmountPaid,
 
       totalPaid,
     };
@@ -205,4 +226,3 @@ export function useLicPli() {
 
   return context;
 }
-
