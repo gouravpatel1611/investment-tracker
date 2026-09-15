@@ -14,7 +14,11 @@ import{
 
 import {
   IntFdProvider
-} from "./context/IntFdContext"
+} from "./context/IntFdContext";
+import {
+  LicPliProvider
+} from "./context/LicPliContext";
+
 
 function App() {
   return (
@@ -22,7 +26,9 @@ function App() {
       <MutualFundProvider>
         <BondProvider>
              <IntFdProvider>
-                <AppRoutes />
+                <LicPliProvider>
+                  <AppRoutes />
+                </LicPliProvider>
              </IntFdProvider>
         </BondProvider>
       </MutualFundProvider>

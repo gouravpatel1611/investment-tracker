@@ -1,19 +1,18 @@
-export function formatCurrency(
-  value = 0
-) {
-  const roundedValue = Math.round(
-    Number(value) || 0
-  );
+export function formatCurrency(value = 0) {
+  const number = Number(value) || 0;
 
-  return new Intl.NumberFormat(
-    "en-IN",
-    {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }
-  ).format(roundedValue);
+  // Nearest ₹10
+  const roundedValue =
+    Math.round(number / 10) * 10;
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(roundedValue);
 }
+
+
 
 export function formatNumber(
   value = 0

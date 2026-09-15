@@ -489,7 +489,7 @@ function AssetBreakdown({
       }
 
       // --------------------------------------
-      // CPF
+      // INT-FD
       // --------------------------------------
 
       if (
@@ -499,6 +499,23 @@ function AssetBreakdown({
 
         navigate(
           "/int-fd"
+        );
+
+        return;
+      }
+
+
+      // --------------------------------------
+      // LIC-PLI
+      // --------------------------------------
+
+      if (
+        asset.id ===
+        "lic"
+      ) {
+
+        navigate(
+          "/lic-pli"
         );
 
         return;

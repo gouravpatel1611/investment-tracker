@@ -29,7 +29,16 @@ import CPF from "../pages/cpf/CPF";
 import IntFd from "../pages/intFd/IntFd"
 import IntFdForm from "../pages/intFd/IntFdForm"
 
+
+import LicPli from "../pages/licPli/LicPli";
+import LicPliForm from "../pages/licPli/LicPliForm";
+
+
+
+
 import ProtectedRoute from "./ProtectedRoute";
+
+
 
 function AppRoutes() {
   return (
@@ -127,6 +136,22 @@ function AppRoutes() {
               element={
                 <IntFdForm />
               }
+            />
+
+
+            <Route
+              path="/lic-pli"
+              element={<LicPli />}
+            />
+
+            <Route
+              path="/lic-pli/add"
+              element={<LicPliForm />}
+            />
+
+            <Route
+              path="/lic-pli/edit/:id"
+              element={<LicPliForm />}
             />
 
             <Route
