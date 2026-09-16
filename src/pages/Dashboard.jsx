@@ -1,36 +1,63 @@
-import {
-  ChevronRight,
-  Plus,
-} from "lucide-react";
+
+import { Plus } from "lucide-react";
 
 import { useOutletContext } from "react-router-dom";
 
 import PortfolioSummary from "../components/dashboard/PortfolioSummary";
-import AssetAllocation from "../components/dashboard/AssetAllocation";
 import AssetBreakdown from "../components/dashboard/AssetBreakdown";
 
 import SectionHeader from "../components/common/SectionHeader";
 
 function Dashboard() {
-  const { openAddInvestment } = useOutletContext();
+  const { openAddInvestment } =
+    useOutletContext();
 
   return (
     <div className="space-y-6">
 
-      {/* HEADER */}
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
+      <section
+        className="
+          flex
+          flex-col
+          gap-4
+          sm:flex-row
+          sm:items-end
+          sm:justify-between
+        "
+      >
 
         <div>
-          <p className="text-sm font-medium text-slate-500">
+
+          <p
+            className="
+              text-sm
+              font-medium
+              text-slate-500
+            "
+          >
             Good afternoon
           </p>
 
-          <h1 className="page-title mt-1">
+          <h1
+            className="
+              page-title
+              mt-1
+            "
+          >
             Your portfolio
           </h1>
+
         </div>
 
-        {/* DESKTOP ADD INVESTMENT */}
+
+        {/* =================================================
+            DESKTOP ADD INVESTMENT
+        ================================================= */}
+
         <button
           type="button"
           onClick={openAddInvestment}
@@ -59,11 +86,17 @@ function Dashboard() {
       </section>
 
 
-      {/* PORTFOLIO SUMMARY */}
+      {/* =================================================
+          PORTFOLIO SUMMARY
+      ================================================= */}
+
       <PortfolioSummary />
 
 
-      {/* ASSET BREAKDOWN */}
+      {/* =================================================
+          ASSET BREAKDOWN
+      ================================================= */}
+
       <section>
 
         <SectionHeader
@@ -76,10 +109,6 @@ function Dashboard() {
         </div>
 
       </section>
-
-
-
-     
 
     </div>
   );

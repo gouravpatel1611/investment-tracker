@@ -1,781 +1,82 @@
 import {
-  IndianRupee,
-} from "lucide-react";
+  useMemo,
+} from "react";
 
 import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+  IndianRupee,
+  TrendingUp,
+} from "lucide-react";
 
 import {
   useMutualFunds,
 } from "../../context/MutualFundContext";
 
 import {
+  useSGB,
+} from "../../context/SGBContext";
+
+import {
   useBonds,
 } from "../../context/BondContext";
 
 import {
-  getSGBPortfolio,
-} from "../../services/sgb/sgbPortfolioService";
-
-import {
-  getCPFRecord,
-} from "../../services/firebase/cpfService";
-
-import {
-  calculateCPF,
-  calculateNVSCPF,
-} from "../../utils/cpf/cpfCalculations";
-
-import {
-  calculateTotalBondFinancialSummary,
-} from "../../utils/bondCalculations";
-
-
-import {
-  useLicPli,
-} from "../../context/LicPliContext";
-
-
-function formatCurrency(value) {
-
-  return new Intl.NumberFormat(
-    "en-IN",
-    {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }
-  ).format(
-    Number(value) || 0
-  );
-
-}
+  calculateDashboardTotals,
+  formatCurrency,
+} from "../../utils/dashboard/dashboardCalculations";
 
 
 function PortfolioSummary() {
 
-
-  /* --------------------------------
-     MUTUAL FUNDS
-  -------------------------------- */
-
   const {
     holdings:
-      mutualFundHoldings,
-
-    loading:
-      mutualFundLoading,
-
+      mutualFundHoldings = [],
   } = useMutualFunds();
 
 
-  /* --------------------------------
-     BONDS
-  -------------------------------- */
+  const {
+    summary:
+      sgbSummary = {},
+  } = useSGB();
+
 
   const {
-    bonds,
-
-    loading:
-      bondLoading,
-
+    bonds = [],
   } = useBonds();
 
 
-  /* --------------------------------
-     SGB
-  -------------------------------- */
-
-  const [
-    sgbPortfolio,
-    setSgbPortfolio,
-  ] = useState({
-
-    holdings: [],
-
-    summary: {
-
-      seriesCount: 0,
-
-      units: 0,
-
-      purchaseValue: 0,
-
-      currentValue: 0,
-
-      interest: 0,
-
-      profit: 0,
-
-      gain: 0,
-
-      totalGainPercent: 0,
-
-    },
-
-  });
-
-
-  const [
-    sgbLoading,
-    setSgbLoading,
-  ] = useState(true);
-
-
-  useEffect(() => {
-
-    let mounted = true;
-
-
-    const loadSGB =
-      async () => {
-
-        try {
-
-          setSgbLoading(
-            true
-          );
-
-
-          const data =
-            await getSGBPortfolio();
-
-
-          if (mounted) {
-
-            setSgbPortfolio(
-              data || {
-
-                holdings: [],
-
-                summary: {},
-
-              }
-            );
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            "Failed to load SGB portfolio:",
-            error
-          );
-
-        } finally {
-
-          if (mounted) {
-
-            setSgbLoading(
-              false
-            );
-
-          }
-
-        }
-
-      };
-
-
-    loadSGB();
-
-
-    return () => {
-
-      mounted = false;
-
-    };
-
-  }, []);
-
-
-  /* --------------------------------
-     CPF
-  -------------------------------- */
-
-  const [
-    cpfData,
-    setCpfData,
-  ] = useState(null);
-
-
-  const [
-    cpfLoading,
-    setCpfLoading,
-  ] = useState(true);
-
-
-  useEffect(() => {
-
-    let mounted = true;
-
-
-    const loadCPF =
-      async () => {
-
-        try {
-
-          setCpfLoading(
-            true
-          );
-
-
-          const data =
-            await getCPFRecord();
-
-
-          if (mounted) {
-
-            setCpfData(
-              data
-            );
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            "Failed to load CPF:",
-            error
-          );
-
-        } finally {
-
-          if (mounted) {
-
-            setCpfLoading(
-              false
-            );
-
-          }
-
-        }
-
-      };
-
-
-    loadCPF();
-
-
-    return () => {
-
-      mounted = false;
-
-    };
-
-  }, []);
-
-
-
-
-
-    /* ==============================
-   LIC / PLI / OTHER
-============================== */
-      const {
-    policies: licPliPolicies,
-    loading: licPliLoading,
-  } = useLicPli();
-
-
-  const licPliTotalPaid =
-    (licPliPolicies || []).reduce(
-      (total, policy) =>
-        total +
-        (
-          Number(
-            policy.totalPaid
-          ) || 0
+  const summary =
+    useMemo(
+      () =>
+        calculateDashboardTotals(
+          mutualFundHoldings,
+          sgbSummary,
+          bonds
         ),
-      0
+      [
+        mutualFundHoldings,
+        sgbSummary,
+        bonds,
+      ]
     );
 
-
-
-
-
-  /* --------------------------------
-     ASSET BREAKDOWN VALUES
-  -------------------------------- */
-
-  const assetSummary =
-    useMemo(() => {
-
-
-      /* ==============================
-         MUTUAL FUNDS
-      ============================== */
-
-      const mutualFundInvested =
-        mutualFundHoldings.reduce(
-          (
-            total,
-            fund
-          ) =>
-
-            total +
-            (
-              Number(
-                fund.investedAmount
-              ) || 0
-            ),
-
-          0
-
-        );
-
-
-      const mutualFundCurrentValue =
-        mutualFundHoldings.reduce(
-          (
-            total,
-            fund
-          ) =>
-
-            total +
-            (
-              Number(
-                fund.currentValue
-              ) || 0
-            ),
-
-          0
-
-        );
-
-
-      const mutualFundProfit =
-        mutualFundCurrentValue -
-        mutualFundInvested;
-
-
-      /* ==============================
-         SGB
-      ============================== */
-
-      const sgbSummary =
-        sgbPortfolio?.summary ||
-        {};
-
-
-      const sgbInvested =
-        Number(
-          sgbSummary.purchaseValue
-        ) || 0;
-
-
-      const sgbCurrentValue =
-        Number(
-          sgbSummary.currentValue
-        ) || 0;
-
-
-      const sgbInterest =
-        Number(
-          sgbSummary.interest
-        ) || 0;
-
-
-      // Final SGB value
-
-      const sgbValueWithInterest =
-        sgbCurrentValue +
-        sgbInterest;
-
-
-      const sgbProfit =
-        Number(
-          sgbSummary.profit
-        ) || 0;
-
-
-      const sgbGain =
-        Number(
-          sgbSummary.gain
-        ) || 0;
-
-
-      /* ==============================
-         BONDS
-      ============================== */
-
-      const bondSummary =
-        calculateTotalBondFinancialSummary(
-          bonds || []
-        );
-
-
-      // --------------------------------
-      // Bond Invested
-      // --------------------------------
-      //
-      // Actual purchase amount
-      //
-      const bondsInvested =
-        Number(
-          bondSummary.totalPrincipal
-        ) || 0;
-
-
-      // --------------------------------
-      // Bond Current Value
-      // --------------------------------
-      //
-      // Total Principal
-      // + Interest Received
-      //
-
-      const bondsValue =
-        (
-          Number(
-            bondSummary.totalPrincipal
-          ) || 0
-        ) +
-        (
-          Number(
-            bondSummary.interestReceived
-          ) || 0
-        );
-
-
-      // --------------------------------
-      // Bond Profit / Loss
-      // --------------------------------
-
-      const bondsProfit =
-        bondsValue -
-        bondsInvested;
-
-
-      /* ==============================
-         CPF
-      ============================== */
-
-      let cpfValue = 0;
-      let cpfProfit = 0;
-
-
-      if (cpfData) {
-
-
-        // --------------------------------
-        // OWN CPF
-        // --------------------------------
-
-        const ownCPF =
-          calculateCPF({
-
-            openingBalance:
-              cpfData.own
-                ?.openingBalance || 0,
-
-            monthlyDeposit:
-              cpfData.own
-                ?.monthlyContribution || 0,
-
-            interestRates:
-              cpfData.own
-                ?.interestRates || {},
-
-            financialYear:
-              cpfData.financialYear,
-
-          });
-
-
-        // --------------------------------
-        // NVS CPF
-        // --------------------------------
-
-        const nvsCPF =
-          calculateNVSCPF({
-
-            openingBalance:
-              cpfData.nvs
-                ?.openingBalance || 0,
-
-            basicPay:
-              cpfData.nvs
-                ?.basicPay || 0,
-
-            interestRates:
-              cpfData.nvs
-                ?.interestRates || {},
-
-            financialYear:
-              cpfData.financialYear,
-
-          });
-
-
-        // --------------------------------
-        // FINAL CPF VALUE
-        // --------------------------------
-
-        cpfValue =
-          ownCPF.closingBalance +
-          nvsCPF.closingBalance;
-
-        cpfProfit = 
-          ownCPF.totalInterest +
-          nvsCPF.totalInterest;
-
-      }
-
-
-      /* ==============================
-         OTHER ASSETS
-      ============================== */
-
-      const fdValue =
-        0;
-
-
-      const apyNpsValue =
-        0;
-
-
-      const cryptoValue =
-        0;
-
-
-      const licValue =
-        0;
-
-
-      const etfStockValue =
-        0;
-
-
-      /* ==============================
-         TOTAL INVESTED
-      ============================== */
-
-      const totalInvested =
-        mutualFundInvested +
-        sgbInvested +
-        bondsInvested+
-        cpfValue+
-        fdValue+
-        licPliTotalPaid;
-
-
-      /* ==============================
-         TOTAL CURRENT VALUE
-      ============================== */
-
-      const totalCurrentValue =
-        mutualFundCurrentValue +
-        sgbValueWithInterest +
-        bondsValue +
-        cpfValue +
-        cpfProfit+
-        fdValue +
-        licValue +
-        etfStockValue;
-
-
-      /* ==============================
-         TOTAL PROFIT / LOSS
-      ============================== */
-
-      const totalProfitLoss =
-        mutualFundProfit +
-        sgbGain +
-        bondsProfit+
-        cpfProfit;
-
-
-      /* ==============================
-         TOTAL RETURN
-      ============================== */
-
-      const totalReturnPercent =
-        totalInvested > 0
-
-          ? (
-              totalProfitLoss /
-              totalInvested
-            ) * 100
-
-          : 0;
-
-
-      return {
-
-        totalInvested,
-
-        totalCurrentValue,
-
-        totalProfitLoss,
-
-        totalReturnPercent,
-
-
-        /* Individual assets */
-
-        mutualFundCurrentValue,
-
-        sgbValueWithInterest,
-
-        bondsValue,
-
-        bondsInvested,
-
-        bondsProfit,
-
-        cpfValue,
-        cpfProfit,
-        fdValue,
-
-        apyNpsValue,
-
-        cryptoValue,
-
-        licValue,
-
-        etfStockValue,
-
-      };
-
-
-    }, [
-
-      mutualFundHoldings,
-
-      sgbPortfolio,
-
-      bonds,
-
-      cpfData,
-
-    ]);
-
-
-  const isProfit =
-    assetSummary.totalProfitLoss >=
-    0;
-
-
-  /* --------------------------------
-     LOADING
-  -------------------------------- */
-
-  if (
-
-    mutualFundLoading ||
-    sgbLoading ||
-    bondLoading ||
-    cpfLoading
-
-  ) {
-
-    return (
-
-      <section
-        className="
-          overflow-hidden
-          rounded-3xl
-          bg-slate-900
-          p-5
-          text-white
-          shadow-xl
-          sm:p-7
-        "
-      >
-
-        <div
-          className="
-            animate-pulse
-          "
-        >
-
-          <div
-            className="
-              h-4
-              w-36
-              rounded
-              bg-slate-700
-            "
-          />
-
-
-          <div
-            className="
-              mt-3
-              h-10
-              w-52
-              rounded
-              bg-slate-700
-            "
-          />
-
-
-          <div
-            className="
-              mt-6
-              grid
-              grid-cols-2
-              gap-3
-              sm:grid-cols-4
-            "
-          >
-
-            {[1, 2, 3, 4].map(
-              (item) => (
-
-                <div
-                  key={item}
-                  className="
-                    h-16
-                    rounded-2xl
-                    bg-white/10
-                  "
-                />
-
-              )
-            )}
-
-          </div>
-
-        </div>
-
-      </section>
-
-    );
-
-  }
-
-
-  /* --------------------------------
-     UI
-  -------------------------------- */
 
   return (
-
     <section
       className="
-        overflow-hidden
-        rounded-3xl
+        rounded-2xl
+        border border-slate-700/80
         bg-slate-900
-        p-5
-        text-white
-        shadow-xl
-        sm:p-7
+        p-4
+        shadow-sm
       "
     >
-
-
-      {/* HEADER */}
 
       <div
         className="
           flex
           items-start
           justify-between
+          gap-3
         "
       >
 
@@ -783,205 +84,222 @@ function PortfolioSummary() {
 
           <p
             className="
-              text-sm
-              text-slate-300
+              text-xs
+              font-semibold
+              uppercase
+              tracking-wider
+              text-slate-400
             "
           >
-            Total portfolio value
+            Total portfolio
           </p>
 
-
-          <p
+          <h2
             className="
-              mt-2
-              text-3xl
-              font-black
+              mt-1
+              text-2xl
+              font-extrabold
               tracking-tight
-              sm:text-4xl
+              text-white
             "
           >
-
             {formatCurrency(
-              assetSummary.totalCurrentValue
+              summary.totalCurrentValue
             )}
-
-          </p>
+          </h2>
 
         </div>
 
 
         <div
           className="
-            grid
-            h-11
-            w-11
-            place-items-center
-            rounded-2xl
-            bg-white/10
+            flex
+            h-9
+            w-9
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            bg-emerald-500/10
+            text-emerald-400
           "
         >
-
-          <IndianRupee
-            size={22}
+          <TrendingUp
+            size={18}
           />
-
         </div>
 
       </div>
 
 
-      {/* STATS */}
-
       <div
         className="
-          mt-6
+          mt-4
           grid
           grid-cols-2
-          gap-3
-          sm:grid-cols-4
+          gap-2
         "
       >
 
-
         {/* INVESTED */}
 
-        <Stat
-          label="Invested"
-          value={formatCurrency(
-            assetSummary.totalInvested
-          )}
-        />
+        <div
+          className="
+            rounded-xl
+            border border-slate-700/70
+            bg-slate-800/70
+            p-3
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              gap-1.5
+              text-xs
+              font-medium
+              text-slate-400
+            "
+          >
+            <IndianRupee
+              size={13}
+            />
+
+            Invested
+
+          </div>
 
 
-        {/* PROFIT / LOSS */}
+          <p
+            className="
+              mt-1
+              text-sm
+              font-bold
+              text-slate-100
+            "
+          >
+            {formatCurrency(
+              summary.totalInvested
+            )}
+          </p>
 
-        <Stat
-          label="Total P/L"
+        </div>
 
-          value={`${
-            isProfit
-              ? "+"
-              : ""
-          }${formatCurrency(
-            assetSummary.totalProfitLoss
-          )}`}
 
-          positive={
-            isProfit
-          }
+        {/* PROFIT */}
 
-          negative={
-            !isProfit
-          }
-        />
+        <div
+          className="
+            rounded-xl
+            border border-slate-700/70
+            bg-slate-800/70
+            p-3
+          "
+        >
+
+          <p
+            className="
+              text-xs
+              font-medium
+              text-slate-400
+            "
+          >
+            Profit
+          </p>
+
+
+          <p
+            className="
+              mt-1
+              text-sm
+              font-bold
+              text-emerald-400
+            "
+          >
+            {formatCurrency(
+              summary.totalProfit
+            )}
+          </p>
+
+        </div>
 
 
         {/* RETURN */}
 
-        <Stat
-          label="Return"
+        <div
+          className="
+            rounded-xl
+            border border-slate-700/70
+            bg-slate-800/70
+            p-3
+          "
+        >
 
-          value={`${
-            isProfit
-              ? "+"
-              : ""
-          }${assetSummary.totalReturnPercent.toFixed(
-            2
-          )}%`}
-
-          positive={
-            isProfit
-          }
-
-          negative={
-            !isProfit
-          }
-        />
+          <p
+            className="
+              text-xs
+              font-medium
+              text-slate-400
+            "
+          >
+            Return
+          </p>
 
 
-        {/* TODAY */}
+          <p
+            className="
+              mt-1
+              text-sm
+              font-bold
+              text-emerald-400
+            "
+          >
+            {summary.totalReturn.toFixed(2)}%
+          </p>
 
-        <Stat
-          label="Today"
-          value="—"
-        />
+        </div>
+
+
+        {/* XIRR */}
+
+        <div
+          className="
+            rounded-xl
+            border border-slate-700/70
+            bg-slate-800/70
+            p-3
+          "
+        >
+
+          <p
+            className="
+              text-xs
+              font-medium
+              text-slate-400
+            "
+          >
+            XIRR
+          </p>
+
+
+          <p
+            className="
+              mt-1
+              text-sm
+              font-bold
+              text-slate-300
+            "
+          >
+            —
+          </p>
+
+        </div>
 
       </div>
 
     </section>
-
   );
-
 }
-
-
-/* --------------------------------
-   STAT COMPONENT
--------------------------------- */
-
-function Stat({
-  label,
-  value,
-  positive = false,
-  negative = false,
-}) {
-
-  return (
-
-    <div
-      className="
-        rounded-2xl
-        bg-white/10
-        p-3
-      "
-    >
-
-      <p
-        className="
-          text-[11px]
-          text-slate-300
-        "
-      >
-        {label}
-      </p>
-
-
-      <p
-        className={`
-          mt-1
-          text-sm
-          font-black
-
-          ${
-            positive
-              ? "text-emerald-300"
-              : ""
-          }
-
-          ${
-            negative
-              ? "text-red-300"
-              : ""
-          }
-
-          ${
-            !positive &&
-            !negative
-              ? "text-white"
-              : ""
-          }
-        `}
-      >
-
-        {value}
-
-      </p>
-
-    </div>
-
-  );
-
-}
-
 
 export default PortfolioSummary;
