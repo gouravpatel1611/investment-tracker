@@ -151,7 +151,8 @@ function PortfolioSummary() {
       "
     >
 
-      {/* =====================================
+
+    {/* =====================================
           HEADER
       ====================================== */}
 
@@ -175,7 +176,7 @@ function PortfolioSummary() {
               text-white
             "
           >
-            Total Portfolio
+            Invested
           </p>
 
           <h2
@@ -184,11 +185,11 @@ function PortfolioSummary() {
               text-3xl
               font-extrabold
               tracking-tight
-              text-amber-400
+              text-white
             "
           >
             {formatCurrency(
-              summary.totalCurrentValue
+              summary.totalInvested
             )}
           </h2>
 
@@ -209,10 +210,9 @@ function PortfolioSummary() {
           "
         >
 
-          <TrendingUp
-            size={19}
-            strokeWidth={2.2}
-          />
+          <IndianRupee
+              size={14}
+            />
 
         </div>
 
@@ -232,53 +232,6 @@ function PortfolioSummary() {
         "
       >
 
-        {/* ===================================
-            INVESTED
-        ==================================== */}
-
-        <div
-          className="
-            rounded-xl
-            border border-slate-700/70
-            bg-slate-800/70
-            p-3
-          "
-        >
-
-          <div
-            className="
-              flex
-              items-center
-              gap-1.5
-              text-xm
-              font-semibold
-              text-white
-            "
-          >
-
-            <IndianRupee
-              size={14}
-            />
-
-            Invested
-
-          </div>
-
-
-          <p
-            className="
-              mt-1
-              text-base
-              font-extrabold
-              text-white
-            "
-          >
-            {formatCurrency(
-              summary.totalInvested
-            )}
-          </p>
-
-        </div>
 
 
         {/* ===================================
@@ -296,7 +249,7 @@ function PortfolioSummary() {
 
           <p
             className="
-              text-xm
+              text-xM
               font-semibold
               text-white
             "
@@ -309,6 +262,7 @@ function PortfolioSummary() {
             className={`
               mt-1
               text-base
+              text-xl
               font-extrabold
               ${
                 summary.totalProfit >= 0
@@ -371,44 +325,79 @@ function PortfolioSummary() {
         </div>
 
 
-        {/* ===================================
-            XIRR
-        ==================================== */}
 
-        <div
-          className="
-            rounded-xl
-            border border-slate-700/70
-            bg-slate-800/70
-            p-3
-          "
-        >
+
+      </div>
+
+
+            {/* =====================================
+          FOOTER
+      ====================================== */}
+
+      <div
+        className="
+          flex
+          items-start
+          justify-between
+          gap-3
+          mt-3
+        "
+      >
+
+        <div>
 
           <p
             className="
               text-xm
               font-semibold
+              uppercase
+              tracking-wider
               text-white
             "
           >
-            XIRR
+            Total Portfolio
           </p>
 
-
-          <p
+          <h2
             className="
               mt-1
-              text-base
+              text-3xl
               font-extrabold
-              text-white
+              tracking-tight
+              text-amber-400
             "
           >
-            —
-          </p>
+            {formatCurrency(
+              summary.totalCurrentValue
+            )}
+          </h2>
+
+        </div>
+
+
+        <div
+          className="
+            flex
+            h-10
+            w-10
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            bg-emerald-500/10
+            text-emerald-400
+          "
+        >
+
+          <TrendingUp
+            size={19}
+            strokeWidth={2.2}
+          />
 
         </div>
 
       </div>
+
 
     </section>
   );
