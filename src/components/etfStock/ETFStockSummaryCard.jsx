@@ -36,16 +36,9 @@ export default function ETFStockSummaryCard({
 }) {
   const {
     totalInvested = 0,
-
-    /* =====================================================
-       CONTEXT SE VALUE AAYEGI
-    ===================================================== */
     totalCurrentValue = 0,
-
     totalProfitLoss = 0,
-
     totalReturnPercent = 0,
-
     totalHoldings = 0,
   } = summary;
 
@@ -80,13 +73,13 @@ export default function ETFStockSummaryCard({
       <div
         className="
           flex
-          items-start
+          items-center
           justify-between
-          gap-4
+          gap-3
           border-b
           border-slate-700
-          px-5
-          py-5
+          px-4
+          py-4
         "
       >
 
@@ -94,11 +87,11 @@ export default function ETFStockSummaryCard({
 
           <p
             className="
-              text-xs
+              text-[11px]
               font-semibold
               uppercase
               tracking-[0.12em]
-              text-slate-400
+              text-white
             "
           >
             Portfolio Summary
@@ -106,9 +99,10 @@ export default function ETFStockSummaryCard({
 
           <p
             className="
-              mt-1.5
+              mt-1
+              truncate
               text-base
-              font-semibold
+              font-bold
               tracking-tight
               text-white
             "
@@ -126,28 +120,28 @@ export default function ETFStockSummaryCard({
             flex
             shrink-0
             items-center
-            gap-2.5
-            rounded-xl
+            gap-2
+            rounded-lg
             border
             border-slate-700
             bg-slate-800
-            px-3.5
-            py-2.5
+            px-2.5
+            py-2
           "
         >
 
           <Layers3
-            size={17}
-            className="text-slate-400"
+            size={15}
+            className="text-white"
           />
 
           <div>
 
             <p
               className="
-                text-[11px]
+                text-[10px]
                 font-medium
-                text-slate-400
+                text-white
               "
             >
               Holdings
@@ -156,7 +150,7 @@ export default function ETFStockSummaryCard({
             <p
               className="
                 mt-0.5
-                text-base
+                text-sm
                 font-bold
                 leading-none
                 text-white
@@ -191,16 +185,16 @@ export default function ETFStockSummaryCard({
 
         <div
           className="
-            px-5
-            py-5
+            px-4
+            py-3.5
           "
         >
 
           <p
             className="
-              text-xs
+              text-[11px]
               font-medium
-              text-slate-400
+              text-white
             "
           >
             Total Invested
@@ -208,12 +202,11 @@ export default function ETFStockSummaryCard({
 
           <p
             className="
-              mt-1.5
+              mt-1
               text-lg
               font-extrabold
               tracking-tight
               text-white
-              sm:text-xl
             "
           >
             {formatCurrency(totalInvested)}
@@ -226,16 +219,16 @@ export default function ETFStockSummaryCard({
 
         <div
           className="
-            px-5
-            py-5
+            px-4
+            py-3.5
           "
         >
 
           <p
             className="
-              text-xs
+              text-[11px]
               font-medium
-              text-slate-400
+              text-white
             "
           >
             Current Value
@@ -243,12 +236,11 @@ export default function ETFStockSummaryCard({
 
           <p
             className="
-              mt-1.5
+              mt-1
               text-lg
               font-extrabold
               tracking-tight
               text-white
-              sm:text-xl
             "
           >
             {formatCurrency(
@@ -270,85 +262,55 @@ export default function ETFStockSummaryCard({
           flex
           items-center
           justify-between
-          gap-5
-          px-5
-          py-5
+          gap-3
+          px-4
+          py-3
         "
       >
 
         {/* PROFIT / LOSS */}
 
-        <div
-          className="
-            flex
-            min-w-0
-            items-center
-            gap-3
-          "
-        >
+        <div className="min-w-0">
+
+          <p
+            className="
+              text-[11px]
+              font-medium
+              text-white
+            "
+          >
+            Total Profit / Loss
+          </p>
 
           <div
             className={`
+              mt-0.5
               flex
-              h-10
-              w-10
-              shrink-0
               items-center
-              justify-center
-              rounded-xl
+              gap-1.5
+              text-base
+              font-extrabold
+              tracking-tight
               ${
                 isProfit
-                  ? "bg-emerald-500/10"
-                  : "bg-red-500/10"
+                  ? "text-emerald-400"
+                  : "text-red-400"
               }
             `}
           >
 
             {isProfit ? (
-              <TrendingUp
-                size={19}
-                className="text-emerald-400"
-              />
+              <TrendingUp size={15} />
             ) : (
-              <TrendingDown
-                size={19}
-                className="text-red-400"
-              />
+              <TrendingDown size={15} />
             )}
 
-          </div>
-
-
-          <div className="min-w-0">
-
-            <p
-              className="
-                text-xs
-                font-medium
-                text-slate-400
-              "
-            >
-              Total Profit / Loss
-            </p>
-
-            <p
-              className={`
-                mt-1
-                text-base
-                font-extrabold
-                tracking-tight
-                ${
-                  isProfit
-                    ? "text-emerald-400"
-                    : "text-red-400"
-                }
-              `}
-            >
+            <span>
               {isProfit ? "+" : "-"}
               {formatCurrency(
                 Math.abs(numericProfitLoss)
               )}
-            </p>
+            </span>
 
           </div>
 
@@ -360,19 +322,21 @@ export default function ETFStockSummaryCard({
         <div
           className="
             shrink-0
-            rounded-xl
+            rounded-lg
+            border
+            border-slate-700
             bg-slate-800
-            px-4
-            py-2.5
+            px-3
+            py-1.5
             text-right
           "
         >
 
           <p
             className="
-              text-[11px]
+              text-[10px]
               font-medium
-              text-slate-400
+              text-white
             "
           >
             Return
@@ -381,7 +345,7 @@ export default function ETFStockSummaryCard({
           <p
             className={`
               mt-0.5
-              text-base
+              text-sm
               font-extrabold
               ${
                 isProfit
