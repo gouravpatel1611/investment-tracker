@@ -36,9 +36,16 @@ export default function ETFStockSummaryCard({
 }) {
   const {
     totalInvested = 0,
-    currentValue = 0,
+
+    /* =====================================================
+       CONTEXT SE VALUE AAYEGI
+    ===================================================== */
+    totalCurrentValue = 0,
+
     totalProfitLoss = 0,
-    returnPercent = 0,
+
+    totalReturnPercent = 0,
+
     totalHoldings = 0,
   } = summary;
 
@@ -46,7 +53,10 @@ export default function ETFStockSummaryCard({
     Number(totalProfitLoss) || 0;
 
   const numericReturn =
-    Number(returnPercent) || 0;
+    Number(totalReturnPercent) || 0;
+
+  const numericCurrentValue =
+    Number(totalCurrentValue) || 0;
 
   const isProfit =
     numericProfitLoss >= 0;
@@ -241,7 +251,9 @@ export default function ETFStockSummaryCard({
               sm:text-xl
             "
           >
-            {formatCurrency(currentValue)}
+            {formatCurrency(
+              numericCurrentValue
+            )}
           </p>
 
         </div>
@@ -378,7 +390,9 @@ export default function ETFStockSummaryCard({
               }
             `}
           >
-            {formatPercent(numericReturn)}
+            {formatPercent(
+              numericReturn
+            )}
           </p>
 
         </div>
@@ -388,4 +402,3 @@ export default function ETFStockSummaryCard({
     </div>
   );
 }
-
