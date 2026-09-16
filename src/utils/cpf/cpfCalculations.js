@@ -3,7 +3,9 @@ import {
 } from "./cpfHelpers";
 
 /**
- * Financial Year ke 12 months
+ * ==================================================
+ * FINANCIAL YEAR MONTHS
+ * ==================================================
  *
  * Example:
  * 2026-27
@@ -22,7 +24,8 @@ export function getFinancialYearMonths(
   return Array.from(
     { length: 12 },
     (_, index) => {
-      const monthOffset = index + 3;
+      const monthOffset =
+        index + 3;
 
       const date = new Date(
         startYear,
@@ -57,21 +60,110 @@ export function getFinancialYearMonths(
 }
 
 /**
- * Average Interest Rate
+ * ==================================================
+ * CURRENT MONTH INDEX
+ * ==================================================
+ *
+ * Current month FY ke andar kitne months
+ * complete/active hain.
+ *
+ * Apr 2026 → index 0
+ * May 2026 → index 1
+ * ...
+ * Sep 2026 → index 5
+ *
+ * Current month bhi include hoga.
+ *
+ * Agar FY future hai:
+ * return -1
+ *
+ * Agar FY past hai:
+ * return 11
+ */
+export function getCurrentFinancialYearMonthIndex(
+  financialYear
+) {
+  const months =
+    getFinancialYearMonths(
+      financialYear
+    );
+
+  const today =
+    new Date();
+
+  const currentYear =
+    today.getFullYear();
+
+  const currentMonth =
+    today.getMonth();
+
+  const currentDateValue =
+    currentYear * 12 +
+    currentMonth;
+
+  const firstMonth =
+    months[0];
+
+  const firstMonthValue =
+    firstMonth.year * 12 +
+    firstMonth.month;
+
+  const lastMonth =
+    months[11];
+
+  const lastMonthValue =
+    lastMonth.year * 12 +
+    lastMonth.month;
+
+  if (
+    currentDateValue <
+    firstMonthValue
+  ) {
+    return -1;
+  }
+
+  if (
+    currentDateValue >
+    lastMonthValue
+  ) {
+    return 11;
+  }
+
+  return (
+    currentDateValue -
+    firstMonthValue
+  );
+}
+
+/**
+ * ==================================================
+ * AVERAGE INTEREST RATE
+ * ==================================================
  *
  * Sirf card par display ke liye.
  *
- * Actual calculation mein
- * average rate use nahi hota.
+ * Actual calculation mein average rate
+ * use nahi hota.
  */
 export function calculateAverageInterestRate(
   interestRates = {}
 ) {
   const rates = [
-    Number(interestRates.Q1) || 0,
-    Number(interestRates.Q2) || 0,
-    Number(interestRates.Q3) || 0,
-    Number(interestRates.Q4) || 0,
+    Number(
+      interestRates.Q1
+    ) || 0,
+
+    Number(
+      interestRates.Q2
+    ) || 0,
+
+    Number(
+      interestRates.Q3
+    ) || 0,
+
+    Number(
+      interestRates.Q4
+    ) || 0,
   ];
 
   return (
@@ -84,15 +176,16 @@ export function calculateAverageInterestRate(
 }
 
 /**
- * Opening Balance Interest
+ * ==================================================
+ * OPENING BALANCE INTEREST
+ * ==================================================
  *
- * Opening balance poore financial year
- * ke liye quarter-wise interest kamata hai.
+ * Full FY interest:
  *
- * Q1 = Apr-Jun = 3 months
- * Q2 = Jul-Sep = 3 months
- * Q3 = Oct-Dec = 3 months
- * Q4 = Jan-Mar = 3 months
+ * Q1 = Apr-Jun
+ * Q2 = Jul-Sep
+ * Q3 = Oct-Dec
+ * Q4 = Jan-Mar
  *
  * Formula:
  *
@@ -117,15 +210,20 @@ export function calculateOpeningBalanceInterest({
   ].forEach((quarter) => {
     const rate =
       Number(
-        interestRates[quarter]
+        interestRates[
+          quarter
+        ]
       ) || 0;
 
     const interest =
-      (balance * rate * 3) /
+      (balance *
+        rate *
+        3) /
       1200;
 
-    quarterInterest[quarter] =
-      interest;
+    quarterInterest[
+      quarter
+    ] = interest;
 
     total += interest;
   });
@@ -139,41 +237,116 @@ export function calculateOpeningBalanceInterest({
 
 /**
  * ==================================================
- * OWN CPF - DEPOSIT INTEREST
+ * OPENING BALANCE CURRENT INTEREST
  * ==================================================
  *
- * FINAL RULE A
- *
- * Deposit jis quarter mein hua,
- * usi quarter ka rate us deposit ke
- * poore remaining period par lagega.
+ * Sirf current month tak.
  *
  * Example:
  *
- * 01-Apr → Q1 rate × 12 months
- * 01-May → Q1 rate × 11 months
- * 01-Jun → Q1 rate × 10 months
+ * Apr-Sep = 6 months
  *
- * 01-Jul → Q2 rate × 9 months
- * 01-Aug → Q2 rate × 8 months
- * 01-Sep → Q2 rate × 7 months
+ * Har month ke liye us month ka
+ * applicable quarterly rate use hoga.
+ */
+export function calculateCurrentOpeningBalanceInterest({
+  openingBalance = 0,
+  interestRates = {},
+  financialYear,
+}) {
+  const balance =
+    Number(openingBalance) || 0;
+
+  const months =
+    getFinancialYearMonths(
+      financialYear
+    );
+
+  const currentIndex =
+    getCurrentFinancialYearMonthIndex(
+      financialYear
+    );
+
+  if (
+    currentIndex < 0
+  ) {
+    return {
+      total: 0,
+      monthlyDetails: [],
+    };
+  }
+
+  let total = 0;
+
+  const monthlyDetails =
+    months
+      .slice(
+        0,
+        currentIndex + 1
+      )
+      .map((month) => {
+        const rate =
+          Number(
+            interestRates[
+              month.quarter
+            ]
+          ) || 0;
+
+        const interest =
+          (balance *
+            rate) /
+          1200;
+
+        total += interest;
+
+        return {
+          date: month.date,
+
+          quarter:
+            month.quarter,
+
+          rate,
+
+          interest,
+        };
+      });
+
+  return {
+    total,
+
+    monthlyDetails,
+  };
+}
+
+/**
+ * ==================================================
+ * OWN CPF - DEPOSIT INTEREST
+ * ==================================================
  *
- * 01-Oct → Q3 rate × 6 months
- * 01-Nov → Q3 rate × 5 months
- * 01-Dec → Q3 rate × 4 months
+ * CURRENT VALUE / CURRENT PROFIT RULE
  *
- * 01-Jan → Q4 rate × 3 months
- * 01-Feb → Q4 rate × 2 months
- * 01-Mar → Q4 rate × 1 month
+ * Monthly deposit 1st date ko hota hai.
  *
- * IMPORTANT:
+ * Har deposit:
  *
- * May ka deposit Q1 mein hua.
- * Isliye May deposit ke remaining
- * 11 months par Q1 rate hi lagega.
+ * Deposit month se
+ * current month tak interest kamata hai.
  *
- * Deposit ko Q1/Q2/Q3/Q4 mein split
- * nahi kiya jayega.
+ * Interest ke liye:
+ *
+ * Jis month ka interest calculate ho raha hai,
+ * us month ka applicable quarterly rate use hoga.
+ *
+ * Example:
+ *
+ * Apr deposit:
+ * Apr + May + Jun + Jul + Aug + Sep
+ *
+ * May deposit:
+ * May + Jun + Jul + Aug + Sep
+ *
+ * Sep deposit:
+ * Sep
  */
 export function calculateDepositInterest({
   monthlyDeposit = 0,
@@ -188,60 +361,107 @@ export function calculateDepositInterest({
       financialYear
     );
 
+  const currentIndex =
+    getCurrentFinancialYearMonthIndex(
+      financialYear
+    );
+
+  /**
+   * Future FY
+   */
+  if (
+    currentIndex < 0
+  ) {
+    return {
+      monthlyDetails: [],
+      totalInterest: 0,
+    };
+  }
+
   let totalInterest = 0;
 
   const monthlyDetails =
-    months.map(
-      (month, index) => {
-        /**
-         * Apr = 12
-         * May = 11
-         * Jun = 10
-         * ...
-         * Mar = 1
-         */
-        const remainingMonths =
-          12 - index;
+    months
+      .slice(
+        0,
+        currentIndex + 1
+      )
+      .map(
+        (
+          depositMonth,
+          depositIndex
+        ) => {
+          let depositInterest = 0;
 
-        /**
-         * Deposit jis quarter mein hua
-         * us quarter ka rate.
-         */
-        const rate =
-          Number(
-            interestRates[
-              month.quarter
-            ]
-          ) || 0;
+          /**
+           * Deposit month se current month tak
+           * interest calculate karo.
+           */
+          for (
+            let interestIndex =
+              depositIndex;
+            interestIndex <=
+            currentIndex;
+            interestIndex++
+          ) {
+            const interestMonth =
+              months[
+                interestIndex
+              ];
 
-        /**
-         * Rule A
-         */
-        const interest =
-          (deposit *
-            rate *
-            remainingMonths) /
-          1200;
+            const rate =
+              Number(
+                interestRates[
+                  interestMonth.quarter
+                ]
+              ) || 0;
 
-        totalInterest += interest;
+            const interest =
+              (deposit *
+                rate) /
+              1200;
 
-        return {
-          date: month.date,
+            depositInterest +=
+              interest;
+          }
 
-          quarter:
-            month.quarter,
+          totalInterest +=
+            depositInterest;
 
-          rate,
+          return {
+            date:
+              depositMonth.date,
 
-          deposit,
+            quarter:
+              depositMonth.quarter,
 
-          months:
-            remainingMonths,
+            /**
+             * Deposit month ka rate
+             * information/display ke liye.
+             *
+             * Actual interest mein
+             * har calculation month ka rate
+             * use hua hai.
+             */
+            rate:
+              Number(
+                interestRates[
+                  depositMonth.quarter
+                ]
+              ) || 0,
 
-          interest,
-        };
-      }
-    );
+            deposit,
+
+            months:
+              currentIndex -
+              depositIndex +
+              1,
+
+            interest:
+              depositInterest,
+          };
+        }
+      );
 
   return {
     monthlyDetails,
@@ -255,12 +475,32 @@ export function calculateDepositInterest({
  * OWN CPF CALCULATION
  * ==================================================
  *
- * Own CPF:
+ * Existing fields preserve kiye gaye hain
+ * taaki cards break na hon.
+ *
+ * New fields:
+ *
+ * currentInvested
+ * currentProfit
+ * currentValue
+ *
+ * Current Profit =
+ *
+ * Opening Balance Interest
+ * +
+ * Own Deposit Interest
+ *
+ * Current Invested =
  *
  * Opening Balance
- * + Annual Contribution
- * + Opening Balance Interest
- * + Deposit Interest
+ * +
+ * Current FY deposits
+ *
+ * Current Value =
+ *
+ * Current Invested
+ * +
+ * Current Profit
  */
 export function calculateCPF({
   openingBalance = 0,
@@ -275,23 +515,25 @@ export function calculateCPF({
     Number(monthlyDeposit) || 0;
 
   /**
-   * Opening balance interest
+   * Full FY opening interest
+   *
+   * Existing calculation preserve.
    */
   const openingInterest =
     calculateOpeningBalanceInterest({
-      openingBalance: opening,
+      openingBalance:
+        opening,
 
       interestRates,
     });
 
   /**
-   * Monthly deposit interest
-   *
-   * Rule A
+   * Current month tak opening interest.
    */
-  const depositInterest =
-    calculateDepositInterest({
-      monthlyDeposit: deposit,
+  const currentOpeningInterest =
+    calculateCurrentOpeningBalanceInterest({
+      openingBalance:
+        opening,
 
       interestRates,
 
@@ -299,30 +541,97 @@ export function calculateCPF({
     });
 
   /**
-   * Annual deposit
+   * Current month tak deposit interest.
+   */
+  const depositInterest =
+    calculateDepositInterest({
+      monthlyDeposit:
+        deposit,
+
+      interestRates,
+
+      financialYear,
+    });
+
+  /**
+   * Full annual deposit.
+   *
+   * Existing field preserve.
    */
   const totalDeposit =
     deposit * 12;
 
   /**
-   * Total interest
+   * Current FY months.
+   */
+  const currentIndex =
+    getCurrentFinancialYearMonthIndex(
+      financialYear
+    );
+
+  const currentMonthCount =
+    currentIndex >= 0
+      ? currentIndex + 1
+      : 0;
+
+  /**
+   * Current deposits.
+   *
+   * Example:
+   *
+   * Apr-Sep = 6 deposits
+   */
+  const currentDeposit =
+    deposit *
+    currentMonthCount;
+
+  /**
+   * Full FY total interest.
+   *
+   * Existing field preserve.
    */
   const totalInterest =
     openingInterest.total +
     depositInterest.totalInterest;
 
   /**
-   * Closing balance
+   * Existing full FY closing balance.
+   *
+   * Isko remove nahi kiya gaya hai
+   * taaki existing cards break na hon.
    */
   const closingBalance =
     opening +
     totalDeposit +
     totalInterest;
 
-  return {
-    openingBalance: opening,
+  /**
+   * ==================================================
+   * CURRENT VALUE
+   * ==================================================
+   */
 
-    monthlyDeposit: deposit,
+  const currentInvested =
+    opening +
+    currentDeposit;
+
+  const currentProfit =
+    currentOpeningInterest.total +
+    depositInterest.totalInterest;
+
+  const currentValue =
+    currentInvested +
+    currentProfit;
+
+  return {
+    /**
+     * Existing fields
+     */
+    openingBalance:
+      opening,
+
+    monthlyDeposit:
+      deposit,
 
     totalDeposit,
 
@@ -341,6 +650,28 @@ export function calculateCPF({
     totalInterest,
 
     closingBalance,
+
+    /**
+     * ==================================================
+     * NEW CURRENT-VALUE FIELDS
+     * ==================================================
+     */
+
+    currentMonthCount,
+
+    currentDeposit,
+
+    currentInvested,
+
+    currentOpeningInterest:
+      currentOpeningInterest.total,
+
+    currentDepositInterest:
+      depositInterest.totalInterest,
+
+    currentProfit,
+
+    currentValue,
   };
 }
 
@@ -349,25 +680,17 @@ export function calculateCPF({
  * NVS CPF CALCULATION
  * ==================================================
  *
- * IMPORTANT:
+ * NVS contribution par interest nahi.
  *
- * NVS contribution par koi interest nahi.
+ * Basic Pay × 10%
+ * = Monthly Contribution
  *
- * Sirf opening balance par
- * quarterly interest lagega.
+ * Profit:
  *
- * Basic Pay × 10% = Monthly Contribution
+ * Sirf opening balance ka
+ * current month tak interest.
  *
- * Monthly Contribution × 12
- * = Annual Contribution
- *
- * Closing:
- *
- * Opening Balance
- * + Annual Contribution
- * + Opening Balance Interest
- *
- * Deposit Interest = 0
+ * NVS deposit interest = 0
  */
 export function calculateNVSCPF({
   openingBalance = 0,
@@ -382,44 +705,57 @@ export function calculateNVSCPF({
     Number(basicPay) || 0;
 
   /**
-   * NVS contribution
-   *
-   * Basic Pay ka 10%
+   * Monthly NVS contribution
    */
   const monthlyContribution =
     pay * 0.10;
 
   /**
-   * Annual contribution
+   * Full FY contribution
    */
   const totalDeposit =
     monthlyContribution * 12;
 
   /**
-   * Sirf opening balance par
-   * interest calculate hoga.
+   * Full FY opening interest.
+   *
+   * Existing field preserve.
    */
   const openingInterest =
     calculateOpeningBalanceInterest({
-      openingBalance: opening,
+      openingBalance:
+        opening,
 
       interestRates,
     });
 
   /**
-   * NVS mein contribution/deposit
-   * par interest ZERO hai.
+   * Current month tak opening interest.
    */
-  const interestOnDeposits = 0;
+  const currentOpeningInterest =
+    calculateCurrentOpeningBalanceInterest({
+      openingBalance:
+        opening,
+
+      interestRates,
+
+      financialYear,
+    });
 
   /**
-   * Total interest
+   * NVS deposit par interest ZERO.
+   */
+  const interestOnDeposits =
+    0;
+
+  /**
+   * Full FY total interest.
    */
   const totalInterest =
     openingInterest.total;
 
   /**
-   * Closing balance
+   * Existing full FY closing balance.
    */
   const closingBalance =
     opening +
@@ -427,12 +763,48 @@ export function calculateNVSCPF({
     totalInterest;
 
   /**
-   * NVS monthlyDetails mein
-   * deposit interest ZERO rakha gaya hai.
+   * Current FY month count.
+   */
+  const currentIndex =
+    getCurrentFinancialYearMonthIndex(
+      financialYear
+    );
+
+  const currentMonthCount =
+    currentIndex >= 0
+      ? currentIndex + 1
+      : 0;
+
+  /**
+   * Current NVS contribution.
+   */
+  const currentDeposit =
+    monthlyContribution *
+    currentMonthCount;
+
+  /**
+   * ==================================================
+   * CURRENT VALUE
+   * ==================================================
    *
-   * Isse card/table future mein
-   * monthly contribution dikha sakta hai,
-   * lekin interest 0 rahega.
+   * NVS profit mein
+   * deposit interest include nahi hai.
+   */
+  const currentInvested =
+    opening +
+    currentDeposit;
+
+  const currentProfit =
+    currentOpeningInterest.total;
+
+  const currentValue =
+    currentInvested +
+    currentProfit;
+
+  /**
+   * Monthly details
+   *
+   * Existing structure preserve.
    */
   const months =
     getFinancialYearMonths(
@@ -440,33 +812,46 @@ export function calculateNVSCPF({
     );
 
   const monthlyDetails =
-    months.map(
-      (month) => ({
-        date: month.date,
+    currentIndex >= 0
+      ? months
+          .slice(
+            0,
+            currentIndex + 1
+          )
+          .map(
+            (month) => ({
+              date:
+                month.date,
 
-        quarter:
-          month.quarter,
+              quarter:
+                month.quarter,
 
-        rate:
-          Number(
-            interestRates[
-              month.quarter
-            ]
-          ) || 0,
+              rate:
+                Number(
+                  interestRates[
+                    month.quarter
+                  ]
+                ) || 0,
 
-        deposit:
-          monthlyContribution,
+              deposit:
+                monthlyContribution,
 
-        months: 0,
+              months: 0,
 
-        interest: 0,
-      })
-    );
+              interest: 0,
+            })
+          )
+      : [];
 
   return {
-    openingBalance: opening,
+    /**
+     * Existing fields
+     */
+    openingBalance:
+      opening,
 
-    basicPay: pay,
+    basicPay:
+      pay,
 
     monthlyDeposit:
       monthlyContribution,
@@ -489,6 +874,28 @@ export function calculateNVSCPF({
     totalInterest,
 
     closingBalance,
+
+    /**
+     * ==================================================
+     * NEW CURRENT-VALUE FIELDS
+     * ==================================================
+     */
+
+    currentMonthCount,
+
+    currentDeposit,
+
+    currentInvested,
+
+    currentOpeningInterest:
+      currentOpeningInterest.total,
+
+    currentDepositInterest:
+      0,
+
+    currentProfit,
+
+    currentValue,
   };
 }
 
@@ -502,11 +909,30 @@ export function calculateNVSCPF({
  *
  * Own + NVS calculation se
  * automatically calculate hoti hai.
+ *
+ * Existing fields preserve:
+ *
+ * ownClosingBalance
+ * nvsClosingBalance
+ * totalClosingBalance
+ *
+ * New fields:
+ *
+ * ownCurrentValue
+ * nvsCurrentValue
+ * totalCurrentValue
+ *
+ * ownProfit
+ * nvsProfit
+ * totalProfit
  */
 export function calculateCPFSummary({
   ownCPF = {},
   nvsCPF = {},
 }) {
+  /**
+   * Existing closing values
+   */
   const ownClosing =
     Number(
       ownCPF.closingBalance
@@ -517,7 +943,39 @@ export function calculateCPFSummary({
       nvsCPF.closingBalance
     ) || 0;
 
+  /**
+   * New current values
+   */
+  const ownCurrentValue =
+    Number(
+      ownCPF.currentValue
+    ) || 0;
+
+  const nvsCurrentValue =
+    Number(
+      nvsCPF.currentValue
+    ) || 0;
+
+  /**
+   * New profit
+   */
+  const ownProfit =
+    Number(
+      ownCPF.currentProfit
+    ) || 0;
+
+  const nvsProfit =
+    Number(
+      nvsCPF.currentProfit
+    ) || 0;
+
   return {
+    /**
+     * ==================================================
+     * OLD FIELDS - PRESERVED
+     * ==================================================
+     */
+
     ownClosingBalance:
       ownClosing,
 
@@ -527,5 +985,27 @@ export function calculateCPFSummary({
     totalClosingBalance:
       ownClosing +
       nvsClosing,
+
+    /**
+     * ==================================================
+     * NEW SUMMARY FIELDS
+     * ==================================================
+     */
+
+    ownCurrentValue,
+
+    nvsCurrentValue,
+
+    totalCurrentValue:
+      ownCurrentValue +
+      nvsCurrentValue,
+
+    ownProfit,
+
+    nvsProfit,
+
+    totalProfit:
+      ownProfit +
+      nvsProfit,
   };
 }

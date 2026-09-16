@@ -473,30 +473,34 @@ export default function CPF() {
           ================================================== */}
 
           <CFPSummaryCard
-            financialYear={
-              record.financialYear
-            }
+              financialYear={
+                record.financialYear
+              }
 
-            ownClosingBalance={
-              summary.ownClosingBalance
-            }
+              ownCurrentValue={
+                summary.ownCurrentValue
+              }
 
-            nvsClosingBalance={
-              summary.nvsClosingBalance
-            }
+              ownProfit={
+                summary.ownProfit
+              }
 
-            totalClosingBalance={
-              summary.totalClosingBalance
-            }
+              nvsCurrentValue={
+                summary.nvsCurrentValue
+              }
 
-            ownInterest={
-              ownCalculation.totalInterest
-            }
+              nvsProfit={
+                summary.nvsProfit
+              }
 
-            nvsInterest={
-              nvsCalculation.totalInterest
-            }
-          />
+              totalCurrentValue={
+                summary.totalCurrentValue
+              }
+
+              totalProfit={
+                summary.totalProfit
+              }
+            />
 
 
           {/* =================================================

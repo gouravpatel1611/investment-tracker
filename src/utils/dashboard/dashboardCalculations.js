@@ -203,6 +203,7 @@ export function calculateBonds(
 // CPF
 // ==========================================
 
+
 export function calculateCPF(
   cpfRecord = null
 ) {
@@ -219,6 +220,74 @@ export function calculateCPF(
       currentValue: 0,
     };
   }
+
+
+  // ----------------------------------------
+  // CURRENT DATE
+  // ----------------------------------------
+
+  const today =
+    new Date();
+
+
+  // ----------------------------------------
+  // FINANCIAL YEAR START
+  // ----------------------------------------
+
+  const financialYear =
+    String(
+      cpfRecord?.financialYear || ""
+    );
+
+  const fyStartYear =
+    Number(
+      financialYear
+        .split("-")[0]
+    );
+
+  const financialYearStart =
+    new Date(
+      fyStartYear,
+      3,
+      1
+    );
+
+
+  // ----------------------------------------
+  // CURRENT MONTH
+  // APRIL = 1 ... MARCH = 12
+  // ----------------------------------------
+
+  let monthsElapsed = 0;
+
+  if (
+    today >=
+    financialYearStart
+  ) {
+
+    monthsElapsed =
+      (
+        today.getFullYear() -
+        financialYearStart.getFullYear()
+      ) *
+        12 +
+      (
+        today.getMonth() -
+        financialYearStart.getMonth()
+      ) +
+      1;
+
+  }
+
+  // Maximum 12 months
+  monthsElapsed =
+    Math.min(
+      Math.max(
+        monthsElapsed,
+        0
+      ),
+      12
+    );
 
 
   // ----------------------------------------
@@ -262,42 +331,215 @@ export function calculateCPF(
 
 
   // ----------------------------------------
-  // CLOSING BALANCES
+  // BASIC VALUES
   // ----------------------------------------
 
-  const ownClosingBalance =
+  const ownOpeningBalance =
     toNumber(
-      ownCalculation?.closingBalance
+      cpfRecord?.own?.openingBalance
     );
 
-  const nvsClosingBalance =
+  const nvsOpeningBalance =
     toNumber(
-      nvsCalculation?.closingBalance
+      cpfRecord?.nvs?.openingBalance
     );
 
-
-  // ----------------------------------------
-  // TOTAL INTEREST
-  // ----------------------------------------
-
-  const ownInterest =
+  const ownMonthlyDeposit =
     toNumber(
-      ownCalculation?.totalInterest
+      cpfRecord?.own?.monthlyContribution
     );
 
-  const nvsInterest =
+  const nvsBasicPay =
     toNumber(
-      nvsCalculation?.totalInterest
+      cpfRecord?.nvs?.basicPay
     );
 
 
   // ----------------------------------------
-  // CURRENT VALUE
+  // NVS MONTHLY CONTRIBUTION
+  // 10% OF BASIC PAY
   // ----------------------------------------
 
-  const currentValue =
-    ownClosingBalance +
-    nvsClosingBalance;
+  const nvsMonthlyDeposit =
+    nvsBasicPay * 0.10;
+
+
+  // ----------------------------------------
+  // CURRENT MONTH DEPOSITS
+  // ----------------------------------------
+
+  const ownDeposits =
+    ownMonthlyDeposit *
+    monthsElapsed;
+
+  const nvsDeposits =
+    nvsMonthlyDeposit *
+    monthsElapsed;
+
+
+  // ----------------------------------------
+  // OPENING BALANCE INTEREST
+  // CURRENT MONTH INCLUDED
+  // ----------------------------------------
+
+  function calculateOpeningInterest(
+    openingBalance,
+    interestRates
+  ) {
+
+    let interest = 0;
+
+    for (
+      let month = 0;
+      month < monthsElapsed;
+      month++
+    ) {
+
+      // April-June = Q1
+      // July-September = Q2
+      // October-December = Q3
+      // January-March = Q4
+
+      let rate = 0;
+
+      if (month < 3) {
+        rate =
+          toNumber(
+            interestRates?.Q1
+          );
+      }
+      else if (month < 6) {
+        rate =
+          toNumber(
+            interestRates?.Q2
+          );
+      }
+      else if (month < 9) {
+        rate =
+          toNumber(
+            interestRates?.Q3
+          );
+      }
+      else {
+        rate =
+          toNumber(
+            interestRates?.Q4
+          );
+      }
+
+      interest +=
+        openingBalance *
+        (rate / 100) /
+        12;
+    }
+
+    return interest;
+  }
+
+
+  // ----------------------------------------
+  // NVS OPENING BALANCE INTEREST
+  // ----------------------------------------
+
+  const nvsOpeningInterest =
+    calculateOpeningInterest(
+      nvsOpeningBalance,
+      cpfRecord?.nvs?.interestRates
+    );
+
+
+  // ----------------------------------------
+  // OWN OPENING BALANCE INTEREST
+  // ----------------------------------------
+
+  const ownOpeningInterest =
+    calculateOpeningInterest(
+      ownOpeningBalance,
+      cpfRecord?.own?.interestRates
+    );
+
+
+  // ----------------------------------------
+  // OWN DEPOSIT INTEREST
+  // ----------------------------------------
+  //
+  // Deposit is made on 1st of every month.
+  // Current month is included.
+  //
+  // Each deposit earns interest for the
+  // remaining months including its own month.
+  //
+  // Rate used = rate of the month in which
+  // the interest is calculated.
+  // ----------------------------------------
+
+  function calculateOwnDepositInterest() {
+
+    let interest = 0;
+
+    for (
+      let depositMonth = 0;
+      depositMonth < monthsElapsed;
+      depositMonth++
+    ) {
+
+      const depositAmount =
+        ownMonthlyDeposit;
+
+      // Number of months for which
+      // this deposit earns interest
+      const months =
+        monthsElapsed -
+        depositMonth;
+
+      for (
+        let interestMonth =
+          depositMonth;
+        interestMonth <
+        monthsElapsed;
+        interestMonth++
+      ) {
+
+        let rate = 0;
+
+        if (interestMonth < 3) {
+          rate =
+            toNumber(
+              cpfRecord?.own?.interestRates?.Q1
+            );
+        }
+        else if (interestMonth < 6) {
+          rate =
+            toNumber(
+              cpfRecord?.own?.interestRates?.Q2
+            );
+        }
+        else if (interestMonth < 9) {
+          rate =
+            toNumber(
+              cpfRecord?.own?.interestRates?.Q3
+            );
+        }
+        else {
+          rate =
+            toNumber(
+              cpfRecord?.own?.interestRates?.Q4
+            );
+        }
+
+        interest +=
+          depositAmount *
+          (rate / 100) /
+          12;
+      }
+    }
+
+    return interest;
+  }
+
+
+  const ownDepositInterest =
+    calculateOwnDepositInterest();
 
 
   // ----------------------------------------
@@ -305,8 +547,9 @@ export function calculateCPF(
   // ----------------------------------------
 
   const profit =
-    ownInterest +
-    nvsInterest;
+    nvsOpeningInterest +
+    ownOpeningInterest +
+    ownDepositInterest;
 
 
   // ----------------------------------------
@@ -314,7 +557,18 @@ export function calculateCPF(
   // ----------------------------------------
 
   const invested =
-    currentValue -
+    ownOpeningBalance +
+    nvsOpeningBalance +
+    ownDeposits +
+    nvsDeposits;
+
+
+  // ----------------------------------------
+  // CURRENT VALUE
+  // ----------------------------------------
+
+  const currentValue =
+    invested +
     profit;
 
 
@@ -336,7 +590,6 @@ export function calculateCPF(
       round(currentValue),
   };
 }
-
 
 // ==========================================
 // LIC / PLI

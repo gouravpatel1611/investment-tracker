@@ -1,3 +1,4 @@
+
 import {
   IndianRupee,
 } from "lucide-react";
@@ -6,9 +7,11 @@ import {
   formatCurrency,
 } from "../../utils/licPli/licPliFormatters";
 
+
 export default function LicPliSummaryCard({
   summary,
 }) {
+
   const rows = [
     {
       key: "lic",
@@ -24,23 +27,36 @@ export default function LicPliSummaryCard({
     },
   ];
 
-  const totalPremium = rows.reduce(
-    (total, row) =>
-      total +
-      Number(
-        summary?.[row.key]?.premiumAmount
-      || 0),
-    0
-  );
 
-  const totalPaid = rows.reduce(
-    (total, row) =>
-      total +
-      Number(
-        summary?.[row.key]?.paid
-      || 0),
-    0
-  );
+  // ========================================
+  // TOTAL PREMIUM
+  // ========================================
+
+  const totalPremium =
+    rows.reduce(
+      (total, row) =>
+        total +
+        Number(
+          summary?.[row.key]?.premiumAmount || 0
+        ),
+      0
+    );
+
+
+  // ========================================
+  // TOTAL PAID
+  // ========================================
+
+  const totalPaid =
+    rows.reduce(
+      (total, row) =>
+        total +
+        Number(
+          summary?.[row.key]?.paid || 0
+        ),
+      0
+    );
+
 
   return (
     <section
@@ -54,7 +70,11 @@ export default function LicPliSummaryCard({
         shadow-xl
       "
     >
-      {/* Header */}
+
+      {/* =====================================
+          HEADER
+      ====================================== */}
+
       <div
         className="
           flex
@@ -66,6 +86,7 @@ export default function LicPliSummaryCard({
           py-3
         "
       >
+
         <div
           className="
             flex
@@ -81,7 +102,9 @@ export default function LicPliSummaryCard({
           <IndianRupee size={17} />
         </div>
 
+
         <div>
+
           <h2
             className="
               text-sm
@@ -92,48 +115,131 @@ export default function LicPliSummaryCard({
             Policy Summary
           </h2>
 
-          <p
-            className="
-              text-[10px]
-              text-slate-500
-            "
-          >
-            Premium & total paid
-          </p>
+
         </div>
+
       </div>
 
-      {/* Rows */}
-      <div className="divide-y divide-slate-800">
-        {rows.map((row) => (
-          <div
-            key={row.key}
-            className="
-              grid
-              grid-cols-[70px_1fr_1fr]
-              items-center
-              gap-2
-              px-4
-              py-2.5
-            "
-          >
-            <span
+
+      {/* =====================================
+          COLUMN HEADER
+      ====================================== */}
+
+      <div
+        className="
+          grid
+          grid-cols-[58px_1fr_72px_1fr]
+          items-center
+          gap-2
+          border-b
+          border-slate-800
+          bg-slate-950/50
+          px-4
+          py-2
+        "
+      >
+
+        <span
+          className="
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-wide
+            text-white
+          "
+        >
+          Type
+        </span>
+
+
+        <span
+          className="
+            text-right
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-wide
+            text-white
+          "
+        >
+          Premium
+        </span>
+
+
+        <span
+          className="
+            text-center
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-wide
+            text-white
+          "
+        >
+          Inst.
+        </span>
+
+
+        <span
+          className="
+            text-right
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-wide
+            text-white
+          "
+        >
+          Total Paid
+        </span>
+
+      </div>
+
+
+      {/* =====================================
+          ROWS
+      ====================================== */}
+
+      <div
+        className="
+          divide-y
+          divide-slate-800
+        "
+      >
+
+        {rows.map(
+          (row) => (
+
+            <div
+              key={row.key}
               className="
-                text-xs
-                font-bold
-                text-slate-300
+                grid
+                grid-cols-[58px_1fr_72px_1fr]
+                items-center
+                gap-2
+                px-4
+                py-2.5
               "
             >
-              {row.label}
-            </span>
 
-            <div>
-              <p className="text-[9px] text-slate-500">
-                PREMIUM
-              </p>
+              {/* TYPE */}
+
+              <span
+                className="
+                  text-xs
+                  font-bold
+                  text-white
+                "
+              >
+                {row.label}
+              </span>
+
+
+              {/* PREMIUM */}
 
               <p
                 className="
+                  text-right
                   text-xs
                   font-semibold
                   text-white
@@ -143,15 +249,27 @@ export default function LicPliSummaryCard({
                   summary?.[row.key]?.premiumAmount
                 )}
               </p>
-            </div>
 
-            <div>
-              <p className="text-[9px] text-slate-500">
-                PAID
-              </p>
+
+              {/* INSTALLMENTS */}
 
               <p
                 className="
+                  text-center
+                  text-xs
+                  font-semibold
+                  text-white
+                "
+              >
+                {summary?.[row.key]?.installmentPaid || 0}
+              </p>
+
+
+              {/* TOTAL PAID */}
+
+              <p
+                className="
+                  text-right
                   text-xs
                   font-bold
                   text-emerald-400
@@ -161,15 +279,21 @@ export default function LicPliSummaryCard({
                   summary?.[row.key]?.paid
                 )}
               </p>
-            </div>
-          </div>
-        ))}
 
-        {/* Total */}
+            </div>
+
+          )
+        )}
+
+
+        {/* ===================================
+            TOTAL
+        ==================================== */}
+
         <div
           className="
             grid
-            grid-cols-[70px_1fr_1fr]
+            grid-cols-[58px_1fr_72px_1fr]
             items-center
             gap-2
             border-t
@@ -179,6 +303,9 @@ export default function LicPliSummaryCard({
             py-3
           "
         >
+
+          {/* TOTAL LABEL */}
+
           <span
             className="
               text-xs
@@ -189,51 +316,48 @@ export default function LicPliSummaryCard({
             TOTAL
           </span>
 
-          <div>
-            <p
-              className="
-                text-[9px]
-                font-semibold
-                text-slate-500
-              "
-            >
-              PREMIUM
-            </p>
 
-            <p
-              className="
-                text-sm
-                font-extrabold
-                text-white
-              "
-            >
-              {formatCurrency(totalPremium)}
-            </p>
-          </div>
+          {/* TOTAL PREMIUM */}
 
-          <div>
-            <p
-              className="
-                text-[9px]
-                font-semibold
-                text-slate-500
-              "
-            >
-              PAID
-            </p>
+          <p
+            className="
+              text-right
+              text-sm
+              font-extrabold
+              text-white
+            "
+          >
+            {formatCurrency(
+              totalPremium
+            )}
+          </p>
 
-            <p
-              className="
-                text-sm
-                font-extrabold
-                text-emerald-400
-              "
-            >
-              {formatCurrency(totalPaid)}
-            </p>
-          </div>
+
+          {/* EMPTY INSTALLMENT COLUMN */}
+
+          <div />
+
+
+          {/* TOTAL PAID */}
+
+          <p
+            className="
+              text-right
+              text-sm
+              font-extrabold
+              text-emerald-400
+            "
+          >
+            {formatCurrency(
+              totalPaid
+            )}
+          </p>
+
         </div>
+
       </div>
+
     </section>
   );
 }
+

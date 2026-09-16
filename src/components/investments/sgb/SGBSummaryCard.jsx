@@ -13,7 +13,9 @@ import {
 // ==========================================
 
 const formatCurrency = (value) => {
-  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+  return `₹${Math.round(
+    Number(value || 0)
+  ).toLocaleString("en-IN")}`;
 };
 
 
@@ -34,26 +36,56 @@ const Stat = ({
   icon: Icon,
   label,
   value,
-  valueClass = "text-gray-200",
+  valueClass = "text-white",
 }) => {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-3">
+    <div
+      className="
+        rounded-xl
+        border border-gray-800
+        bg-gray-950/60
+        px-3
+        py-2.5
+      "
+    >
 
-      <div className="mb-1 flex items-center gap-2">
+      <div
+        className="
+          flex
+          items-center
+          gap-1.5
+        "
+      >
 
         <Icon
-          size={14}
-          className="text-gray-500"
+          size={13}
+          className="text-white"
         />
 
-        <p className="text-[11px] text-gray-500">
+        <p
+          className="
+            truncate
+            text-[10px]
+            font-medium
+            uppercase
+            tracking-wide
+            text-white
+          "
+        >
           {label}
         </p>
 
       </div>
 
+
       <p
-        className={`text-sm font-semibold ${valueClass}`}
+        className={`
+          mt-1
+          truncate
+          text-sm
+          font-bold
+          ${valueClass}
+        `}
       >
         {value}
       </p>
@@ -71,10 +103,6 @@ const SGBSummaryCard = ({
   summary,
 }) => {
 
-  // ========================================
-  // GAIN STATUS
-  // ========================================
-
   const isGain =
     Number(summary?.gain || 0) >= 0;
 
@@ -89,31 +117,76 @@ const SGBSummaryCard = ({
 
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 p-4 sm:p-5">
-
+    <div
+      className="
+        relative
+        overflow-hidden
+        rounded-2xl
+        border border-gray-800
+        bg-gray-900
+        p-4
+      "
+    >
 
       {/* =====================================
           HEADER
       ====================================== */}
 
-      <div className="relative mb-5 flex items-center justify-between">
+      <div
+        className="
+          mb-3
+          flex
+          items-center
+          justify-between
+          gap-3
+        "
+      >
 
-        <div className="flex items-center gap-3">
+        <div
+          className="
+            flex
+            min-w-0
+            items-center
+            gap-2.5
+          "
+        >
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
-
-            <Gem size={21} />
-
+          <div
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              bg-yellow-500/10
+              text-yellow-400
+            "
+          >
+            <Gem size={19} />
           </div>
 
 
-          <div>
+          <div className="min-w-0">
 
-            <h2 className="text-base font-semibold text-gray-200">
+            <h2
+              className="
+                truncate
+                text-sm
+                font-bold
+                text-white
+              "
+            >
               SGB Portfolio
             </h2>
 
-            <p className="text-xs text-gray-500">
+            <p
+              className="
+                text-[10px]
+                text-white
+              "
+            >
               Investment Summary
             </p>
 
@@ -122,157 +195,42 @@ const SGBSummaryCard = ({
         </div>
 
 
-        <div className="rounded-full border border-gray-800 bg-gray-950 px-3 py-1 text-xs font-medium text-gray-400">
-
+        <div
+          className="
+            shrink-0
+            rounded-full
+            border border-gray-800
+            bg-gray-950
+            px-2.5
+            py-1
+            text-[10px]
+            font-semibold
+            text-white
+          "
+        >
           {summary?.seriesCount || 0} Series
-
         </div>
 
       </div>
 
 
       {/* =====================================
-          PURCHASE + CURRENT VALUE
-      ====================================== */}
-
-      <div className="grid grid-cols-2 gap-3">
-
-
-        {/* ===================================
-            PURCHASE VALUE
-        ==================================== */}
-
-        <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-3">
-
-          <p className="mb-1 text-[11px] text-gray-500">
-            Purchase Value
-          </p>
-
-          <p className="text-lg font-bold text-gray-200">
-
-            {formatCurrency(
-              summary?.purchaseValue
-            )}
-
-          </p>
-
-        </div>
-
-
-        {/* ===================================
-            CURRENT VALUE WITH INTEREST
-        ==================================== */}
-
-        <div className="rounded-xl border border-yellow-500/10 bg-yellow-500/5 p-3">
-
-          <p className="mb-1 text-[11px] text-gray-500">
-            Current Value with Interest
-          </p>
-
-          <p className="text-lg font-bold text-yellow-400">
-
-            {formatCurrency(
-              currentValueWithInterest
-            )}
-
-          </p>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          TOTAL GAIN
+          PRIMARY VALUES
       ====================================== */}
 
       <div
-        className={`mt-3 rounded-xl border p-3 ${
-          isGain
-            ? "border-emerald-500/15 bg-emerald-500/5"
-            : "border-red-500/15 bg-red-500/5"
-        }`}
+        className="
+          grid
+          grid-cols-2
+          gap-2
+        "
       >
 
-        <div className="flex items-center justify-between gap-3">
-
-
-          <div>
-
-            <div className="mb-1 flex items-center gap-2">
-
-              <TrendingUp
-                size={15}
-                className={
-                  isGain
-                    ? "text-emerald-400"
-                    : "text-red-400"
-                }
-              />
-
-              <span className="text-xs text-gray-500">
-                Total Gain
-              </span>
-
-            </div>
-
-
-            <p
-              className={`text-2xl font-bold ${
-                isGain
-                  ? "text-emerald-400"
-                  : "text-red-400"
-              }`}
-            >
-
-              {isGain ? "+" : ""}
-
-              {formatCurrency(
-                summary?.gain
-              )}
-
-            </p>
-
-          </div>
-
-
-          {/* TOTAL GAIN PERCENTAGE */}
-
-          <div
-            className={`rounded-full px-3 py-1.5 text-sm font-bold ${
-              isGain
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-red-500/10 text-red-400"
-            }`}
-          >
-
-            {isGain ? "+" : ""}
-
-            {Number(
-              summary?.totalGainPercent || 0
-            ).toFixed(2)}
-
-            %
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          STATS
-      ====================================== */}
-
-      <div className="mt-3 grid grid-cols-2 gap-2">
-
-
-        {/* GRAM / UNITS */}
+        {/* UNIT */}
 
         <Stat
           icon={Coins}
-          label="Gram / Units"
+          label="Unit"
           value={`${formatUnits(
             summary?.units
           )} g`}
@@ -290,7 +248,46 @@ const SGBSummaryCard = ({
         />
 
 
-        {/* INTEREST */}
+        {/* INVESTED */}
+
+        <Stat
+          icon={IndianRupee}
+          label="Invested"
+          value={formatCurrency(
+            summary?.purchaseValue
+          )}
+        />
+
+
+        {/* GAIN */}
+
+        <Stat
+          icon={TrendingUp}
+          label="Gain"
+          value={formatCurrency(
+            summary?.gain
+          )}
+          valueClass={
+            isGain
+              ? "text-emerald-400"
+              : "text-red-400"
+          }
+        />
+
+
+        {/* CURRENT VALUE */}
+
+        <Stat
+          icon={IndianRupee}
+          label="Current Value"
+          value={formatCurrency(
+            summary?.currentValue
+          )}
+          valueClass="text-yellow-400"
+        />
+
+
+        {/* INTEREST RECEIVED */}
 
         <Stat
           icon={IndianRupee}
@@ -298,15 +295,33 @@ const SGBSummaryCard = ({
           value={formatCurrency(
             summary?.interest
           )}
-          valueClass="text-blue-300"
+          valueClass="text-green-300"
         />
 
 
-        {/* PROFIT */}
+        {/* GAIN % */}
+
+        <Stat
+          icon={Percent}
+          label="Gain %"
+          value={`${
+            isGain ? "+" : ""
+          }${Number(
+            summary?.totalGainPercent || 0
+          ).toFixed(2)}%`}
+          valueClass={
+            isGain
+              ? "text-emerald-400"
+              : "text-red-400"
+          }
+        />
+
+
+        {/* TOTAL PROFIT */}
 
         <Stat
           icon={TrendingUp}
-          label="Gain"
+          label="Total Profit"
           value={formatCurrency(
             summary?.profit
           )}
@@ -321,11 +336,13 @@ const SGBSummaryCard = ({
 
       </div>
 
+
+
+
     </div>
   );
 };
 
 
 export default SGBSummaryCard;
-
 

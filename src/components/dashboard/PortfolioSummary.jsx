@@ -1,3 +1,4 @@
+
 import {
   useMemo,
 } from "react";
@@ -167,23 +168,23 @@ function PortfolioSummary() {
 
           <p
             className="
-              text-xs
+              text-xm
               font-semibold
               uppercase
               tracking-wider
-              text-slate-400
+              text-white
             "
           >
-            Total portfolio
+            Total Portfolio
           </p>
 
           <h2
             className="
               mt-1
-              text-2xl
+              text-3xl
               font-extrabold
               tracking-tight
-              text-white
+              text-amber-400
             "
           >
             {formatCurrency(
@@ -197,8 +198,8 @@ function PortfolioSummary() {
         <div
           className="
             flex
-            h-9
-            w-9
+            h-10
+            w-10
             shrink-0
             items-center
             justify-center
@@ -209,7 +210,8 @@ function PortfolioSummary() {
         >
 
           <TrendingUp
-            size={18}
+            size={19}
+            strokeWidth={2.2}
           />
 
         </div>
@@ -248,14 +250,14 @@ function PortfolioSummary() {
               flex
               items-center
               gap-1.5
-              text-xs
-              font-medium
-              text-slate-400
+              text-xm
+              font-semibold
+              text-white
             "
           >
 
             <IndianRupee
-              size={13}
+              size={14}
             />
 
             Invested
@@ -266,9 +268,9 @@ function PortfolioSummary() {
           <p
             className="
               mt-1
-              text-sm
-              font-bold
-              text-slate-100
+              text-base
+              font-extrabold
+              text-white
             "
           >
             {formatCurrency(
@@ -294,9 +296,9 @@ function PortfolioSummary() {
 
           <p
             className="
-              text-xs
-              font-medium
-              text-slate-400
+              text-xm
+              font-semibold
+              text-white
             "
           >
             Profit
@@ -306,8 +308,8 @@ function PortfolioSummary() {
           <p
             className={`
               mt-1
-              text-sm
-              font-bold
+              text-base
+              font-extrabold
               ${
                 summary.totalProfit >= 0
                   ? "text-emerald-400"
@@ -338,9 +340,9 @@ function PortfolioSummary() {
 
           <p
             className="
-              text-xs
-              font-medium
-              text-slate-400
+              text-xm
+              font-semibold
+              text-white
             "
           >
             Return
@@ -350,8 +352,8 @@ function PortfolioSummary() {
           <p
             className={`
               mt-1
-              text-sm
-              font-bold
+              text-base
+              font-extrabold
               ${
                 summary.totalReturn >= 0
                   ? "text-emerald-400"
@@ -359,6 +361,10 @@ function PortfolioSummary() {
               }
             `}
           >
+            {summary.totalReturn >= 0
+              ? "+"
+              : ""}
+
             {summary.totalReturn.toFixed(2)}%
           </p>
 
@@ -380,9 +386,9 @@ function PortfolioSummary() {
 
           <p
             className="
-              text-xs
-              font-medium
-              text-slate-400
+              text-xm
+              font-semibold
+              text-white
             "
           >
             XIRR
@@ -392,9 +398,9 @@ function PortfolioSummary() {
           <p
             className="
               mt-1
-              text-sm
-              font-bold
-              text-slate-300
+              text-base
+              font-extrabold
+              text-white
             "
           >
             —
@@ -409,3 +415,4 @@ function PortfolioSummary() {
 }
 
 export default PortfolioSummary;
+

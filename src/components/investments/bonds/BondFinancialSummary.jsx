@@ -59,7 +59,7 @@ function SummaryItem({
             truncate
             text-[9px]
             font-medium
-            text-slate-500
+            text-white
           "
         >
           {label}
@@ -115,7 +115,7 @@ function BondFinancialSummary({
         label="Total Principal"
         value={formatCurrency(principalAmount)}
         iconClass="text-sky-400"
-        valueClass="text-slate-200"
+        valueClass="text-white"
       />
 
       {/* ==========================================
@@ -127,7 +127,7 @@ function BondFinancialSummary({
         label="Total Interest"
         value={formatCurrency(totalInterest)}
         iconClass="text-violet-400"
-        valueClass="text-slate-200"
+        valueClass="text-white"
       />
 
       {/* ==========================================
