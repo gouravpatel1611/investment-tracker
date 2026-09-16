@@ -8,6 +8,12 @@ import {
   formatCurrency,
 } from "../../../utils/cpf/cpfHelpers";
 
+function roundValue(value = 0) {
+  return Math.round(
+    Number(value) || 0
+  );
+}
+
 function SummaryRow({
   label,
   currentValue = 0,
@@ -62,6 +68,12 @@ function SummaryRow({
   const style =
     styles[type] ||
     styles.own;
+
+  const roundedCurrentValue =
+    roundValue(currentValue);
+
+  const roundedProfit =
+    roundValue(profit);
 
   return (
     <div
@@ -145,7 +157,7 @@ function SummaryRow({
             `}
           >
             {formatCurrency(
-              currentValue
+              roundedCurrentValue
             )}
           </p>
 
@@ -181,7 +193,7 @@ function SummaryRow({
               `}
             >
               {formatCurrency(
-                profit
+                roundedProfit
               )}
             </span>
           </div>

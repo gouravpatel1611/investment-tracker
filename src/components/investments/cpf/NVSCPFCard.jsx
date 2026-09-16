@@ -80,22 +80,22 @@ function InfoItem({
       wrapper:
         "border-slate-700 bg-slate-800/70",
       icon:
-        "bg-slate-700 text-slate-300",
+        "bg-slate-700 text-white",
       label:
-        "text-slate-400",
+        "text-white",
       value:
-        "text-slate-100",
+        "text-white",
     },
 
     default: {
       wrapper:
         "border-slate-700 bg-slate-800/70",
       icon:
-        "bg-slate-700 text-slate-300",
+        "bg-slate-700 text-white",
       label:
-        "text-slate-400",
+        "text-white",
       value:
-        "text-slate-100",
+        "text-white",
     },
   };
 
@@ -510,7 +510,7 @@ export default function NVSCPFCard({
                 className="
                   mt-1.5
                   text-[15px]
-                  text-slate-100
+                  text-white
                   font-medium
                   tracking-wide
                 "

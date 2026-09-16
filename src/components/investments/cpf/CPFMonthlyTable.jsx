@@ -26,7 +26,7 @@ export default function CPFMonthlyTable({
           p-5
           text-center
           text-xs
-          text-slate-400
+          text-white
         "
       >
         No monthly data available.
@@ -73,7 +73,7 @@ export default function CPFMonthlyTable({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-slate-400
+                text-white
                 sm:px-3
                 sm:text-[12px]
               "
@@ -98,7 +98,7 @@ export default function CPFMonthlyTable({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-slate-400
+                text-white
                 sm:px-3
                 sm:text-[12px]
               "
@@ -123,7 +123,7 @@ export default function CPFMonthlyTable({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-slate-400
+                text-white
                 sm:px-3
                 sm:text-[12px]
               "
@@ -148,7 +148,7 @@ export default function CPFMonthlyTable({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-slate-400
+                text-white
                 sm:px-3
                 sm:text-[12px]
               "
@@ -185,7 +185,7 @@ export default function CPFMonthlyTable({
                     py-2.5
                     text-[12px]
                     font-medium
-                    text-slate-200
+                    text-white
                     sm:px-3
                     sm:text-xs
                   "
@@ -220,7 +220,7 @@ export default function CPFMonthlyTable({
                     py-2.5
                     text-right
                     text-[12px]
-                    text-slate-400
+                    text-white
                     sm:px-3
                     sm:text-xs
                   "
