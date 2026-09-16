@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 
 import {
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -22,108 +21,27 @@ import {
   calculateAverageInterestRate,
 } from "../../utils/cpf/cpfCalculations";
 
-import {
-  getCurrentFinancialYear,
-  getFinancialYearDates,
-} from "../../utils/cpf/cpfHelpers";
-
-import {
-  getCPFRecord,
-  saveCPFRecord,
-} from "../../services/firebase/cpfService";
-
-import { useAuth } from "../../context/AuthContext";
-
-
-const EMPTY_RECORD = {
-  own: {
-    openingBalance: 0,
-    openingDate: "",
-    monthlyContribution: 0,
-    closingDate: "",
-    interestRates: {
-      Q1: 0,
-      Q2: 0,
-      Q3: 0,
-      Q4: 0,
-    },
-  },
-
-  nvs: {
-    openingBalance: 0,
-    openingDate: "",
-    basicPay: 0,
-    closingDate: "",
-    interestRates: {
-      Q1: 0,
-      Q2: 0,
-      Q3: 0,
-      Q4: 0,
-    },
-  },
-};
-
-
-function createDefaultRecord() {
-  const financialYear =
-    getCurrentFinancialYear();
-
-  const {
-    startDate,
-    endDate,
-  } =
-    getFinancialYearDates(
-      financialYear
-    );
-
-  return {
-    financialYear,
-
-    own: {
-      ...EMPTY_RECORD.own,
-      openingDate: startDate,
-      closingDate: endDate,
-      interestRates: {
-        ...EMPTY_RECORD.own.interestRates,
-      },
-    },
-
-    nvs: {
-      ...EMPTY_RECORD.nvs,
-      openingDate: startDate,
-      closingDate: endDate,
-      interestRates: {
-        ...EMPTY_RECORD.nvs.interestRates,
-      },
-    },
-  };
-}
+import { useCPF } from "../../context/CPFContext";
 
 
 export default function CPF() {
-  const { user } = useAuth();
 
-  const [
+  /* =========================================================
+     CPF CONTEXT
+  ========================================================= */
+
+  const {
     record,
-    setRecord,
-  ] = useState(
-    createDefaultRecord()
-  );
-
-  const [
     loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
     saving,
-    setSaving,
-  ] = useState(false);
-
-  const [
     error,
-    setError,
-  ] = useState("");
+    saveCPF,
+  } = useCPF();
+
+
+  /* =========================================================
+     LOCAL UI STATE
+  ========================================================= */
 
   const [
     expandedCard,
@@ -136,160 +54,92 @@ export default function CPF() {
   ] = useState(null);
 
 
-  /*
-   * Load CPF data
-   */
-  useEffect(() => {
-    let active = true;
+  /* =========================================================
+     OWN CPF CALCULATION
+  ========================================================= */
 
-    async function loadCPF() {
-      if (!user?.uid) {
-        setLoading(false);
-        return;
-      }
+  const ownCalculation =
+    useMemo(() => {
 
-      try {
-        setLoading(true);
-        setError("");
+      return calculateCPF({
+        openingBalance:
+          record.own.openingBalance,
 
-        const financialYear =
-          getCurrentFinancialYear();
+        monthlyDeposit:
+          record.own.monthlyContribution,
 
-        const savedRecord =
-          await getCPFRecord(
-            user.uid,
-            financialYear
-          );
+        interestRates:
+          record.own.interestRates,
 
-        if (!active) return;
+        financialYear:
+          record.financialYear,
+      });
 
-        if (savedRecord) {
-          setRecord({
-            financialYear:
-              savedRecord.financialYear,
-
-            own: {
-              ...EMPTY_RECORD.own,
-
-              ...(savedRecord.own || {}),
-
-              interestRates: {
-                ...EMPTY_RECORD.own.interestRates,
-                ...(savedRecord.own?.interestRates || {}),
-              },
-            },
-
-            nvs: {
-              ...EMPTY_RECORD.nvs,
-
-              ...(savedRecord.nvs || {}),
-
-              interestRates: {
-                ...EMPTY_RECORD.nvs.interestRates,
-                ...(savedRecord.nvs?.interestRates || {}),
-              },
-            },
-          });
-        } else {
-          setRecord(
-            createDefaultRecord()
-          );
-        }
-      } catch (err) {
-        console.error(
-          "CPF loading error:",
-          err
-        );
-
-        if (active) {
-          setError(
-            "Unable to load CPF data."
-          );
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadCPF();
-
-    return () => {
-      active = false;
-    };
-  }, [user?.uid]);
+    }, [record]);
 
 
-  /*
-   * Own CPF calculation
-   */
-  const ownCalculation = useMemo(() => {
-    return calculateCPF({
-      openingBalance:
-        record.own.openingBalance,
+  /* =========================================================
+     NVS CPF CALCULATION
+  ========================================================= */
 
-      monthlyDeposit:
-        record.own.monthlyContribution,
+  const nvsCalculation =
+    useMemo(() => {
 
-      interestRates:
-        record.own.interestRates,
+      return calculateNVSCPF({
+        openingBalance:
+          record.nvs.openingBalance,
 
-      financialYear:
-        record.financialYear,
-    });
-  }, [record]);
+        basicPay:
+          record.nvs.basicPay,
 
+        interestRates:
+          record.nvs.interestRates,
 
-  /*
-   * NVS CPF calculation
-   */
-  const nvsCalculation = useMemo(() => {
-    return calculateNVSCPF({
-      openingBalance:
-        record.nvs.openingBalance,
+        financialYear:
+          record.financialYear,
+      });
 
-      basicPay:
-        record.nvs.basicPay,
-
-      interestRates:
-        record.nvs.interestRates,
-
-      financialYear:
-        record.financialYear,
-    });
-  }, [record]);
+    }, [record]);
 
 
-  /*
-   * Average interest rate - Own CPF
-   */
+  /* =========================================================
+     AVERAGE INTEREST RATE
+     OWN CPF
+  ========================================================= */
+
   const ownAverageRate =
     useMemo(
       () =>
         calculateAverageInterestRate(
           record.own.interestRates
         ),
-      [record.own.interestRates]
+      [
+        record.own.interestRates,
+      ]
     );
 
 
-  /*
-   * Average interest rate - NVS CPF
-   */
+  /* =========================================================
+     AVERAGE INTEREST RATE
+     NVS CPF
+  ========================================================= */
+
   const nvsAverageRate =
     useMemo(
       () =>
         calculateAverageInterestRate(
           record.nvs.interestRates
         ),
-      [record.nvs.interestRates]
+      [
+        record.nvs.interestRates,
+      ]
     );
 
 
-  /*
-   * Summary calculation
-   */
+  /* =========================================================
+     SUMMARY CALCULATION
+  ========================================================= */
+
   const summary =
     useMemo(
       () =>
@@ -307,100 +157,78 @@ export default function CPF() {
     );
 
 
-  /*
-   * Save CPF
-   */
+  /* =========================================================
+     SAVE CPF
+  ========================================================= */
+
   async function handleSave(
     mode,
     formData
   ) {
-    if (!user?.uid) {
-      setError(
-        "Please login before saving CPF data."
-      );
-
-      return;
-    }
-
     try {
-      setSaving(true);
-      setError("");
 
-      const updatedRecord = {
-        ...record,
-
-        [mode]: {
-          ...record[mode],
-
-          ...formData,
-
-          interestRates: {
-            ...record[mode].interestRates,
-            ...(formData.interestRates || {}),
-          },
-        },
-      };
-
-      await saveCPFRecord(
-        user.uid,
-        updatedRecord
-      );
-
-      setRecord(
-        updatedRecord
+      await saveCPF(
+        mode,
+        formData
       );
 
       setEditing(null);
+
     } catch (err) {
+
       console.error(
         "CPF save error:",
         err
       );
 
-      setError(
-        "Unable to save CPF data."
-      );
-    } finally {
-      setSaving(false);
     }
   }
 
 
-  /*
-   * Open edit form
-   */
+  /* =========================================================
+     OPEN EDIT FORM
+  ========================================================= */
+
   function openEdit(mode) {
     setEditing(mode);
   }
 
 
-  /*
-   * Close edit form
-   */
+  /* =========================================================
+     CLOSE EDIT FORM
+  ========================================================= */
+
   function closeEdit() {
+
     if (!saving) {
       setEditing(null);
     }
+
   }
 
 
-  /*
-   * Expand / collapse monthly table
-   */
+  /* =========================================================
+     EXPAND / COLLAPSE MONTHLY TABLE
+  ========================================================= */
+
   function toggleCard(card) {
+
     setExpandedCard(
       (current) =>
         current === card
           ? null
           : card
     );
+
   }
 
 
-  /*
-   * Loading screen
-   */
+  /* =========================================================
+     LOADING SCREEN
+  ========================================================= */
+
   if (loading) {
+
     return (
       <main
         className="
@@ -410,12 +238,14 @@ export default function CPF() {
           py-6
         "
       >
+
         <div
           className="
             mx-auto
             max-w-6xl
           "
         >
+
           <div
             className="
               flex
@@ -424,6 +254,7 @@ export default function CPF() {
               justify-center
             "
           >
+
             <div
               className="
                 flex
@@ -432,6 +263,7 @@ export default function CPF() {
                 text-slate-400
               "
             >
+
               <LoaderCircle
                 size={22}
                 className="animate-spin"
@@ -445,13 +277,22 @@ export default function CPF() {
               >
                 Loading CPF...
               </span>
+
             </div>
+
           </div>
+
         </div>
+
       </main>
     );
+
   }
 
+
+  /* =========================================================
+     MAIN PAGE
+  ========================================================= */
 
   return (
     <main
@@ -464,6 +305,7 @@ export default function CPF() {
         sm:py-7
       "
     >
+
       <div
         className="
           mx-auto
@@ -474,6 +316,7 @@ export default function CPF() {
         {/* =====================================================
             HEADER
         ====================================================== */}
+
         <header
           className="
             mb-6
@@ -486,6 +329,7 @@ export default function CPF() {
             sm:p-5
           "
         >
+
           <div
             className="
               flex
@@ -495,6 +339,7 @@ export default function CPF() {
           >
 
             {/* Back Button */}
+
             <button
               type="button"
               onClick={() =>
@@ -520,11 +365,14 @@ export default function CPF() {
               "
               aria-label="Go back"
             >
+
               <ArrowLeft size={19} />
+
             </button>
 
 
             {/* Header Content */}
+
             <div className="min-w-0">
 
               <p
@@ -567,13 +415,16 @@ export default function CPF() {
             </div>
 
           </div>
+
         </header>
 
 
         {/* =====================================================
             ERROR
         ====================================================== */}
+
         {error && (
+
           <div
             className="
               mb-5
@@ -589,6 +440,7 @@ export default function CPF() {
               text-red-300
             "
           >
+
             <AlertCircle
               size={18}
               className="
@@ -600,13 +452,16 @@ export default function CPF() {
             <span>
               {error}
             </span>
+
           </div>
+
         )}
 
 
         {/* =====================================================
             CPF CARDS
         ====================================================== */}
+
         <div
           className="
             space-y-5
@@ -616,6 +471,7 @@ export default function CPF() {
           {/* =================================================
               1. SUMMARY CARD
           ================================================== */}
+
           <CFPSummaryCard
             financialYear={
               record.financialYear
@@ -633,10 +489,11 @@ export default function CPF() {
               summary.totalClosingBalance
             }
 
-            ownInterest = {
+            ownInterest={
               ownCalculation.totalInterest
             }
-            nvsInterest = {
+
+            nvsInterest={
               nvsCalculation.totalInterest
             }
           />
@@ -645,6 +502,7 @@ export default function CPF() {
           {/* =================================================
               2. OWN CPF CARD
           ================================================== */}
+
           <OwnCPFCard
             data={record.own}
 
@@ -673,6 +531,7 @@ export default function CPF() {
           {/* =================================================
               3. NVS CPF CARD
           ================================================== */}
+
           <NVSCPFCard
             data={record.nvs}
 
@@ -698,13 +557,16 @@ export default function CPF() {
           />
 
         </div>
+
       </div>
 
 
       {/* =====================================================
           EDIT FORM / MODAL
       ====================================================== */}
+
       {editing && (
+
         <CPFEditForm
           mode={editing}
 
@@ -728,6 +590,7 @@ export default function CPF() {
             )
           }
         />
+
       )}
 
     </main>

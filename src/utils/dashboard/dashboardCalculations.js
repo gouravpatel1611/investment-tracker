@@ -6,6 +6,15 @@ import {
   calculateTotalBondFinancialSummary,
 } from "../bondCalculations";
 
+import {
+  calculateCPF as calculateCPFData,
+  calculateNVSCPF,
+} from "../cpf/cpfCalculations";
+
+import {
+  calculateFdSummary,
+} from "../intFd/intFdCalculations";
+
 
 // ==========================================
 // COMMON HELPERS
@@ -68,6 +77,10 @@ export function calculateMutualFunds(
       0
     );
 
+  const currentValue =
+    invested +
+    profit;
+
   return {
     invested:
       round(invested),
@@ -77,6 +90,9 @@ export function calculateMutualFunds(
 
     holdings:
       holdings.length,
+
+    currentValue:
+      round(currentValue),
   };
 }
 
@@ -103,6 +119,10 @@ export function calculateSGB(
       summary?.seriesCount
     );
 
+  const currentValue =
+    invested +
+    profit;
+
   return {
     invested:
       round(invested),
@@ -111,6 +131,9 @@ export function calculateSGB(
       round(profit),
 
     holdings,
+
+    currentValue:
+      round(currentValue),
   };
 }
 
@@ -180,11 +203,137 @@ export function calculateBonds(
 // CPF
 // ==========================================
 
-export function calculateCPF() {
+export function calculateCPF(
+  cpfRecord = null
+) {
+
+  // ----------------------------------------
+  // NO CPF DATA
+  // ----------------------------------------
+
+  if (!cpfRecord) {
+    return {
+      invested: 0,
+      profit: 0,
+      holdings: 0,
+      currentValue: 0,
+    };
+  }
+
+
+  // ----------------------------------------
+  // OWN CPF CALCULATION
+  // ----------------------------------------
+
+  const ownCalculation =
+    calculateCPFData({
+      openingBalance:
+        cpfRecord?.own?.openingBalance,
+
+      monthlyDeposit:
+        cpfRecord?.own?.monthlyContribution,
+
+      interestRates:
+        cpfRecord?.own?.interestRates,
+
+      financialYear:
+        cpfRecord?.financialYear,
+    });
+
+
+  // ----------------------------------------
+  // NVS CPF CALCULATION
+  // ----------------------------------------
+
+  const nvsCalculation =
+    calculateNVSCPF({
+      openingBalance:
+        cpfRecord?.nvs?.openingBalance,
+
+      basicPay:
+        cpfRecord?.nvs?.basicPay,
+
+      interestRates:
+        cpfRecord?.nvs?.interestRates,
+
+      financialYear:
+        cpfRecord?.financialYear,
+    });
+
+
+  // ----------------------------------------
+  // CLOSING BALANCES
+  // ----------------------------------------
+
+  const ownClosingBalance =
+    toNumber(
+      ownCalculation?.closingBalance
+    );
+
+  const nvsClosingBalance =
+    toNumber(
+      nvsCalculation?.closingBalance
+    );
+
+
+  // ----------------------------------------
+  // TOTAL INTEREST
+  // ----------------------------------------
+
+  const ownInterest =
+    toNumber(
+      ownCalculation?.totalInterest
+    );
+
+  const nvsInterest =
+    toNumber(
+      nvsCalculation?.totalInterest
+    );
+
+
+  // ----------------------------------------
+  // CURRENT VALUE
+  // ----------------------------------------
+
+  const currentValue =
+    ownClosingBalance +
+    nvsClosingBalance;
+
+
+  // ----------------------------------------
+  // PROFIT
+  // ----------------------------------------
+
+  const profit =
+    ownInterest +
+    nvsInterest;
+
+
+  // ----------------------------------------
+  // INVESTED
+  // ----------------------------------------
+
+  const invested =
+    currentValue -
+    profit;
+
+
+  // ----------------------------------------
+  // FINAL RESULT
+  // ----------------------------------------
+
   return {
-    invested: 0,
-    profit: 0,
-    holdings: 0,
+    invested:
+      round(invested),
+
+    profit:
+      round(profit),
+
+    holdings:
+      2,
+
+    currentValue:
+      round(currentValue),
   };
 }
 
@@ -193,11 +342,55 @@ export function calculateCPF() {
 // LIC / PLI
 // ==========================================
 
-export function calculateLicPli() {
+export function calculateLicPli(
+  policies = []
+) {
+
+  // ----------------------------------------
+  // TOTAL PAID
+  // ----------------------------------------
+
+  const totalPaid =
+    policies.reduce(
+      (total, policy) =>
+        total +
+        toNumber(
+          policy?.totalPaid
+        ),
+      0
+    );
+
+
+  // ----------------------------------------
+  // LIC / PLI HAS NO PROFIT
+  // ----------------------------------------
+
+  const invested =
+    totalPaid;
+
+  const profit =
+    0;
+
+  const currentValue =
+    totalPaid;
+
+
+  // ----------------------------------------
+  // FINAL RESULT
+  // ----------------------------------------
+
   return {
-    invested: 0,
-    profit: 0,
-    holdings: 0,
+    invested:
+      round(invested),
+
+    profit:
+      round(profit),
+
+    holdings:
+      policies.length,
+
+    currentValue:
+      round(currentValue),
   };
 }
 
@@ -206,11 +399,65 @@ export function calculateLicPli() {
 // ETF / STOCK
 // ==========================================
 
-export function calculateETFStock() {
+export function calculateETFStock(
+  summary = {}
+) {
+
+  // ----------------------------------------
+  // TOTAL INVESTED
+  // ----------------------------------------
+
+  const invested =
+    toNumber(
+      summary?.totalInvested
+    );
+
+
+  // ----------------------------------------
+  // TOTAL PROFIT / LOSS
+  // ----------------------------------------
+
+  const profit =
+    toNumber(
+      summary?.totalProfitLoss
+    );
+
+
+  // ----------------------------------------
+  // CURRENT VALUE
+  // ----------------------------------------
+
+  const currentValue =
+    toNumber(
+      summary?.totalCurrentValue
+    );
+
+
+  // ----------------------------------------
+  // TOTAL HOLDINGS
+  // ----------------------------------------
+
+  const holdings =
+    Number(
+      summary?.totalHoldings
+    ) || 0;
+
+
+  // ----------------------------------------
+  // FINAL RESULT
+  // ----------------------------------------
+
   return {
-    invested: 0,
-    profit: 0,
-    holdings: 0,
+    invested:
+      round(invested),
+
+    profit:
+      round(profit),
+
+    holdings,
+
+    currentValue:
+      round(currentValue),
   };
 }
 
@@ -219,11 +466,71 @@ export function calculateETFStock() {
 // INT-FD
 // ==========================================
 
-export function calculateFD() {
+export function calculateFD(
+  fds = []
+) {
+
+  // ----------------------------------------
+  // FD SUMMARY
+  // ----------------------------------------
+
+  const summary =
+    calculateFdSummary(
+      fds
+    );
+
+
+  // ----------------------------------------
+  // TOTAL PRINCIPAL
+  // ----------------------------------------
+
+  const invested =
+    toNumber(
+      summary?.totalPrincipal
+    );
+
+
+  // ----------------------------------------
+  // TILL-DATE INTEREST
+  // ----------------------------------------
+
+  const profit =
+    toNumber(
+      summary?.totalTillMonthInterest
+    );
+
+
+  // ----------------------------------------
+  // CURRENT VALUE
+  // ----------------------------------------
+
+  const currentValue =
+    invested +
+    profit;
+
+
+  // ----------------------------------------
+  // FINAL RESULT
+  // ----------------------------------------
+
   return {
-    invested: 0,
-    profit: 0,
-    holdings: 0,
+    invested:
+      round(
+        invested
+      ),
+
+    profit:
+      round(
+        profit
+      ),
+
+    holdings:
+      fds.length,
+
+    currentValue:
+      round(
+        currentValue
+      ),
   };
 }
 
@@ -235,7 +542,11 @@ export function calculateFD() {
 export function calculateDashboardTotals(
   mutualFundHoldings = [],
   sgbSummary = {},
-  bondData = []
+  bondData = [],
+  cpfRecord = null,
+  fdData = [],
+  licPliPolicies = [],
+  etfStockSummary = {}
 ) {
 
   // ========================================
@@ -247,27 +558,41 @@ export function calculateDashboardTotals(
       mutualFundHoldings
     );
 
+
   const sgb =
     calculateSGB(
       sgbSummary
     );
+
 
   const bonds =
     calculateBonds(
       bondData
     );
 
+
   const cpf =
-    calculateCPF();
+    calculateCPF(
+      cpfRecord
+    );
+
 
   const licPli =
-    calculateLicPli();
+    calculateLicPli(
+      licPliPolicies
+    );
+
 
   const etfStock =
-    calculateETFStock();
+    calculateETFStock(
+      etfStockSummary
+    );
+
 
   const fd =
-    calculateFD();
+    calculateFD(
+      fdData
+    );
 
 
   // ========================================
@@ -323,13 +648,8 @@ export function calculateDashboardTotals(
         const currentValue =
           asset.id === "bonds"
             ? asset.currentValue
-            : (
-                toNumber(
-                  asset.invested
-                ) +
-                toNumber(
-                  asset.profit
-                )
+            : toNumber(
+                asset.currentValue
               );
 
         return {
@@ -449,8 +769,7 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      mutualFunds.invested +
-      mutualFunds.profit
+      mutualFunds.currentValue
     )
   );
 
@@ -487,8 +806,7 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      sgb.invested +
-      sgb.profit
+      sgb.currentValue
     )
   );
 
@@ -584,8 +902,7 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      cpf.invested +
-      cpf.profit
+      cpf.currentValue
     )
   );
 
@@ -606,6 +923,18 @@ export function calculateDashboardTotals(
   );
 
   console.log(
+    "Total Policies:",
+    licPli.holdings
+  );
+
+  console.log(
+    "Total Paid:",
+    formatCurrency(
+      licPli.invested
+    )
+  );
+
+  console.log(
     "Invested:",
     formatCurrency(
       licPli.invested
@@ -622,8 +951,7 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      licPli.invested +
-      licPli.profit
+      licPli.currentValue
     )
   );
 
@@ -651,7 +979,7 @@ export function calculateDashboardTotals(
   );
 
   console.log(
-    "Profit:",
+    "Profit / Loss:",
     formatCurrency(
       etfStock.profit
     )
@@ -660,8 +988,7 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      etfStock.invested +
-      etfStock.profit
+      etfStock.currentValue
     )
   );
 
@@ -682,14 +1009,14 @@ export function calculateDashboardTotals(
   );
 
   console.log(
-    "Invested:",
+    "Total Principal:",
     formatCurrency(
       fd.invested
     )
   );
 
   console.log(
-    "Profit:",
+    "Till-Date Interest:",
     formatCurrency(
       fd.profit
     )
@@ -698,8 +1025,7 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      fd.invested +
-      fd.profit
+      fd.currentValue
     )
   );
 
@@ -795,13 +1121,11 @@ export function calculateDashboardTotals(
   console.log(
     "Current Value:",
     formatCurrency(
-      mutualFunds.invested +
-      mutualFunds.profit
+      mutualFunds.currentValue
     ),
     "+",
     formatCurrency(
-      sgb.invested +
-      sgb.profit
+      sgb.currentValue
     ),
     "+",
     formatCurrency(
@@ -809,23 +1133,19 @@ export function calculateDashboardTotals(
     ),
     "+",
     formatCurrency(
-      cpf.invested +
-      cpf.profit
+      cpf.currentValue
     ),
     "+",
     formatCurrency(
-      licPli.invested +
-      licPli.profit
+      licPli.currentValue
     ),
     "+",
     formatCurrency(
-      etfStock.invested +
-      etfStock.profit
+      etfStock.currentValue
     ),
     "+",
     formatCurrency(
-      fd.invested +
-      fd.profit
+      fd.currentValue
     ),
     "=",
     formatCurrency(

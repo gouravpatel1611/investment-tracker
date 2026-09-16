@@ -24,6 +24,7 @@ import {
   ETFStockProvider,
 } from "./context/ETFStockContext";
 
+import { CPFProvider } from "./context/CPFContext";
 
 
 function App() {
@@ -35,7 +36,9 @@ function App() {
                 <LicPliProvider>
                     <SGBProvider>
                       <ETFStockProvider>
-                        <AppRoutes />
+                        <CPFProvider>
+                          <AppRoutes />
+                        </CPFProvider>
                       </ETFStockProvider>
                     </SGBProvider>
                 </LicPliProvider>

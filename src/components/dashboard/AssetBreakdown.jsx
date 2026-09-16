@@ -18,6 +18,22 @@ import {
   useBonds,
 } from "../../context/BondContext";
 
+import {
+  useCPF,
+} from "../../context/CPFContext";
+
+import {
+  useIntFd,
+} from "../../context/IntFdContext";
+
+import {
+  useLicPli,
+} from "../../context/LicPliContext";
+
+import {
+  useETFStock,
+} from "../../context/ETFStockContext";
+
 import AssetBreakdownCard
   from "./AssetBreakdownCard";
 
@@ -76,6 +92,57 @@ function AssetBreakdown() {
 
 
   // ========================================
+  // CPF
+  // ========================================
+
+  const {
+    record:
+      cpfRecord = null,
+
+    loading:
+      cpfLoading,
+  } = useCPF();
+
+
+  // ========================================
+  // INT-FD
+  // ========================================
+
+  const {
+    fds = [],
+
+    loading:
+      fdLoading,
+  } = useIntFd();
+
+
+  // ========================================
+  // LIC / PLI
+  // ========================================
+
+  const {
+    policies:
+      licPliPolicies = [],
+
+    loading:
+      licPliLoading,
+  } = useLicPli();
+
+
+  // ========================================
+  // ETF / STOCK
+  // ========================================
+
+  const {
+    summary:
+      etfStockSummary = {},
+
+    loading:
+      etfStockLoading,
+  } = useETFStock();
+
+
+  // ========================================
   // CALCULATIONS
   // ========================================
 
@@ -85,12 +152,20 @@ function AssetBreakdown() {
         calculateDashboardTotals(
           mutualFundHoldings,
           sgbSummary,
-          bonds
+          bonds,
+          cpfRecord,
+          fds,
+          licPliPolicies,
+          etfStockSummary
         ),
       [
         mutualFundHoldings,
         sgbSummary,
         bonds,
+        cpfRecord,
+        fds,
+        licPliPolicies,
+        etfStockSummary,
       ]
     );
 
@@ -145,7 +220,7 @@ function AssetBreakdown() {
       const routes = {
 
         mutualFunds:
-          "/portfolio/mutual-funds",
+          "/mutual-funds",
 
         sgb:
           "/sgb",
@@ -179,6 +254,10 @@ function AssetBreakdown() {
       navigate(route);
     };
 
+
+  // ========================================
+  // UI
+  // ========================================
 
   return (
     <div
@@ -217,6 +296,26 @@ function AssetBreakdown() {
                 asset.id ===
                 "bonds" &&
                 bondLoading
+              ) ||
+              (
+                asset.id ===
+                "cpf" &&
+                cpfLoading
+              ) ||
+              (
+                asset.id ===
+                "lic" &&
+                licPliLoading
+              ) ||
+              (
+                asset.id ===
+                "etfStock" &&
+                etfStockLoading
+              ) ||
+              (
+                asset.id ===
+                "fd" &&
+                fdLoading
               )
             }
 

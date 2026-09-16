@@ -20,6 +20,22 @@ import {
 } from "../../context/BondContext";
 
 import {
+  useCPF,
+} from "../../context/CPFContext";
+
+import {
+  useIntFd,
+} from "../../context/IntFdContext";
+
+import {
+  useLicPli,
+} from "../../context/LicPliContext";
+
+import {
+  useETFStock,
+} from "../../context/ETFStockContext";
+
+import {
   calculateDashboardTotals,
   formatCurrency,
 } from "../../utils/dashboard/dashboardCalculations";
@@ -27,11 +43,19 @@ import {
 
 function PortfolioSummary() {
 
+  // ========================================
+  // MUTUAL FUNDS
+  // ========================================
+
   const {
     holdings:
       mutualFundHoldings = [],
   } = useMutualFunds();
 
+
+  // ========================================
+  // SGB
+  // ========================================
 
   const {
     summary:
@@ -39,10 +63,57 @@ function PortfolioSummary() {
   } = useSGB();
 
 
+  // ========================================
+  // BONDS
+  // ========================================
+
   const {
     bonds = [],
   } = useBonds();
 
+
+  // ========================================
+  // CPF
+  // ========================================
+
+  const {
+    record:
+      cpfRecord = null,
+  } = useCPF();
+
+
+  // ========================================
+  // INT-FD
+  // ========================================
+
+  const {
+    fds = [],
+  } = useIntFd();
+
+
+  // ========================================
+  // LIC / PLI
+  // ========================================
+
+  const {
+    policies:
+      licPliPolicies = [],
+  } = useLicPli();
+
+
+  // ========================================
+  // ETF / STOCK
+  // ========================================
+
+  const {
+    summary:
+      etfStockSummary = {},
+  } = useETFStock();
+
+
+  // ========================================
+  // DASHBOARD SUMMARY
+  // ========================================
 
   const summary =
     useMemo(
@@ -50,12 +121,20 @@ function PortfolioSummary() {
         calculateDashboardTotals(
           mutualFundHoldings,
           sgbSummary,
-          bonds
+          bonds,
+          cpfRecord,
+          fds,
+          licPliPolicies,
+          etfStockSummary
         ),
       [
         mutualFundHoldings,
         sgbSummary,
         bonds,
+        cpfRecord,
+        fds,
+        licPliPolicies,
+        etfStockSummary,
       ]
     );
 
@@ -70,6 +149,10 @@ function PortfolioSummary() {
         shadow-sm
       "
     >
+
+      {/* =====================================
+          HEADER
+      ====================================== */}
 
       <div
         className="
@@ -124,13 +207,19 @@ function PortfolioSummary() {
             text-emerald-400
           "
         >
+
           <TrendingUp
             size={18}
           />
+
         </div>
 
       </div>
 
+
+      {/* =====================================
+          SUMMARY GRID
+      ====================================== */}
 
       <div
         className="
@@ -141,7 +230,9 @@ function PortfolioSummary() {
         "
       >
 
-        {/* INVESTED */}
+        {/* ===================================
+            INVESTED
+        ==================================== */}
 
         <div
           className="
@@ -162,6 +253,7 @@ function PortfolioSummary() {
               text-slate-400
             "
           >
+
             <IndianRupee
               size={13}
             />
@@ -187,7 +279,9 @@ function PortfolioSummary() {
         </div>
 
 
-        {/* PROFIT */}
+        {/* ===================================
+            PROFIT
+        ==================================== */}
 
         <div
           className="
@@ -210,12 +304,16 @@ function PortfolioSummary() {
 
 
           <p
-            className="
+            className={`
               mt-1
               text-sm
               font-bold
-              text-emerald-400
-            "
+              ${
+                summary.totalProfit >= 0
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }
+            `}
           >
             {formatCurrency(
               summary.totalProfit
@@ -225,7 +323,9 @@ function PortfolioSummary() {
         </div>
 
 
-        {/* RETURN */}
+        {/* ===================================
+            RETURN
+        ==================================== */}
 
         <div
           className="
@@ -248,12 +348,16 @@ function PortfolioSummary() {
 
 
           <p
-            className="
+            className={`
               mt-1
               text-sm
               font-bold
-              text-emerald-400
-            "
+              ${
+                summary.totalReturn >= 0
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }
+            `}
           >
             {summary.totalReturn.toFixed(2)}%
           </p>
@@ -261,7 +365,9 @@ function PortfolioSummary() {
         </div>
 
 
-        {/* XIRR */}
+        {/* ===================================
+            XIRR
+        ==================================== */}
 
         <div
           className="
