@@ -22,7 +22,6 @@ import {
   useETFStock,
 } from "../../context/ETFStockContext";
 
-import ETFStockTransactionForm from "../../components/etfStock/ETFStockTransactionForm";
 
 
 /* =========================================================
@@ -106,12 +105,10 @@ export default function ETFStockDetails() {
     deleteTransaction,
     loading,
     priceLoading,
+    livePrices,
   } = useETFStock();
 
-  const [
-    showTransactionForm,
-    setShowTransactionForm,
-  ] = useState(false);
+  console.log(livePrices);
 
 
   /* =======================================================
@@ -142,13 +139,7 @@ export default function ETFStockDetails() {
     );
 
 
-  /* =======================================================
-     CLOSE FORM AFTER SAVE
-  ======================================================= */
 
-  function handleTransactionSaved() {
-    setShowTransactionForm(false);
-  }
 
 
   /* =======================================================
@@ -251,7 +242,7 @@ export default function ETFStockDetails() {
         <button
           type="button"
           onClick={() =>
-            navigate("/etf-stock")
+            navigate(-1)
           }
           className="
             flex
@@ -367,559 +358,558 @@ export default function ETFStockDetails() {
       className="
         min-h-screen
         space-y-5
-        bg-slate-950
-        px-4
-        py-5
         sm:px-6
         lg:px-8
       "
     >
 
-      {/* ===================================================
-          TOP BAR
-      =================================================== */}
+
+
+{/* ===================================================
+    COMBINED TOP + ASSET CARD
+=================================================== */}
+
+<div
+  className="
+    overflow-hidden
+    rounded-2xl
+    border
+    border-slate-800
+    bg-slate-900
+    shadow-lg
+  "
+>
+
+  {/* TOP BAR */}
+
+  <div
+    className="
+      flex
+      items-center
+      border-b
+      border-slate-800
+      px-4
+      py-2
+      sm:px-5
+    "
+  >
+
+    <button
+      type="button"
+      onClick={() =>
+        navigate("/etf-stock")
+      }
+      className="
+        group
+        flex
+        items-center
+        gap-1.5
+        rounded-lg
+        border
+        border-slate-800
+        bg-slate-950
+        px-2.5
+        py-1.5
+        text-xs
+        font-medium
+        text-slate-300
+        transition
+        hover:border-slate-700
+        hover:bg-slate-800
+        hover:text-white
+      "
+    >
+
+      <ArrowLeft
+        size={15}
+        className="
+          transition-transform
+          group-hover:-translate-x-0.5
+        "
+      />
+
+      Back
+
+    </button>
+
+  </div>
+
+
+  {/* ASSET CONTENT */}
+
+  <div
+    className="
+      px-4
+      py-3
+      sm:px-5
+      sm:py-3.5
+    "
+  >
+
+    <div
+      className="
+        flex
+        items-center
+        justify-between
+        gap-4
+      "
+    >
+
+      {/* ASSET INFO */}
+
+      <div
+        className="
+          min-w-0
+        "
+      >
+
+        {/* SYMBOL + TYPE */}
+
+        <div
+          className="
+            flex
+            flex-wrap
+            items-center
+            gap-1.5
+          "
+        >
+
+          <p
+            className="
+              text-[11px]
+              font-bold
+              tracking-[0.1em]
+              text-slate-400
+            "
+          >
+            {holding.symbol}
+          </p>
+
+
+          <span
+            className="
+              rounded
+              border
+              border-slate-700
+              bg-slate-800
+              px-1.5
+              py-0.5
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-wide
+              text-slate-300
+            "
+          >
+            {holding.assetType || "STOCK"}
+          </span>
+
+        </div>
+
+
+        {/* NAME */}
+
+        <h1
+          className="
+            mt-1
+            truncate
+            text-lg
+            font-bold
+            leading-tight
+            tracking-tight
+            text-white
+            sm:text-xl
+          "
+        >
+          {holding.name}
+        </h1>
+
+      </div>
+
+
+      {/* CURRENT PRICE */}
+
+      <div
+        className="
+          shrink-0
+          text-right
+        "
+      >
+
+        <p
+          className="
+            text-[9px]
+            font-semibold
+            uppercase
+            tracking-wider
+            text-slate-500
+          "
+        >
+          Current Price
+        </p>
+
+
+        <p
+          className="
+            mt-0.5
+            text-lg
+            font-extrabold
+            leading-tight
+            tracking-tight
+            text-white
+            sm:text-xl
+          "
+        >
+          {formatCurrency(
+            holding.currentPrice
+          )}
+        </p>
+
+
+        {priceLoading && (
+          <p
+            className="
+              mt-0.5
+              text-[9px]
+              leading-none
+              text-slate-500
+            "
+          >
+            Updating...
+          </p>
+        )}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+{/* ===================================================
+    HOLDING SUMMARY
+=================================================== */}
+
+<div
+  className="
+    overflow-hidden
+    rounded-2xl
+    border
+    border-slate-800
+    bg-slate-900
+    shadow-sm
+  "
+>
+
+  {/* HEADER */}
+
+  <div
+    className="
+      flex
+      items-center
+      justify-between
+      border-b
+      border-slate-800
+      px-4
+      py-2.5
+    "
+  >
+
+    <h2
+      className="
+        text-sm
+        font-bold
+        tracking-tight
+        text-white
+      "
+    >
+      Holding Summary
+    </h2>
+
+
+    {/* TOTAL RETURN */}
+
+    <div
+      className={`
+        flex
+        items-center
+        gap-1.5
+        rounded-lg
+        px-2
+        py-1
+        ${
+          isProfit
+            ? "bg-emerald-500/10"
+            : "bg-red-500/10"
+        }
+      `}
+    >
+
+      {isProfit ? (
+        <TrendingUp
+          size={14}
+          className="
+            text-emerald-400
+          "
+        />
+      ) : (
+        <TrendingDown
+          size={14}
+          className="
+            text-red-400
+          "
+        />
+      )}
+
+      <span
+        className={`
+          text-xs
+          font-bold
+          ${
+            isProfit
+              ? "text-emerald-400"
+              : "text-red-400"
+          }
+        `}
+      >
+        {formatPercent(
+          returnPercent
+        )}
+      </span>
+
+    </div>
+
+  </div>
+
+
+  {/* METRICS */}
+
+  <div
+    className="
+      grid
+      grid-cols-2
+      lg:grid-cols-4
+    "
+  >
+
+    {/* UNITS */}
+
+    <div
+      className="
+        border-b
+        border-slate-800
+        px-4
+        py-3
+        lg:border-b-0
+        lg:border-r
+      "
+    >
+
+      <p
+        className="
+          text-[10px]
+          font-semibold
+          uppercase
+          tracking-wider
+          text-slate-500
+        "
+      >
+        Units
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-lg
+          font-bold
+          leading-tight
+          text-white
+        "
+      >
+        {formatNumber(
+          holding.units
+        )}
+      </p>
+
+    </div>
+
+
+    {/* INVESTED */}
+
+    <div
+      className="
+        border-b
+        border-slate-800
+        px-4
+        py-3
+        lg:border-b-0
+        lg:border-r
+      "
+    >
+
+      <p
+        className="
+          text-[10px]
+          font-semibold
+          uppercase
+          tracking-wider
+          text-slate-500
+        "
+      >
+        Invested
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-lg
+          font-bold
+          leading-tight
+          text-white
+        "
+      >
+        {formatCurrency(
+          holding.investedAmount
+        )}
+      </p>
+
+    </div>
+
+
+    {/* CURRENT VALUE */}
+
+    <div
+      className="
+        border-b
+        border-slate-800
+        px-4
+        py-3
+        lg:border-b-0
+        lg:border-r
+      "
+    >
+
+      <p
+        className="
+          text-[10px]
+          font-semibold
+          uppercase
+          tracking-wider
+          text-slate-500
+        "
+      >
+        Current Value
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-lg
+          font-bold
+          leading-tight
+          text-white
+        "
+      >
+        {formatCurrency(
+          holding.currentValue
+        )}
+      </p>
+
+    </div>
+
+
+    {/* PROFIT / LOSS */}
+
+    <div
+      className="
+        px-4
+        py-3
+      "
+    >
 
       <div
         className="
           flex
           items-center
-          justify-between
-          gap-3
+          gap-2
         "
       >
 
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/etf-stock")
-          }
-          className="
-            flex
-            items-center
-            gap-2
-            rounded-xl
-            border
-            border-slate-800
-            bg-slate-900
-            px-3
-            py-2.5
-            text-sm
-            font-medium
-            text-slate-300
-            transition
-            hover:border-slate-700
-            hover:text-white
-          "
-        >
-
-          <ArrowLeft
-            size={17}
-          />
-
-          Back
-
-        </button>
-
-
-        <button
-          type="button"
-          onClick={() =>
-            setShowTransactionForm(
-              (value) => !value
-            )
-          }
-          className="
-            flex
-            items-center
-            gap-2
-            rounded-xl
-            bg-slate-100
-            px-3.5
-            py-2.5
-            text-sm
-            font-semibold
-            text-slate-900
-            transition
-            hover:bg-white
-          "
-        >
-
-          {showTransactionForm ? (
-            <>
-              <X
-                size={17}
-              />
-
-              Close
-            </>
-          ) : (
-            <>
-              <Plus
-                size={17}
-              />
-
-              Add Transaction
-            </>
-          )}
-
-        </button>
-
-      </div>
-
-
-      {/* ===================================================
-          ASSET HEADER
-      =================================================== */}
-
-      <div
-        className="
-          rounded-2xl
-          border
-          border-slate-800
-          bg-slate-900
-          p-5
-        "
-      >
-
-        <div
-          className="
-            flex
-            items-start
-            justify-between
-            gap-4
-          "
-        >
-
-          {/* ASSET */}
-
-          <div
-            className="
-              min-w-0
-            "
-          >
-
-            <div
-              className="
-                flex
-                flex-wrap
-                items-center
-                gap-2
-              "
-            >
-
-              <p
-                className="
-                  text-xs
-                  font-bold
-                  tracking-wide
-                  text-slate-400
-                "
-              >
-                {holding.symbol}
-              </p>
-
-
-              <span
-                className="
-                  rounded-md
-                  bg-slate-800
-                  px-2
-                  py-1
-                  text-[10px]
-                  font-bold
-                  uppercase
-                  tracking-wide
-                  text-slate-300
-                "
-              >
-                {holding.assetType ||
-                  "STOCK"}
-              </span>
-
-            </div>
-
-
-            <h1
-              className="
-                mt-1.5
-                text-xl
-                font-bold
-                leading-tight
-                text-white
-                sm:text-2xl
-              "
-            >
-              {holding.name}
-            </h1>
-
-          </div>
-
-
-          {/* CURRENT PRICE */}
-
-          <div
+        {isProfit ? (
+          <TrendingUp
+            size={16}
             className="
               shrink-0
-              text-right
+              text-emerald-400
             "
-          >
-
-            <p
-              className="
-                text-[11px]
-                font-medium
-                text-slate-500
-              "
-            >
-              Current Price
-            </p>
-
-
-            <p
-              className="
-                mt-1
-                text-lg
-                font-extrabold
-                text-white
-                sm:text-xl
-              "
-            >
-              {formatCurrency(
-                holding.currentPrice
-              )}
-            </p>
-
-
-            {priceLoading && (
-              <p
-                className="
-                  mt-1
-                  text-[10px]
-                  text-slate-500
-                "
-              >
-                Updating...
-              </p>
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* ===================================================
-          TRANSACTION FORM
-      =================================================== */}
-
-      {showTransactionForm && (
-        <div
-          className="
-            rounded-2xl
-            border
-            border-slate-800
-            bg-slate-900
-            p-4
-            sm:p-5
-          "
-        >
-
-          <div
-            className="
-              mb-5
-            "
-          >
-
-            <h2
-              className="
-                text-base
-                font-semibold
-                text-white
-              "
-            >
-              Add Transaction
-            </h2>
-
-
-            <p
-              className="
-                mt-1
-                text-xs
-                text-slate-500
-              "
-            >
-              Add BUY or SELL transaction for{" "}
-
-              <span
-                className="
-                  font-semibold
-                  text-slate-300
-                "
-              >
-                {holding.symbol}
-              </span>
-
-            </p>
-
-          </div>
-
-
-          <ETFStockTransactionForm
-            defaultSymbol={cleanSymbol}
-            onSaved={handleTransactionSaved}
           />
-
-        </div>
-      )}
-
-
-      {/* ===================================================
-          HOLDING SUMMARY
-      =================================================== */}
-
-      <div>
-
-        <h2
-          className="
-            mb-3
-            text-base
-            font-semibold
-            text-white
-          "
-        >
-          Holding Summary
-        </h2>
-
-
-        <div
-          className="
-            grid
-            grid-cols-2
-            gap-3
-            lg:grid-cols-4
-          "
-        >
-
-          {/* UNITS */}
-
-          <div
+        ) : (
+          <TrendingDown
+            size={16}
             className="
-              rounded-2xl
-              border
-              border-slate-800
-              bg-slate-900
-              p-4
+              shrink-0
+              text-red-400
+            "
+          />
+        )}
+
+
+        <div>
+
+          <p
+            className="
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-wider
+              text-slate-500
             "
           >
-
-            <p
-              className="
-                text-[11px]
-                font-medium
-                text-slate-500
-              "
-            >
-              Units
-            </p>
+            Profit / Loss
+          </p>
 
 
-            <p
-              className="
-                mt-2
-                text-lg
-                font-bold
-                text-white
-              "
-            >
-              {formatNumber(
-                holding.units
-              )}
-            </p>
-
-          </div>
-
-
-          {/* INVESTED */}
-
-          <div
-            className="
-              rounded-2xl
-              border
-              border-slate-800
-              bg-slate-900
-              p-4
-            "
+          <p
+            className={`
+              mt-1
+              text-lg
+              font-bold
+              leading-tight
+              ${
+                isProfit
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }
+            `}
           >
-
-            <p
-              className="
-                text-[11px]
-                font-medium
-                text-slate-500
-              "
-            >
-              Invested
-            </p>
-
-
-            <p
-              className="
-                mt-2
-                text-lg
-                font-bold
-                text-white
-              "
-            >
-              {formatCurrency(
-                holding.investedAmount
-              )}
-            </p>
-
-          </div>
-
-
-          {/* CURRENT VALUE */}
-
-          <div
-            className="
-              rounded-2xl
-              border
-              border-slate-800
-              bg-slate-900
-              p-4
-            "
-          >
-
-            <p
-              className="
-                text-[11px]
-                font-medium
-                text-slate-500
-              "
-            >
-              Current Value
-            </p>
-
-
-            <p
-              className="
-                mt-2
-                text-lg
-                font-bold
-                text-white
-              "
-            >
-              {formatCurrency(
-                holding.currentValue
-              )}
-            </p>
-
-          </div>
-
-
-          {/* PROFIT / LOSS */}
-
-          <div
-            className="
-              rounded-2xl
-              border
-              border-slate-800
-              bg-slate-900
-              p-4
-            "
-          >
-
-            <div
-              className="
-                flex
-                items-start
-                justify-between
-                gap-2
-              "
-            >
-
-              <div>
-
-                <p
-                  className="
-                    text-[11px]
-                    font-medium
-                    text-slate-500
-                  "
-                >
-                  Profit / Loss
-                </p>
-
-
-                <p
-                  className={`
-                    mt-2
-                    text-lg
-                    font-bold
-                    ${
-                      isProfit
-                        ? "text-emerald-400"
-                        : "text-red-400"
-                    }
-                  `}
-                >
-                  {isProfit
-                    ? "+"
-                    : "-"}
-                  {formatCurrency(
-                    Math.abs(
-                      profitLoss
-                    )
-                  )}
-                </p>
-
-              </div>
-
-
-              {isProfit ? (
-                <TrendingUp
-                  size={17}
-                  className="
-                    mt-1
-                    text-emerald-400
-                  "
-                />
-              ) : (
-                <TrendingDown
-                  size={17}
-                  className="
-                    mt-1
-                    text-red-400
-                  "
-                />
-              )}
-
-            </div>
-
-
-            <p
-              className={`
-                mt-0.5
-                text-xs
-                font-semibold
-                ${
-                  isProfit
-                    ? "text-emerald-500"
-                    : "text-red-500"
-                }
-              `}
-            >
-              {formatPercent(
-                returnPercent
-              )}
-            </p>
-
-          </div>
+            {isProfit
+              ? "+"
+              : "-"}
+            {formatCurrency(
+              Math.abs(
+                profitLoss
+              )
+            )}
+          </p>
 
         </div>
 
       </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+
 
 
       {/* ===================================================
@@ -943,8 +933,8 @@ export default function ETFStockDetails() {
             <h2
               className="
                 text-base
-                font-semibold
-                text-white
+                font-bold
+                text-dark
               "
             >
               Transactions
@@ -955,6 +945,7 @@ export default function ETFStockDetails() {
               className="
                 mt-0.5
                 text-xs
+                font-bold
                 text-slate-500
               "
             >

@@ -27,7 +27,7 @@ const assets = [
     type: "Fixed Deposit",
     icon: WalletCards,
     iconClass: "bg-amber-500/15 text-amber-300",
-    route: "/investments/fd/add",
+    route: "/int-fd/add",
   },
   {
     id: "bonds",
@@ -51,7 +51,7 @@ const assets = [
     type: "Life & Postal Insurance",
     icon: ShieldCheck,
     iconClass: "bg-emerald-500/15 text-emerald-300",
-    route: "/investments/lic-pli/add",
+    route: "/lic-pli/add",
   },
   {
     id: "etfStock",
@@ -59,7 +59,7 @@ const assets = [
     type: "ETF & Stock",
     icon: TrendingUp,
     iconClass: "bg-sky-500/15 text-sky-300",
-    route: "/investments/etf-stock/add",
+    route: "/etf-stock/add",
   },
 ];
 

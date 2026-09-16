@@ -20,6 +20,7 @@ import {
   calculateTotalPaid,
 } from "../../utils/licPli/licPliCalculations";
 
+import { useNavigate } from "react-router-dom";
 
 /* =================================================
    INITIAL FORM
@@ -156,6 +157,8 @@ export default function LicPliForm({
 
       onClose();
     }
+
+    const navigate = useNavigate();
 
 
   return (
@@ -299,7 +302,7 @@ export default function LicPliForm({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => navigate(-1)}
               className="
                 flex
                 h-8

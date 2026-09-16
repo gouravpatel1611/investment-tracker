@@ -23,6 +23,7 @@ import {
   useETFStock,
 } from "../../context/ETFStockContext";
 
+import { useNavigate } from "react-router-dom";
 
 /* =========================================================
    TODAY
@@ -78,6 +79,8 @@ export default function ETFStockTransactionForm({
   onSaved,
   onBack,
 }) {
+
+  const navigate = useNavigate();
 
   const {
     addTransaction,
@@ -600,7 +603,7 @@ export default function ETFStockTransactionForm({
     } finally {
 
       setSaving(false);
-
+      navigate(-1);
     }
   }
 
@@ -632,15 +635,11 @@ export default function ETFStockTransactionForm({
   ======================================================= */
 
   return (
-    <div
-      className="
-        min-h-screen
-        bg-slate-950
-        text-white
-      "
-    >
 
-      {/* ===================================================
+    <>
+
+
+          {/* ===================================================
           TOP HEADER
       =================================================== */}
 
@@ -653,9 +652,10 @@ export default function ETFStockTransactionForm({
           border-slate-800
           bg-slate-950/95
           px-4
-          py-3
+          py-2
           backdrop-blur
           sm:px-6
+          rounded-3xl
         "
       >
 
@@ -666,7 +666,7 @@ export default function ETFStockTransactionForm({
             max-w-3xl
             items-center
             justify-between
-            gap-3
+            gap-2
           "
         >
 
@@ -674,7 +674,7 @@ export default function ETFStockTransactionForm({
 
           <button
             type="button"
-            onClick={onBack}
+             onClick={() => navigate(-1)}
             className="
               flex
               h-10
@@ -736,30 +736,26 @@ export default function ETFStockTransactionForm({
           </div>
 
 
-          {/* RIGHT - ADD */}
-
-          <div
-            className="
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-xl
-              bg-slate-100
-              text-slate-900
-            "
-          >
-            <Plus
-              size={20}
-              strokeWidth={2.5}
-            />
-          </div>
 
         </div>
 
       </div>
+
+
+
+
+      
+    <div
+      className="
+        min-h-screen
+        bg-slate-950
+        text-white
+        my-3
+        rounded-3xl
+      "
+    >
+
+
 
 
       {/* ===================================================
@@ -1585,5 +1581,6 @@ export default function ETFStockTransactionForm({
       </form>
 
     </div>
+    </>
   );
 }

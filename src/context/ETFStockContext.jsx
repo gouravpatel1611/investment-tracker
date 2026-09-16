@@ -1127,7 +1127,7 @@ export function ETFStockProvider({
 
 
         return {
-
+          livePrices ,
           totalInvested,
 
           totalCurrentValue,
