@@ -819,6 +819,7 @@ export function ETFStockProvider({
                 symbol
               );
 
+            console.log("api data", data);
 
             const price =
               Number(

@@ -1,6 +1,5 @@
 
 import {
-  IndianRupee,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -14,6 +13,19 @@ function formatCurrency(value = 0) {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
+/* =========================================================
+   FORMAT PRICE — 2 DECIMAL
+========================================================= */
+
+function formatPrice(value = 0) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(value) || 0);
 }
 
@@ -75,12 +87,13 @@ function ETFStockCard({
       onClick={onClick}
       className="
         w-full
-        text-left
+        overflow-hidden
         rounded-2xl
         border
         border-slate-700
         bg-slate-900
         p-4
+        text-left
         shadow-sm
         transition
         duration-200
@@ -89,6 +102,7 @@ function ETFStockCard({
         active:scale-[0.99]
       "
     >
+
       {/* =================================================
           HEADER
       ================================================= */}
@@ -101,6 +115,7 @@ function ETFStockCard({
           gap-3
         "
       >
+
         {/* NAME + SYMBOL */}
 
         <div className="min-w-0">
@@ -108,8 +123,9 @@ function ETFStockCard({
           <h3
             className="
               truncate
-              text-sm
+              text-base
               font-bold
+              tracking-tight
               text-white
             "
           >
@@ -118,19 +134,20 @@ function ETFStockCard({
 
           <div
             className="
-              mt-1.5
+              mt-1
               flex
               items-center
               gap-2
             "
           >
+
             {/* SYMBOL */}
 
             <span
               className="
-                text-xs
+                text-sm
                 font-semibold
-                text-slate-400
+                text-white
               "
             >
               {symbol}
@@ -143,12 +160,12 @@ function ETFStockCard({
                 rounded-md
                 bg-slate-800
                 px-2
-                py-0.5
+                py-1
                 text-[10px]
                 font-bold
                 uppercase
                 tracking-wide
-                text-slate-300
+                text-white
               "
             >
               {assetType}
@@ -158,6 +175,7 @@ function ETFStockCard({
 
         </div>
 
+
         {/* RETURN */}
 
         <div
@@ -165,240 +183,306 @@ function ETFStockCard({
             flex
             shrink-0
             items-center
-            gap-1
-            text-xs
+            gap-1.5
+            rounded-lg
+            px-2.5
+            py-1.5
+            text-sm
             font-bold
             ${
               isProfit
-                ? "text-emerald-400"
-                : "text-red-400"
+                ? "bg-emerald-500/10 text-emerald-400"
+                : "bg-red-500/10 text-red-400"
             }
           `}
         >
+
           {isProfit ? (
-            <TrendingUp size={14} />
+            <TrendingUp size={15} />
           ) : (
-            <TrendingDown size={14} />
+            <TrendingDown size={15} />
           )}
 
-          {formatPercent(
-            numericReturn
-          )}
+          {formatPercent(numericReturn)}
+
         </div>
 
       </div>
 
-      {/* =================================================
-          CURRENT VALUE
-      ================================================= */}
-
-      <div className="mt-5">
-
-        <p
-          className="
-            text-[11px]
-            font-medium
-            text-slate-400
-          "
-        >
-          Current Value
-        </p>
-
-        <p
-          className="
-            mt-0.5
-            text-xl
-            font-extrabold
-            tracking-tight
-            text-white
-          "
-        >
-          {formatCurrency(
-            currentValue
-          )}
-        </p>
-
-      </div>
 
       {/* =================================================
-          MAIN STATS
+          FINANCIAL DETAILS
       ================================================= */}
 
       <div
         className="
-          mt-4
-          grid
-          grid-cols-2
-          gap-x-4
-          gap-y-3
-        "
-      >
-        {/* UNITS */}
-
-        <div>
-          <p
-            className="
-              text-[11px]
-              font-medium
-              text-slate-400
-            "
-          >
-            Units
-          </p>
-
-          <p
-            className="
-              mt-0.5
-              text-sm
-              font-bold
-              text-slate-200
-            "
-          >
-            {formatUnits(units)}
-          </p>
-        </div>
-
-        {/* INVESTED */}
-
-        <div>
-          <p
-            className="
-              text-[11px]
-              font-medium
-              text-slate-400
-            "
-          >
-            Invested Amount
-          </p>
-
-          <p
-            className="
-              mt-0.5
-              text-sm
-              font-bold
-              text-slate-200
-            "
-          >
-            {formatCurrency(
-              investedAmount
-            )}
-          </p>
-        </div>
-
-        {/* AVERAGE BUY PRICE */}
-
-        <div>
-          <p
-            className="
-              text-[11px]
-              font-medium
-              text-slate-400
-            "
-          >
-            Avg. Buy Price
-          </p>
-
-          <p
-            className="
-              mt-0.5
-              text-sm
-              font-bold
-              text-slate-200
-            "
-          >
-            {formatCurrency(
-              averageBuyPrice
-            )}
-          </p>
-        </div>
-
-        {/* CURRENT PRICE */}
-
-        <div>
-          <p
-            className="
-              text-[11px]
-              font-medium
-              text-slate-400
-            "
-          >
-            Current Price
-          </p>
-
-          <p
-            className="
-              mt-0.5
-              text-sm
-              font-bold
-              text-slate-200
-            "
-          >
-            {formatCurrency(
-              currentPrice
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* =================================================
-          PROFIT / LOSS
-      ================================================= */}
-
-      <div
-        className="
-          mt-4
-          flex
-          items-center
-          justify-between
-          border-t
+          mt-5
+          overflow-hidden
+          rounded-xl
+          border
           border-slate-700
-          pt-3
+          bg-slate-800/40
         "
       >
-        <div className="flex items-center gap-2">
 
-          {isProfit ? (
-            <TrendingUp
-              size={15}
-              className="text-emerald-400"
-            />
-          ) : (
-            <TrendingDown
-              size={15}
-              className="text-red-400"
-            />
-          )}
+        {/* =================================================
+            ROW 1 — UNIT / GAIN LOSS
+        ================================================= */}
 
-          <span
-            className="
-              text-xs
-              font-medium
-              text-slate-400
-            "
-          >
-            Profit / Loss
-          </span>
+        <div
+          className="
+            grid
+            grid-cols-2
+            divide-x
+            divide-slate-700
+            border-b
+            border-slate-700
+          "
+        >
+
+          {/* UNIT */}
+
+          <div className="px-3.5 py-3">
+
+            <p
+              className="
+                text-[11px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Unit
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-base
+                font-bold
+                text-white
+              "
+            >
+              {formatUnits(units)}
+            </p>
+
+          </div>
+
+
+          {/* GAIN / LOSS */}
+
+          <div className="px-3.5 py-3">
+
+            <p
+              className="
+                text-[11px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Gain / Loss
+            </p>
+
+            <div
+              className={`
+                mt-1
+                flex
+                items-center
+                gap-1.5
+                text-base
+                font-extrabold
+                ${
+                  isProfit
+                    ? "text-emerald-400"
+                    : "text-red-400"
+                }
+              `}
+            >
+
+              {isProfit ? (
+                <TrendingUp size={15} />
+              ) : (
+                <TrendingDown size={15} />
+              )}
+
+              {isProfit ? "+" : "-"}
+              {formatCurrency(
+                Math.abs(numericProfitLoss)
+              )}
+
+            </div>
+
+          </div>
 
         </div>
 
-        <span
-          className={`
-            text-sm
-            font-extrabold
-            ${
-              isProfit
-                ? "text-emerald-400"
-                : "text-red-400"
-            }
-          `}
+
+        {/* =================================================
+            ROW 2 — AVG PRICE / CURRENT PRICE
+        ================================================= */}
+
+        <div
+          className="
+            grid
+            grid-cols-2
+            divide-x
+            divide-slate-700
+            border-b
+            border-slate-700
+          "
         >
-          {isProfit ? "+" : "-"}
-          {formatCurrency(
-            Math.abs(numericProfitLoss)
-          )}
-        </span>
+
+          {/* AVG PRICE */}
+
+          <div className="px-3.5 py-3">
+
+            <p
+              className="
+                text-[11px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Avg. Price
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-base
+                font-bold
+                tracking-tight
+                text-white
+              "
+            >
+              {formatPrice(averageBuyPrice)}
+            </p>
+
+          </div>
+
+
+          {/* CURRENT PRICE */}
+
+          <div className="px-3.5 py-3">
+
+            <p
+              className="
+                text-[11px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Current Price
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-base
+                font-bold
+                tracking-tight
+                text-white
+              "
+            >
+              {formatPrice(currentPrice)}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        {/* =================================================
+            ROW 3 — COST / CURRENT VALUE
+        ================================================= */}
+
+        <div
+          className="
+            grid
+            grid-cols-2
+            divide-x
+            divide-slate-700
+          "
+        >
+
+          {/* COST */}
+
+          <div className="px-3.5 py-3">
+
+            <p
+              className="
+                text-[11px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Cost
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-base
+                font-bold
+                tracking-tight
+                text-white
+              "
+            >
+              {formatCurrency(investedAmount)}
+            </p>
+
+          </div>
+
+
+          {/* CURRENT VALUE */}
+
+          <div
+            className="
+              bg-slate-800/70
+              px-3.5
+              py-3
+            "
+          >
+
+            <p
+              className="
+                text-[11px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Current Value
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-base
+                font-extrabold
+                tracking-tight
+                text-white
+              "
+            >
+              {formatCurrency(currentValue)}
+            </p>
+
+          </div>
+
+        </div>
 
       </div>
+
     </button>
   );
 }

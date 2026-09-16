@@ -1,11 +1,9 @@
 
 import {
-  IndianRupee,
   Layers3,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-
 
 /* =========================================================
    FORMAT CURRENCY
@@ -19,7 +17,6 @@ function formatCurrency(value = 0) {
   }).format(Number(value) || 0);
 }
 
-
 /* =========================================================
    FORMAT PERCENT
 ========================================================= */
@@ -30,7 +27,6 @@ function formatPercent(value = 0) {
   return `${number >= 0 ? "+" : ""}${number.toFixed(2)}%`;
 }
 
-
 /* =========================================================
    SUMMARY CARD
 ========================================================= */
@@ -38,7 +34,6 @@ function formatPercent(value = 0) {
 export default function ETFStockSummaryCard({
   summary = {},
 }) {
-
   const {
     totalInvested = 0,
     currentValue = 0,
@@ -46,7 +41,6 @@ export default function ETFStockSummaryCard({
     returnPercent = 0,
     totalHoldings = 0,
   } = summary;
-
 
   const numericProfitLoss =
     Number(totalProfitLoss) || 0;
@@ -57,7 +51,6 @@ export default function ETFStockSummaryCard({
   const isProfit =
     numericProfitLoss >= 0;
 
-
   return (
     <div
       className="
@@ -66,103 +59,101 @@ export default function ETFStockSummaryCard({
         border
         border-slate-700
         bg-slate-900
-        shadow-sm
+        shadow-lg
       "
     >
 
       {/* =================================================
-          TOP SECTION
+          HEADER
       ================================================= */}
 
       <div
         className="
+          flex
+          items-start
+          justify-between
+          gap-4
           border-b
           border-slate-700
-          px-4
-          py-4
-          sm:px-5
+          px-5
+          py-5
         "
       >
+
+        <div className="min-w-0">
+
+          <p
+            className="
+              text-xs
+              font-semibold
+              uppercase
+              tracking-[0.12em]
+              text-slate-400
+            "
+          >
+            Portfolio Summary
+          </p>
+
+          <p
+            className="
+              mt-1.5
+              text-base
+              font-semibold
+              tracking-tight
+              text-white
+            "
+          >
+            ETF & Stock Investments
+          </p>
+
+        </div>
+
+
+        {/* HOLDINGS */}
 
         <div
           className="
             flex
+            shrink-0
             items-center
-            justify-between
-            gap-3
+            gap-2.5
+            rounded-xl
+            border
+            border-slate-700
+            bg-slate-800
+            px-3.5
+            py-2.5
           "
         >
+
+          <Layers3
+            size={17}
+            className="text-slate-400"
+          />
 
           <div>
 
             <p
               className="
                 text-[11px]
-                font-semibold
-                uppercase
-                tracking-wider
+                font-medium
                 text-slate-400
               "
             >
-              Portfolio Summary
+              Holdings
             </p>
 
             <p
               className="
-                mt-1
-                text-sm
-                font-medium
-                text-slate-200
+                mt-0.5
+                text-base
+                font-bold
+                leading-none
+                text-white
               "
             >
-              ETF & Stock Investments
+              {totalHoldings}
             </p>
-
-          </div>
-
-
-          {/* HOLDINGS */}
-
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-              rounded-xl
-              bg-slate-800
-              px-3
-              py-2
-            "
-          >
-
-            <Layers3
-              size={15}
-              className="text-slate-400"
-            />
-
-            <div>
-
-              <p
-                className="
-                  text-[10px]
-                  font-medium
-                  text-slate-500
-                "
-              >
-                Holdings
-              </p>
-
-              <p
-                className="
-                  text-sm
-                  font-bold
-                  text-white
-                "
-              >
-                {totalHoldings}
-              </p>
-
-            </div>
 
           </div>
 
@@ -172,15 +163,17 @@ export default function ETFStockSummaryCard({
 
 
       {/* =================================================
-          MAIN VALUES
+          INVESTMENT VALUES
       ================================================= */}
 
       <div
         className="
           grid
           grid-cols-2
-          gap-px
-          bg-slate-700
+          divide-x
+          divide-slate-700
+          border-b
+          border-slate-700
         "
       >
 
@@ -188,15 +181,14 @@ export default function ETFStockSummaryCard({
 
         <div
           className="
-            bg-slate-900
-            px-4
-            py-4
+            px-5
+            py-5
           "
         >
 
           <p
             className="
-              text-[11px]
+              text-xs
               font-medium
               text-slate-400
             "
@@ -206,17 +198,15 @@ export default function ETFStockSummaryCard({
 
           <p
             className="
-              mt-1
-              text-base
+              mt-1.5
+              text-lg
               font-extrabold
               tracking-tight
               text-white
-              sm:text-lg
+              sm:text-xl
             "
           >
-            {formatCurrency(
-              totalInvested
-            )}
+            {formatCurrency(totalInvested)}
           </p>
 
         </div>
@@ -226,15 +216,14 @@ export default function ETFStockSummaryCard({
 
         <div
           className="
-            bg-slate-900
-            px-4
-            py-4
+            px-5
+            py-5
           "
         >
 
           <p
             className="
-              text-[11px]
+              text-xs
               font-medium
               text-slate-400
             "
@@ -244,17 +233,15 @@ export default function ETFStockSummaryCard({
 
           <p
             className="
-              mt-1
-              text-base
+              mt-1.5
+              text-lg
               font-extrabold
               tracking-tight
               text-white
-              sm:text-lg
+              sm:text-xl
             "
           >
-            {formatCurrency(
-              currentValue
-            )}
+            {formatCurrency(currentValue)}
           </p>
 
         </div>
@@ -263,7 +250,7 @@ export default function ETFStockSummaryCard({
 
 
       {/* =================================================
-          PROFIT / LOSS
+          PROFIT / LOSS + RETURN
       ================================================= */}
 
       <div
@@ -271,27 +258,28 @@ export default function ETFStockSummaryCard({
           flex
           items-center
           justify-between
-          gap-4
-          px-4
-          py-4
-          sm:px-5
+          gap-5
+          px-5
+          py-5
         "
       >
+
+        {/* PROFIT / LOSS */}
 
         <div
           className="
             flex
             min-w-0
             items-center
-            gap-2.5
+            gap-3
           "
         >
 
           <div
             className={`
               flex
-              h-9
-              w-9
+              h-10
+              w-10
               shrink-0
               items-center
               justify-center
@@ -306,12 +294,12 @@ export default function ETFStockSummaryCard({
 
             {isProfit ? (
               <TrendingUp
-                size={17}
+                size={19}
                 className="text-emerald-400"
               />
             ) : (
               <TrendingDown
-                size={17}
+                size={19}
                 className="text-red-400"
               />
             )}
@@ -319,11 +307,11 @@ export default function ETFStockSummaryCard({
           </div>
 
 
-          <div>
+          <div className="min-w-0">
 
             <p
               className="
-                text-[11px]
+                text-xs
                 font-medium
                 text-slate-400
               "
@@ -333,9 +321,10 @@ export default function ETFStockSummaryCard({
 
             <p
               className={`
-                mt-0.5
-                text-sm
+                mt-1
+                text-base
                 font-extrabold
+                tracking-tight
                 ${
                   isProfit
                     ? "text-emerald-400"
@@ -345,9 +334,7 @@ export default function ETFStockSummaryCard({
             >
               {isProfit ? "+" : "-"}
               {formatCurrency(
-                Math.abs(
-                  numericProfitLoss
-                )
+                Math.abs(numericProfitLoss)
               )}
             </p>
 
@@ -360,6 +347,11 @@ export default function ETFStockSummaryCard({
 
         <div
           className="
+            shrink-0
+            rounded-xl
+            bg-slate-800
+            px-4
+            py-2.5
             text-right
           "
         >
@@ -377,7 +369,7 @@ export default function ETFStockSummaryCard({
           <p
             className={`
               mt-0.5
-              text-sm
+              text-base
               font-extrabold
               ${
                 isProfit
@@ -386,9 +378,7 @@ export default function ETFStockSummaryCard({
               }
             `}
           >
-            {formatPercent(
-              numericReturn
-            )}
+            {formatPercent(numericReturn)}
           </p>
 
         </div>

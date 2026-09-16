@@ -317,7 +317,6 @@ export default async function handler(
     /* =====================================================
        RESPONSE
     ===================================================== */
-
     return res.status(200).json({
 
       success:
