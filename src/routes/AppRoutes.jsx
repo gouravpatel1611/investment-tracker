@@ -41,6 +41,8 @@ import LicPliForm from "../pages/licPli/LicPliForm";
 import ETFStock from "../pages/etfStock/ETFStock";
 import ETFStockDetails from "../pages/etfStock/ETFStockDetails";
 import ETFStockTransactionForm from "../components/etfStock/ETFStockTransactionForm"
+import Investors from "../pages/investors/Investors";
+
 
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -202,6 +204,13 @@ function AppRoutes() {
               element={<LicPliForm />}
             />
 
+            <Route
+              path="/investors"
+              element={<Investors />}
+            />
+
+
+            
             {/* -----------------------------
                 FALLBACK
             ----------------------------- */}

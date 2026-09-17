@@ -1,20 +1,37 @@
-import { ChevronDown, UserRound } from "lucide-react";
+
+import {
+  ChevronDown,
+  UserRound,
+} from "lucide-react";
+
 
 function InvestorSelect({
   investors,
   value,
   onChange,
+  loading = false,
 }) {
+
   return (
+
     <div>
+
       <label
         htmlFor="investor"
-        className="mb-2 block text-sm font-bold text-slate-200"
+        className="
+          mb-2
+          block
+          text-sm
+          font-bold
+          text-slate-200
+        "
       >
         Investor
       </label>
 
+
       <div className="relative">
+
         <UserRound
           size={17}
           className="
@@ -27,11 +44,15 @@ function InvestorSelect({
           "
         />
 
+
         <select
           id="investor"
           value={value}
+          disabled={loading}
           onChange={(event) =>
-            onChange(event.target.value)
+            onChange(
+              event.target.value
+            )
           }
           className="
             h-12
@@ -51,21 +72,33 @@ function InvestorSelect({
             focus:border-purple-500
             focus:ring-2
             focus:ring-purple-500/20
+            disabled:cursor-not-allowed
+            disabled:opacity-60
           "
         >
+
           <option value="">
-            Select investor
+            {loading
+              ? "Loading investors..."
+              : "Select investor"}
           </option>
 
-          {investors.map((investor) => (
-            <option
-              key={investor.id}
-              value={investor.id}
-            >
-              {investor.name}
-            </option>
-          ))}
+
+          {investors.map(
+            (investor) => (
+
+              <option
+                key={investor.id}
+                value={investor.id}
+              >
+                {investor.name}
+              </option>
+
+            )
+          )}
+
         </select>
+
 
         <ChevronDown
           size={17}
@@ -78,9 +111,12 @@ function InvestorSelect({
             text-slate-500
           "
         />
+
       </div>
+
     </div>
   );
 }
+
 
 export default InvestorSelect;

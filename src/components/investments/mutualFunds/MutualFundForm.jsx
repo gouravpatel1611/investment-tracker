@@ -1,3 +1,4 @@
+
 import {
   useEffect,
   useState,
@@ -21,8 +22,6 @@ import SchemeCodeInput from "./SchemeCodeInput";
 import FundPreview from "./FundPreview";
 import InvestmentSummary from "./InvestmentSummary";
 
-import { investors } from "../../../data/mutualFunds";
-
 import {
   findMutualFundBySchemeCode,
   getHistoricalNav,
@@ -39,6 +38,10 @@ import {
 import {
   useMutualFunds,
 } from "../../../context/MutualFundContext";
+
+import {
+  useInvestors,
+} from "../../../context/InvestorContext";
 
 
 function MutualFundForm() {
@@ -77,6 +80,22 @@ function MutualFundForm() {
   const {
     reload,
   } = useMutualFunds();
+
+
+  /*
+   * --------------------------------
+   * INVESTOR CONTEXT
+   * --------------------------------
+   *
+   * Investors ab Firestore se
+   * current logged-in user ke liye
+   * load honge.
+   */
+
+  const {
+    investors,
+    loading: investorsLoading,
+  } = useInvestors();
 
 
   /*
@@ -891,7 +910,25 @@ function MutualFundForm() {
             investors={investors}
             value={investorId}
             onChange={setInvestorId}
+            loading={investorsLoading}
           />
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/investors")
+            }
+            className="
+              mt-2
+              text-sm
+              font-semibold
+              text-purple-400
+              transition
+              hover:text-purple-300
+            "
+          >
+            Add / Edit Investor
+          </button>
 
         </div>
 
