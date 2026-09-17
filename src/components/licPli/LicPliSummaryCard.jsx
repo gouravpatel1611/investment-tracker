@@ -290,70 +290,65 @@ export default function LicPliSummaryCard({
             TOTAL
         ==================================== */}
 
-        <div
-          className="
-            grid
-            grid-cols-[58px_1fr_72px_1fr]
-            items-center
-            gap-2
-            border-t
-            border-slate-700
-            bg-slate-800/40
-            px-4
-            py-3
-          "
-        >
+<div
+  className="
+    grid
+    grid-cols-[58px_1fr_72px_1fr]
+    items-center
+    gap-3
+    border-t
+    border-slate-700
+    bg-slate-800/40
+    px-4
+    py-3
+  "
+>
+  {/* TOTAL LABEL */}
 
-          {/* TOTAL LABEL */}
-
-          <span
-            className="
-              text-xs
-              font-extrabold
-              text-white
-            "
-          >
-            TOTAL
-          </span>
-
-
-          {/* TOTAL PREMIUM */}
-
-          <p
-            className="
-              text-right
-              text-sm
-              font-extrabold
-              text-white
-            "
-          >
-            {formatCurrency(
-              totalPremium
-            )}
-          </p>
+  <span
+    className="
+      text-xs
+      font-extrabold
+      text-white
+    "
+  >
+    TOTAL
+  </span>
 
 
-          {/* EMPTY INSTALLMENT COLUMN */}
+  {/* TOTAL PREMIUM */}
 
-          <div />
+  <p
+    className="
+      text-right
+      text-sm
+      font-extrabold
+      text-white
+    "
+  >
+    {formatCurrency(
+      totalPremium
+    )}
+  </p>
 
 
-          {/* TOTAL PAID */}
+  {/* TOTAL PAID - MERGED LAST 2 COLUMNS */}
 
-          <p
-            className="
-              text-left
-              text-sm
-              font-extrabold
-              text-emerald-400
-            "
-          >
-            {formatCurrency(
-              totalPaid
-            )}
-          </p>
+  <p
+    className="
+      col-span-2
+      text-center
+      text-sm
+      font-extrabold
+      text-emerald-400
+    "
+  >
+    {formatCurrency(
+      totalPaid
+    )}
+  </p>
 
-        </div>
+</div>
 
       </div>
 
