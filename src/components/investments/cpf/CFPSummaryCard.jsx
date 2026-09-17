@@ -153,6 +153,7 @@ function SummaryRow({
               text-[15px]
               font-bold
               tracking-tight
+              text-yellow-400
               ${style.value}
             `}
           >
@@ -189,7 +190,7 @@ function SummaryRow({
               className={`
                 text-[11px]
                 font-semibold
-                ${style.profit}
+                text-green-400
               `}
             >
               {formatCurrency(

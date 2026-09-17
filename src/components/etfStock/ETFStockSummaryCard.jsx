@@ -206,7 +206,7 @@ export default function ETFStockSummaryCard({
               text-lg
               font-extrabold
               tracking-tight
-              text-white
+              text-yellow-400
             "
           >
             {formatCurrency(totalInvested)}

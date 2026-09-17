@@ -24,7 +24,8 @@ function MutualFundSummaryCard({ data }) {
         relative
         overflow-hidden
         rounded-2xl
-        border border-zinc-700
+        border
+        border-zinc-700
         bg-gradient-to-br
         from-zinc-900
         via-neutral-900
@@ -36,6 +37,7 @@ function MutualFundSummaryCard({ data }) {
     >
 
       {/* SUBTLE GLOW */}
+
       <div
         className="
           pointer-events-none
@@ -53,8 +55,17 @@ function MutualFundSummaryCard({ data }) {
       <div className="relative">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between gap-3">
 
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+            border-b
+            border-zinc-800
+            pb-3
+          "
+        >
           <div>
             <p
               className="
@@ -62,72 +73,32 @@ function MutualFundSummaryCard({ data }) {
                 font-bold
                 uppercase
                 tracking-[0.14em]
-                text-zinc-400
+                text-white
               "
             >
               Mutual Funds
             </p>
 
-            <h2 className="mt-0.5 text-base font-extrabold text-white">
+            <h2
+              className="
+                mt-0.5
+                text-base
+                font-extrabold
+                text-white
+              "
+            >
               Portfolio Summary
             </h2>
           </div>
-
-          {/* RETURN */}
-          <div
-            className={`
-              rounded-full
-              border
-              px-2.5
-              py-1
-              text-xs
-              font-bold
-              ${
-                isProfit
-                  ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
-                  : "border-red-400/25 bg-red-400/10 text-red-300"
-              }
-            `}
-          >
-            {isProfit ? "+" : ""}
-            {returnPercent.toFixed(2)}%
-          </div>
-
         </div>
 
-        {/* CURRENT VALUE */}
-        <div className="mt-4">
 
-          <p
-            className="
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-wider
-              text-zinc-400
-            "
-          >
-            Current Value
-          </p>
+        {/* STATS */}
 
-          <p
-            className="
-              mt-0.5
-              text-2xl
-              font-black
-              tracking-tight
-              text-white
-            "
-          >
-            {formatCurrency(data.currentValue)}
-          </p>
-
-        </div>
-
-        {/* MAIN STATS */}
-        <div className="mt-4 grid grid-cols-2 gap-2.5">
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
 
           {/* INVESTED */}
+
           <div
             className="
               rounded-xl
@@ -138,24 +109,72 @@ function MutualFundSummaryCard({ data }) {
               py-2.5
             "
           >
-            <p className="text-[10px] font-medium text-zinc-400">
+            <p
+              className="
+                text-[10px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
               Invested
             </p>
 
             <p
               className="
-                mt-0.5
+                mt-1
                 truncate
-                text-sm
+                text-m
                 font-bold
-                text-zinc-100
+                text-yellow-400
               "
             >
               {formatCurrency(data.invested)}
             </p>
           </div>
 
+
+          {/* CURRENT VALUE */}
+
+          <div
+            className="
+              rounded-xl
+              border
+              border-zinc-700/80
+              bg-white/[0.045]
+              px-3
+              py-2.5
+            "
+          >
+            <p
+              className="
+                text-[10px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Current Value
+            </p>
+
+            <p
+              className="
+                mt-1
+                truncate
+                text-m
+                font-bold
+                text-white
+              "
+            >
+              {formatCurrency(data.currentValue)}
+            </p>
+          </div>
+
+
           {/* PROFIT / LOSS */}
+
           <div
             className={`
               rounded-xl
@@ -169,13 +188,21 @@ function MutualFundSummaryCard({ data }) {
               }
             `}
           >
-            <p className="text-[10px] font-medium text-zinc-400">
+            <p
+              className="
+                text-[10px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
               Profit / Loss
             </p>
 
             <p
               className={`
-                mt-0.5
+                mt-1
                 truncate
                 text-sm
                 font-bold
@@ -191,8 +218,52 @@ function MutualFundSummaryCard({ data }) {
             </p>
           </div>
 
-        </div>
 
+          {/* PROFIT % */}
+
+          <div
+            className={`
+              rounded-xl
+              border
+              px-3
+              py-2.5
+              ${
+                isProfit
+                  ? "border-emerald-400/20 bg-emerald-400/[0.07]"
+                  : "border-red-400/20 bg-red-400/[0.07]"
+              }
+            `}
+          >
+            <p
+              className="
+                text-[10px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-white
+              "
+            >
+              Profit %
+            </p>
+
+            <p
+              className={`
+                mt-1
+                text-sm
+                font-bold
+                ${
+                  isProfit
+                    ? "text-emerald-300"
+                    : "text-red-300"
+                }
+              `}
+            >
+              {isProfit ? "+" : ""}
+              {returnPercent.toFixed(2)}%
+            </p>
+          </div>
+
+        </div>
 
       </div>
     </div>

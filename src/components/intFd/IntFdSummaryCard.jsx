@@ -172,7 +172,7 @@ export default function IntFdSummaryCard({
       >
         <SummaryItem
           icon={IndianRupee}
-          label="Total Principal"
+          label="Principal"
           value={formatCurrency(
             summary.totalPrincipal
           )}
@@ -184,7 +184,7 @@ export default function IntFdSummaryCard({
 
         <SummaryItem
           icon={TrendingUp}
-          label="Total Interest"
+          label="Interest"
           value={formatCurrency(
             summary.totalInterest
           )}

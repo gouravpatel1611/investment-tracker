@@ -340,7 +340,7 @@ export default function LicPliSummaryCard({
       text-center
       text-sm
       font-extrabold
-      text-emerald-400
+      text-yellow-400
     "
   >
     {formatCurrency(

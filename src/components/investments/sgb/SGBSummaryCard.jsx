@@ -241,7 +241,7 @@ const SGBSummaryCard = ({
 
         <Stat
           icon={IndianRupee}
-          label="Purchase Rate"
+          label="Avg Price"
           value={formatCurrency(
             summary?.purchaseRate
           )}
@@ -283,7 +283,7 @@ const SGBSummaryCard = ({
 
         <Stat
           icon={IndianRupee}
-          label="Current Value"
+          label="Curr Value"
           value={formatCurrency(
             summary?.currentValue
           )}
@@ -295,7 +295,7 @@ const SGBSummaryCard = ({
 
         <Stat
           icon={IndianRupee}
-          label="Interest Received"
+          label="Int Received"
           value={formatCurrency(
             summary?.interest
           )}
