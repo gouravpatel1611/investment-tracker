@@ -342,7 +342,7 @@ export default function LicPliSummaryCard({
 
           <p
             className="
-              text-right
+              text-left
               text-sm
               font-extrabold
               text-emerald-400

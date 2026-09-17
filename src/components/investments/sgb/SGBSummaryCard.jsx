@@ -261,18 +261,22 @@ const SGBSummaryCard = ({
 
         {/* GAIN */}
 
-        <Stat
+                <Stat
           icon={TrendingUp}
-          label="Gain"
+          label="GAIN"
           value={formatCurrency(
-            summary?.gain
+            summary?.profit
           )}
           valueClass={
-            isGain
+            Number(
+              summary?.profit || 0
+            ) >= 0
               ? "text-emerald-400"
               : "text-red-400"
           }
         />
+        
+
 
 
         {/* CURRENT VALUE */}
@@ -295,7 +299,7 @@ const SGBSummaryCard = ({
           value={formatCurrency(
             summary?.interest
           )}
-          valueClass="text-green-300"
+          valueClass="text-emerald-400"
         />
 
 
@@ -319,16 +323,17 @@ const SGBSummaryCard = ({
 
         {/* TOTAL PROFIT */}
 
+
+
+
         <Stat
           icon={TrendingUp}
-          label="Total Profit"
+          label="TOTAL PROFIT"
           value={formatCurrency(
-            summary?.profit
+            summary?.gain
           )}
           valueClass={
-            Number(
-              summary?.profit || 0
-            ) >= 0
+            isGain
               ? "text-emerald-400"
               : "text-red-400"
           }
