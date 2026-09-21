@@ -1,3 +1,4 @@
+
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -442,6 +443,15 @@ function createInitialForm(bond) {
         ? String(bond.interestAdjustment)
         : "",
 
+    /* =========================================
+       TDS
+    ========================================= */
+
+    tds:
+      bond?.tds !== undefined
+        ? String(bond.tds)
+        : "",
+
     couponFrequency:
       bond?.couponFrequency ||
       "monthly",
@@ -709,6 +719,13 @@ function BondForm({
           form.interestAdjustment
         ) || 0,
 
+      /* =========================================
+         TDS
+      ========================================= */
+
+      tds:
+        Number(form.tds) || 0,
+
       principalRepayments:
         repayments,
     };
@@ -937,7 +954,31 @@ function BondForm({
 
           <p className="-mt-2 text-[11px] text-slate-500">
             Use + for additional interest
-            and - for deduction / TDS.
+            and - for deduction / adjustment.
+          </p>
+
+          {/* TDS */}
+
+          <InputField
+            label="TDS"
+            value={form.tds}
+            onChange={(value) =>
+              updateField(
+                "tds",
+                value
+              )
+            }
+            type="number"
+            placeholder="e.g. 250"
+            prefix={
+              <IndianRupee
+                size={14}
+              />
+            }
+          />
+
+          <p className="-mt-2 text-[11px] text-slate-500">
+            TDS will be deducted from Interest Received only.
           </p>
 
           <SelectField

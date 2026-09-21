@@ -101,10 +101,35 @@ export function calculateBondFinancialSummary(
   -------------------------------- */
 
   const interestAdjustment =
-    Number(bond.interestAdjustment) || 0;
+    Number(
+      bond.interestAdjustment
+    ) || 0;
+
+  /* --------------------------------
+     TDS
+
+     TDS is stored separately.
+
+     TDS does NOT reduce Total Interest.
+
+     TDS is deducted only from
+     Interest Received.
+
+     Old bonds without TDS
+     are treated as 0.
+  -------------------------------- */
+
+  const tds =
+    Number(bond.tds) || 0;
 
   /* --------------------------------
      TOTAL INTEREST
+
+     TDS is NOT deducted here.
+
+     Total Interest =
+     Calculated Interest
+     + Interest Adjustment
   -------------------------------- */
 
   const totalInterest =
@@ -113,6 +138,13 @@ export function calculateBondFinancialSummary(
 
   /* --------------------------------
      INTEREST RECEIVED
+
+     Existing received interest
+     + existing adjustment
+     - TDS
+
+     TDS affects only the amount
+     actually received.
   -------------------------------- */
 
   const calculatedInterestReceived =
@@ -125,17 +157,25 @@ export function calculateBondFinancialSummary(
 
   const interestReceived =
     calculatedInterestReceived +
-    interestAdjustment;
+    interestAdjustment -
+    tds;
 
   /* --------------------------------
      INTEREST REMAINING
 
-     Total Interest - Received Interest
+     Total Interest
+     - Interest Received
+     + TDS
+
+     TDS is not actually received,
+     therefore it remains part of
+     the outstanding interest.
   -------------------------------- */
 
   const interestRemaining =
     totalInterest -
-    interestReceived;
+    interestReceived +
+    tds;
 
   /* --------------------------------
      PRINCIPAL REPAYMENTS
@@ -308,7 +348,7 @@ export function calculateTotalBondFinancialSummary(
 
     principalRemaining:
       Number(
-        total.principalRemaining.toFixed(2)
+       total.principalRemaining.toFixed(2)
       ),
 
     interestRemaining:

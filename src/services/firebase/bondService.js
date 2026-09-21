@@ -1,3 +1,4 @@
+
 import {
   addDoc,
   collection,
@@ -69,6 +70,23 @@ function normalizeBondData(bond = {}) {
         bond.interestAdjustment
       ) || 0,
 
+    /*
+      TDS:
+
+      TDS is stored separately.
+
+      It will NOT reduce Total Interest.
+
+      It will be deducted only from
+      Interest Received during calculation.
+
+      Old bonds without TDS
+      will automatically get 0.
+    */
+
+    tds:
+      Number(bond.tds) || 0,
+
     principalRepayments:
       Array.isArray(
         bond.principalRepayments
@@ -76,7 +94,8 @@ function normalizeBondData(bond = {}) {
         ? bond.principalRepayments.map(
             (item) => ({
               id:
-                item.id || crypto.randomUUID(),
+                item.id ||
+                crypto.randomUUID(),
 
               date:
                 item.date || "",
@@ -202,22 +221,36 @@ export async function getBonds() {
       await getDocs(q);
 
     return snapshot.docs.map(
-      (item) => ({
-        ...item.data(),
+      (item) => {
+        const data =
+          item.data();
 
-        /*
-          Old bonds may not have
-          interestAdjustment.
-        */
+        return {
+          ...data,
 
-        interestAdjustment:
-          Number(
-            item.data()
-              .interestAdjustment
-          ) || 0,
+          /*
+            Old bonds may not have
+            interestAdjustment.
+          */
 
-        id: item.id,
-      })
+          interestAdjustment:
+            Number(
+              data.interestAdjustment
+            ) || 0,
+
+          /*
+            Old bonds may not have TDS.
+
+            If TDS is missing from
+            Firebase, treat it as 0.
+          */
+
+          tds:
+            Number(data.tds) || 0,
+
+          id: item.id,
+        };
+      }
     );
   } catch (error) {
     console.error(
