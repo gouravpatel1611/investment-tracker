@@ -1,4 +1,3 @@
-
 function AssetBreakdownCard({
   asset,
   isLoading = false,
@@ -17,15 +16,14 @@ function AssetBreakdownCard({
         border
         border-slate-700/80
         bg-slate-800
-        p-3
+        px-3
+        py-2.5
         text-left
-        shadow-sm
         transition-all
         duration-200
 
         hover:border-slate-600
         hover:bg-slate-750
-        hover:shadow-md
 
         active:scale-[0.99]
 
@@ -35,95 +33,117 @@ function AssetBreakdownCard({
       "
     >
       {/* =============================
-          TOP
+          TOP BAR
       ============================== */}
 
       <div
         className="
           flex
-          items-start
-          justify-between
-          gap-3
+          items-center
+          gap-2.5
         "
       >
-        {/* LEFT */}
+        {/* LOGO */}
+
+        <div
+          className={`
+            flex
+            h-9
+            w-9
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            border
+            border-white/10
+            ${asset?.iconClass || ""}
+          `}
+        >
+          {Icon && (
+            <Icon
+              size={18}
+              strokeWidth={2.2}
+            />
+          )}
+        </div>
+
+        {/* TITLE */}
+
+        <h3
+          className="
+            min-w-0
+            flex-1
+            truncate
+            text-sm
+            font-bold
+            tracking-tight
+            text-slate-100
+          "
+        >
+          {asset?.name || "-"}
+        </h3>
+
+        {/* HOLDINGS */}
+
+        <span
+          className="
+            shrink-0
+            rounded-full
+            border
+            border-slate-600/60
+            bg-slate-900/50
+            px-2
+            py-1
+            text-[10px]
+            font-semibold
+            text-slate-300
+          "
+        >
+          {isLoading
+            ? "Loading..."
+            : `${asset?.holdings || 0} ${
+                asset?.holdings === 1
+                  ? "holding"
+                  : "holdings"
+              }`}
+        </span>
+      </div>
+
+      {/* =============================
+          BOTTOM BAR
+      ============================== */}
+
+      <div
+        className="
+          mt-1.5
+          flex
+          items-center
+        "
+      >
+        {/* AMOUNT */}
 
         <div
           className="
-            flex
-            min-w-0
-            items-center
-            gap-3
+            flex-1
+            text-center
           "
         >
-          {/* ICON */}
-
-          <div
-            className={`
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
-              rounded-xl
-              border
-              border-white/5
-              ${asset?.iconClass || ""}
-            `}
-          >
-            {Icon && (
-              <Icon
-                size={18}
-                strokeWidth={2}
-              />
-            )}
-          </div>
-
-          {/* NAME + TYPE */}
-
-          <div
+          <p
             className="
-              min-w-0
+              text-xl
+              font-bold
+              tracking-tight
+              tabular-nums
+              text-yellow-400
             "
+            style={{
+              fontFamily: "Calibri, Arial, sans-serif",
+            }}
           >
-            <h3
-              className="
-                truncate
-                text-sm
-                font-extrabold
-                tracking-tight
-                text-slate-50
-              "
-            >
-              {asset?.name || "-"}
-            </h3>
-
-            <p
-              className="
-                mt-1
-                truncate
-                text-[11px]
-                font-medium
-                text-slate-400
-              "
-            >
-              {asset?.type || "-"}
-
-              {" · "}
-
-              {isLoading ? (
-                "Loading..."
-              ) : (
-                <>
-                  {asset?.holdings || 0}{" "}
-                  {asset?.holdings === 1
-                    ? "holding"
-                    : "holdings"}
-                </>
-              )}
-            </p>
-          </div>
+            {isLoading
+              ? "Loading..."
+              : asset?.formattedValue || "—"}
+          </p>
         </div>
 
         {/* ARROW */}
@@ -141,39 +161,16 @@ function AssetBreakdownCard({
             transition-all
             duration-200
 
+            group-hover:bg-slate-700
+            group-hover:text-slate-200
             group-hover:translate-x-0.5
-            group-hover:text-slate-300
           "
         >
           →
         </div>
-      </div>
-
-      {/* =============================
-          VALUE
-      ============================== */}
-
-      <div
-        className="
-          mt-2.5
-        "
-      >
-        <p
-          className="
-            text-sm
-            font-extrabold
-            tracking-tight
-            text-slate-50
-          "
-        >
-          {isLoading
-            ? "Loading..."
-            : asset?.formattedValue || "—"}
-        </p>
       </div>
     </button>
   );
 }
 
 export default AssetBreakdownCard;
-
