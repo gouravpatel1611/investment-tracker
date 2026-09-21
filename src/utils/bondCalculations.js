@@ -1,7 +1,6 @@
 import {
   calculateScheduledInterest,
   calculateReceivedInterest,
-  calculatePendingInterest,
   calculatePrincipalSummary,
 } from "./bondInterestSchedule";
 
@@ -25,7 +24,8 @@ function toDateOnly(value) {
     typeof value === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(value)
   ) {
-    const [year, month, day] = value.split("-");
+    const [year, month, day] =
+      value.split("-");
 
     date = new Date(
       Number(year),
@@ -44,7 +44,6 @@ function toDateOnly(value) {
 
   return date;
 }
-
 
 /* =========================================================
    INDIVIDUAL BOND SUMMARY
@@ -65,7 +64,6 @@ export function calculateBondFinancialSummary(
     };
   }
 
-
   /* --------------------------------
      TOTAL PRINCIPAL
 
@@ -82,17 +80,42 @@ export function calculateBondFinancialSummary(
   const totalPrincipal =
     faceValue * quantity;
 
-
   /* --------------------------------
      INTEREST
   -------------------------------- */
 
-  const totalInterest =
+  const calculatedInterest =
     Number(
       calculateScheduledInterest(bond)
     ) || 0;
 
-  const interestReceived =
+  /* --------------------------------
+     INTEREST ADJUSTMENT
+
+     +500 → adds ₹500
+     -350 → deducts ₹350
+     blank/missing → 0
+
+     Adjustment affects interest only.
+     Principal remains unchanged.
+  -------------------------------- */
+
+  const interestAdjustment =
+    Number(bond.interestAdjustment) || 0;
+
+  /* --------------------------------
+     TOTAL INTEREST
+  -------------------------------- */
+
+  const totalInterest =
+    calculatedInterest +
+    interestAdjustment;
+
+  /* --------------------------------
+     INTEREST RECEIVED
+  -------------------------------- */
+
+  const calculatedInterestReceived =
     Number(
       calculateReceivedInterest(
         bond,
@@ -100,14 +123,19 @@ export function calculateBondFinancialSummary(
       )
     ) || 0;
 
-  const interestRemaining =
-    Number(
-      calculatePendingInterest(
-        bond,
-        asOfDate
-      )
-    ) || 0;
+  const interestReceived =
+    calculatedInterestReceived +
+    interestAdjustment;
 
+  /* --------------------------------
+     INTEREST REMAINING
+
+     Total Interest - Received Interest
+  -------------------------------- */
+
+  const interestRemaining =
+    totalInterest -
+    interestReceived;
 
   /* --------------------------------
      PRINCIPAL REPAYMENTS
@@ -119,22 +147,17 @@ export function calculateBondFinancialSummary(
   const repayments =
     principalSummary?.repayments || [];
 
-
   const currentDate =
     toDateOnly(asOfDate) ||
     toDateOnly(new Date());
 
-
   let principalReceived = 0;
 
-
   repayments.forEach((repayment) => {
-
     const repaymentDate =
       toDateOnly(repayment.date);
 
     if (!repaymentDate) return;
-
 
     /*
       Aaj ki repayment bhi received
@@ -142,14 +165,10 @@ export function calculateBondFinancialSummary(
     */
 
     if (repaymentDate <= currentDate) {
-
       principalReceived +=
         Number(repayment.amount) || 0;
-
     }
-
   });
-
 
   /* --------------------------------
      PROTECTION
@@ -161,7 +180,6 @@ export function calculateBondFinancialSummary(
       principalReceived
     );
 
-
   const principalRemaining =
     Math.max(
       0,
@@ -169,18 +187,15 @@ export function calculateBondFinancialSummary(
         principalReceived
     );
 
-
   /* --------------------------------
      RESULT
   -------------------------------- */
 
   return {
-
-    principalAmount: 
+    principalAmount:
       Number(
         totalPrincipal.toFixed(2)
       ),
-
 
     totalInterest:
       Number(
@@ -206,10 +221,8 @@ export function calculateBondFinancialSummary(
       Number(
         interestRemaining.toFixed(2)
       ),
-
   };
 }
-
 
 /* =========================================================
    ALL BONDS SUMMARY
@@ -219,12 +232,10 @@ export function calculateTotalBondFinancialSummary(
   bonds = [],
   asOfDate = new Date()
 ) {
-
   if (
     !Array.isArray(bonds) ||
     bonds.length === 0
   ) {
-
     return {
       totalPrincipal: 0,
       totalInterest: 0,
@@ -233,20 +244,16 @@ export function calculateTotalBondFinancialSummary(
       principalRemaining: 0,
       interestRemaining: 0,
     };
-
   }
-
 
   const total =
     bonds.reduce(
       (result, bond) => {
-
         const summary =
           calculateBondFinancialSummary(
             bond,
             asOfDate
           );
-
 
         result.totalPrincipal +=
           summary.principalAmount;
@@ -266,9 +273,7 @@ export function calculateTotalBondFinancialSummary(
         result.interestRemaining +=
           summary.interestRemaining;
 
-
         return result;
-
       },
       {
         totalPrincipal: 0,
@@ -281,13 +286,10 @@ export function calculateTotalBondFinancialSummary(
     );
 
   return {
-
     totalPrincipal:
       Number(
         total.totalPrincipal.toFixed(2)
       ),
-
-      
 
     totalInterest:
       Number(
@@ -313,6 +315,5 @@ export function calculateTotalBondFinancialSummary(
       Number(
         total.interestRemaining.toFixed(2)
       ),
-
   };
 }

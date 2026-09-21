@@ -23,7 +23,9 @@ function getUserCollection() {
   const user = auth.currentUser;
 
   if (!user) {
-    throw new Error("User is not logged in.");
+    throw new Error(
+      "User is not logged in."
+    );
   }
 
   return collection(
@@ -35,29 +37,90 @@ function getUserCollection() {
 }
 
 /* =========================================================
+   NORMALIZE BOND DATA
+========================================================= */
+
+function normalizeBondData(bond = {}) {
+  const data = {
+    ...bond,
+
+    quantity:
+      Number(bond.quantity) || 0,
+
+    faceValue:
+      Number(bond.faceValue) || 0,
+
+    purchaseValue:
+      Number(bond.purchaseValue) || 0,
+
+    couponRate:
+      Number(bond.couponRate) || 0,
+
+    /*
+      Interest adjustment:
+
+      +500  = add ₹500
+      -350  = deduct ₹350
+      0     = no adjustment
+    */
+
+    interestAdjustment:
+      Number(
+        bond.interestAdjustment
+      ) || 0,
+
+    principalRepayments:
+      Array.isArray(
+        bond.principalRepayments
+      )
+        ? bond.principalRepayments.map(
+            (item) => ({
+              id:
+                item.id || crypto.randomUUID(),
+
+              date:
+                item.date || "",
+
+              amount:
+                Number(item.amount) || 0,
+            })
+          )
+        : [],
+  };
+
+  delete data.id;
+
+  return data;
+}
+
+/* =========================================================
    ADD BOND
 ========================================================= */
 
 export async function addBond(bond) {
   try {
-    const dataToSave = {
-      ...bond,
-      createdAt: serverTimestamp(),
-    };
+    const dataToSave =
+      normalizeBondData(bond);
 
-    delete dataToSave.id;
+    dataToSave.createdAt =
+      serverTimestamp();
 
-    const docRef = await addDoc(
-      getUserCollection(),
-      dataToSave
-    );
+    const docRef =
+      await addDoc(
+        getUserCollection(),
+        dataToSave
+      );
 
     return {
-      ...bond,
+      ...dataToSave,
       id: docRef.id,
     };
   } catch (error) {
-    console.error("Failed to add bond:", error);
+    console.error(
+      "Failed to add bond:",
+      error
+    );
+
     throw error;
   }
 }
@@ -66,7 +129,10 @@ export async function addBond(bond) {
    UPDATE BOND
 ========================================================= */
 
-export async function updateBond(id, bond) {
+export async function updateBond(
+  id,
+  bond
+) {
   try {
     if (!id) {
       throw new Error(
@@ -74,18 +140,21 @@ export async function updateBond(id, bond) {
       );
     }
 
-    const user = auth.currentUser;
+    const user =
+      auth.currentUser;
 
     if (!user) {
-      throw new Error("User is not logged in.");
+      throw new Error(
+        "User is not logged in."
+      );
     }
 
-    const dataToSave = {
-      ...bond,
-      updatedAt: serverTimestamp(),
-    };
+    const dataToSave =
+      normalizeBondData(bond);
 
-    delete dataToSave.id;
+    dataToSave.updatedAt =
+      serverTimestamp();
+
     delete dataToSave.createdAt;
 
     const bondRef = doc(
@@ -102,7 +171,7 @@ export async function updateBond(id, bond) {
     );
 
     return {
-      ...bond,
+      ...dataToSave,
       id,
     };
   } catch (error) {
@@ -123,14 +192,30 @@ export async function getBonds() {
   try {
     const q = query(
       getUserCollection(),
-      orderBy("purchaseDate", "desc")
+      orderBy(
+        "purchaseDate",
+        "desc"
+      )
     );
 
-    const snapshot = await getDocs(q);
+    const snapshot =
+      await getDocs(q);
 
     return snapshot.docs.map(
       (item) => ({
         ...item.data(),
+
+        /*
+          Old bonds may not have
+          interestAdjustment.
+        */
+
+        interestAdjustment:
+          Number(
+            item.data()
+              .interestAdjustment
+          ) || 0,
+
         id: item.id,
       })
     );
@@ -156,7 +241,8 @@ export async function deleteBond(id) {
       );
     }
 
-    const user = auth.currentUser;
+    const user =
+      auth.currentUser;
 
     if (!user) {
       throw new Error(

@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useState,
@@ -57,14 +56,6 @@ function MutualFundForm() {
    * --------------------------------
    * SELECTED FUND FROM DETAILS PAGE
    * --------------------------------
-   *
-   * Details page se:
-   *
-   * navigate("/portfolio/mutual-funds/add", {
-   *   state: { fund }
-   * })
-   *
-   * kiya gaya hai.
    */
 
   const selectedFund =
@@ -86,10 +77,6 @@ function MutualFundForm() {
    * --------------------------------
    * INVESTOR CONTEXT
    * --------------------------------
-   *
-   * Investors ab Firestore se
-   * current logged-in user ke liye
-   * load honge.
    */
 
   const {
@@ -102,10 +89,6 @@ function MutualFundForm() {
    * --------------------------------
    * INITIAL FUND DATA
    * --------------------------------
-   *
-   * Holding ke schema ko form ke
-   * expected fund schema ke saath
-   * normalize kar rahe hain.
    */
 
   const initialFund =
@@ -113,12 +96,6 @@ function MutualFundForm() {
       ? {
           ...selectedFund,
 
-          /*
-           * API FundPreview generally
-           * fund.name use karta hai.
-           *
-           * Holding me schemeName hai.
-           */
           name:
             selectedFund.name ||
             selectedFund.schemeName ||
@@ -200,9 +177,30 @@ function MutualFundForm() {
   );
 
 
+  /*
+   * --------------------------------
+   * NAV
+   * --------------------------------
+   *
+   * nav:
+   * API se fetched NAV ya user edited NAV
+   *
+   * actualNav:
+   * API se mili original NAV
+   *
+   * actualNavDate:
+   * API se mili actual NAV date
+   */
+
   const [
     nav,
     setNav,
+  ] = useState(null);
+
+
+  const [
+    actualNav,
+    setActualNav,
   ] = useState(null);
 
 
@@ -253,6 +251,8 @@ function MutualFundForm() {
    * CALCULATE UNITS
    *
    * Amount ÷ NAV = Units
+   *
+   * Yahan user edited NAV bhi use hoga.
    * --------------------------------
    */
 
@@ -293,10 +293,11 @@ function MutualFundForm() {
    * FETCH NAV
    * --------------------------------
    *
-   * Fund already selected hai.
+   * Date change hone par API se
+   * NAV dobara fetch hoga.
    *
-   * Sirf date change hone par
-   * historical NAV dobara fetch hoga.
+   * Fetched NAV ko editable nav state
+   * mein set kiya jayega.
    */
 
   useEffect(() => {
@@ -312,6 +313,7 @@ function MutualFundForm() {
       ) {
 
         setNav(null);
+        setActualNav(null);
         setActualNavDate(null);
         setIsPreviousDate(false);
 
@@ -335,6 +337,20 @@ function MutualFundForm() {
           return;
         }
 
+
+        /*
+         * Original API NAV
+         */
+
+        setActualNav(
+          result.nav
+        );
+
+
+        /*
+         * Editable NAV field mein
+         * initially API NAV hi rahega.
+         */
 
         setNav(
           result.nav
@@ -361,6 +377,8 @@ function MutualFundForm() {
         if (!cancelled) {
 
           setNav(null);
+
+          setActualNav(null);
 
           setActualNavDate(null);
 
@@ -398,12 +416,6 @@ function MutualFundForm() {
    * --------------------------------
    * SCHEME SEARCH
    * --------------------------------
-   *
-   * Ye fallback ke liye rakha hai.
-   *
-   * Normally Add button se fund already
-   * filled hoga, isliye user ko search
-   * karne ki zarurat nahi padegi.
    */
 
   const handleSchemeSearch =
@@ -417,6 +429,8 @@ function MutualFundForm() {
 
         setFund(null);
         setNav(null);
+        setActualNav(null);
+        setActualNavDate(null);
         setNotFound(false);
 
         return;
@@ -427,6 +441,8 @@ function MutualFundForm() {
       setNotFound(false);
       setFund(null);
       setNav(null);
+      setActualNav(null);
+      setActualNavDate(null);
       setError("");
 
 
@@ -473,12 +489,6 @@ function MutualFundForm() {
    * --------------------------------
    * SCHEME CODE CHANGE
    * --------------------------------
-   *
-   * Auto-filled scheme code ko normally
-   * change nahi karna padega.
-   *
-   * Agar user change karta hai to
-   * purana fund clear hoga.
    */
 
   const handleSchemeCodeChange =
@@ -490,11 +500,37 @@ function MutualFundForm() {
 
       setNav(null);
 
+      setActualNav(null);
+
       setActualNavDate(null);
 
       setIsPreviousDate(false);
 
       setNotFound(false);
+
+      setError("");
+
+    };
+
+
+  /*
+   * --------------------------------
+   * NAV CHANGE
+   * --------------------------------
+   *
+   * User yahan NAV manually edit
+   * kar sakta hai.
+   *
+   * Edited value:
+   * - Units calculation mein use hogi
+   * - Firebase mein purchaseNav ke
+   *   roop mein save hogi
+   */
+
+  const handleNavChange =
+    (value) => {
+
+      setNav(value);
 
       setError("");
 
@@ -582,10 +618,14 @@ function MutualFundForm() {
        * NAV VALIDATION
        */
 
-      if (nav === null) {
+      if (
+        nav === null ||
+        nav === "" ||
+        Number(nav) <= 0
+      ) {
 
         setError(
-          "Purchase NAV is not available."
+          "Please enter a valid purchase NAV."
         );
 
         return;
@@ -706,16 +746,30 @@ function MutualFundForm() {
 
 
         /*
-         * AUTOMATICALLY CALCULATED UNITS
+         * EDITED / FINAL NAV
+         *
+         * User ne agar NAV change kiya hai
+         * to wahi Firebase mein save hoga.
+         */
+
+        purchaseNav:
+          Number(nav),
+
+
+        /*
+         * UNITS
+         *
+         * Edited NAV ke basis par
+         * automatically calculated.
          */
 
         units:
           calculatedUnits,
 
 
-        purchaseNav:
-          Number(nav),
-
+        /*
+         * API SE MILI ACTUAL NAV DATE
+         */
 
         navDate:
           actualNavDate,
@@ -890,7 +944,6 @@ function MutualFundForm() {
         className="space-y-4"
       >
 
-
         {/* --------------------------------
             INVESTOR
         -------------------------------- */}
@@ -1029,7 +1082,6 @@ function MutualFundForm() {
 
 
           <div className="space-y-4">
-
 
             {/* --------------------------------
                 PURCHASE DATE
@@ -1365,13 +1417,20 @@ function MutualFundForm() {
 
                 <input
                   id="purchaseNav"
-                  type="text"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.0001"
                   value={
                     nav !== null
                       ? nav
                       : ""
                   }
-                  readOnly
+                  onChange={(event) =>
+                    handleNavChange(
+                      event.target.value
+                    )
+                  }
                   placeholder={
                     fund
                       ? "Fetching NAV..."
@@ -1382,7 +1441,7 @@ function MutualFundForm() {
                     w-full
                     rounded-xl
                     border
-                    border-slate-700
+                    border-slate-600
                     bg-slate-900
                     pl-10
                     pr-3
@@ -1391,10 +1450,34 @@ function MutualFundForm() {
                     text-white
                     outline-none
                     placeholder:text-slate-500
+                    focus:border-purple-500
+                    focus:ring-2
+                    focus:ring-purple-500/20
                   "
                 />
 
               </div>
+
+
+              {actualNav !== null &&
+                nav !== null &&
+                Number(nav) !==
+                  Number(actualNav) && (
+
+                  <p
+                    className="
+                      mt-2
+                      text-[11px]
+                      font-semibold
+                      text-amber-400
+                    "
+                  >
+                    API NAV: ₹
+                    {actualNav}
+                    {" "}• Using your entered NAV
+                  </p>
+
+                )}
 
             </div>
 
@@ -1508,6 +1591,7 @@ function MutualFundForm() {
             disabled={
               !fund ||
               nav === null ||
+              Number(nav) <= 0 ||
               isNavLoading ||
               !amount ||
               Number(amount) <= 0 ||

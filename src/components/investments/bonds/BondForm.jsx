@@ -22,8 +22,7 @@ import PrincipalRepaymentForm from "./PrincipalRepaymentForm";
 const getToday = () => {
   const date = new Date();
 
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear();
 
   const month = String(
     date.getMonth() + 1
@@ -36,9 +35,7 @@ const getToday = () => {
   return `${year}-${month}-${day}`;
 };
 
-const formatDisplayDate = (
-  value
-) => {
+const formatDisplayDate = (value) => {
   if (!value) return "";
 
   const [
@@ -66,17 +63,6 @@ const formatDisplayDate = (
     }
   ).format(date);
 };
-
-const BOND_TYPE_OPTIONS = [
-  "Corporate Bond",
-  "NCD",
-  "Government Bond",
-  "State Government Bond",
-  "Tax-Free Bond",
-  "Floating Rate Bond",
-  "Zero Coupon Bond",
-  "Other",
-];
 
 const FREQUENCY_OPTIONS = [
   {
@@ -131,7 +117,15 @@ function InputField({
       <div className="relative">
 
         {prefix && (
-          <div className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-500">
+          <div className="
+            pointer-events-none
+            absolute
+            left-3
+            top-1/2
+            z-10
+            -translate-y-1/2
+            text-slate-500
+          ">
             {prefix}
           </div>
         )}
@@ -140,9 +134,7 @@ function InputField({
           type={type}
           value={value}
           onChange={(e) =>
-            onChange(
-              e.target.value
-            )
+            onChange(e.target.value)
           }
           placeholder={placeholder}
           required={required}
@@ -168,7 +160,15 @@ function InputField({
         />
 
         {suffix && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+          <span className="
+            pointer-events-none
+            absolute
+            right-3
+            top-1/2
+            -translate-y-1/2
+            text-xs
+            text-slate-500
+          ">
             {suffix}
           </span>
         )}
@@ -201,9 +201,7 @@ function SelectField({
         <select
           value={value}
           onChange={(e) =>
-            onChange(
-              e.target.value
-            )
+            onChange(e.target.value)
           }
           className="
             h-11
@@ -224,31 +222,24 @@ function SelectField({
             focus:ring-emerald-500/10
           "
         >
-          {options.map(
-            (option) => {
-              const item =
-                typeof option ===
-                "string"
-                  ? {
-                      value: option,
-                      label: option,
-                    }
-                  : option;
+          {options.map((option) => {
+            const item =
+              typeof option === "string"
+                ? {
+                    value: option,
+                    label: option,
+                  }
+                : option;
 
-              return (
-                <option
-                  key={
-                    item.value
-                  }
-                  value={
-                    item.value
-                  }
-                >
-                  {item.label}
-                </option>
-              );
-            }
-          )}
+            return (
+              <option
+                key={item.value}
+                value={item.value}
+              >
+                {item.label}
+              </option>
+            );
+          })}
         </select>
 
         <ChevronDown
@@ -281,8 +272,7 @@ function DatePickerField({
   min,
   max,
 }) {
-  const inputRef =
-    useRef(null);
+  const inputRef = useRef(null);
 
   const openPicker = () => {
     if (!inputRef.current) {
@@ -290,8 +280,7 @@ function DatePickerField({
     }
 
     if (
-      typeof inputRef.current
-        .showPicker ===
+      typeof inputRef.current.showPicker ===
       "function"
     ) {
       inputRef.current.showPicker();
@@ -340,7 +329,11 @@ function DatePickerField({
 
         <CalendarDays
           size={17}
-          className="mr-2.5 shrink-0 text-emerald-400"
+          className="
+            mr-2.5
+            shrink-0
+            text-emerald-400
+          "
         />
 
         <span
@@ -351,9 +344,7 @@ function DatePickerField({
           }
         >
           {value
-            ? formatDisplayDate(
-                value
-              )
+            ? formatDisplayDate(value)
             : "Select date"}
         </span>
 
@@ -364,9 +355,7 @@ function DatePickerField({
           min={min}
           max={max}
           onChange={(e) =>
-            onChange(
-              e.target.value
-            )
+            onChange(e.target.value)
           }
           required={required}
           className="
@@ -394,7 +383,13 @@ function SectionCard({
   children,
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+    <section className="
+      overflow-hidden
+      rounded-2xl
+      border
+      border-slate-800
+      bg-slate-950
+    ">
       <div className="p-4">
         {children}
       </div>
@@ -406,9 +401,7 @@ function SectionCard({
    INITIAL FORM
 ========================================================= */
 
-function createInitialForm(
-  bond
-) {
+function createInitialForm(bond) {
   return {
     bondName:
       bond?.bondName || "",
@@ -421,35 +414,32 @@ function createInitialForm(
       getToday(),
 
     quantity:
-      bond?.quantity !==
-      undefined
-        ? String(
-            bond.quantity
-          )
+      bond?.quantity !== undefined
+        ? String(bond.quantity)
         : "1",
 
     faceValue:
-      bond?.faceValue !==
-      undefined
-        ? String(
-            bond.faceValue
-          )
+      bond?.faceValue !== undefined
+        ? String(bond.faceValue)
         : "",
 
     purchaseValue:
-      bond?.purchaseValue !==
-      undefined
-        ? String(
-            bond.purchaseValue
-          )
+      bond?.purchaseValue !== undefined
+        ? String(bond.purchaseValue)
         : "",
 
     couponRate:
-      bond?.couponRate !==
-      undefined
-        ? String(
-            bond.couponRate
-          )
+      bond?.couponRate !== undefined
+        ? String(bond.couponRate)
+        : "",
+
+    /* =========================================
+       INTEREST ADJUSTMENT
+    ========================================= */
+
+    interestAdjustment:
+      bond?.interestAdjustment !== undefined
+        ? String(bond.interestAdjustment)
         : "",
 
     couponFrequency:
@@ -473,14 +463,13 @@ function createInitialForm(
               id:
                 item.id ||
                 crypto.randomUUID(),
+
               date:
                 item.date || "",
+
               amount:
-                item.amount !==
-                undefined
-                  ? String(
-                      item.amount
-                    )
+                item.amount !== undefined
+                  ? String(item.amount)
                   : "",
             })
           )
@@ -496,8 +485,7 @@ function BondForm({
   mode = "add",
   bond = null,
 }) {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
   const isEdit =
     mode === "edit";
@@ -510,9 +498,7 @@ function BondForm({
 
   const [form, setForm] =
     useState(() =>
-      createInitialForm(
-        bond
-      )
+      createInitialForm(bond)
     );
 
   /* =========================================================
@@ -535,9 +521,7 @@ function BondForm({
      SUBMIT
   ========================================================= */
 
-  const handleSubmit = async (
-    e
-  ) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     setError("");
@@ -617,12 +601,8 @@ function BondForm({
     /* PRINCIPAL */
 
     const principal =
-      Number(
-        form.faceValue
-      ) *
-      Number(
-        form.quantity
-      );
+      Number(form.faceValue) *
+      Number(form.quantity);
 
     /* REPAYMENT VALIDATION */
 
@@ -637,9 +617,7 @@ function BondForm({
             item.date || "",
 
           amount:
-            Number(
-              item.amount
-            ) || 0,
+            Number(item.amount) || 0,
         }))
         .sort(
           (a, b) =>
@@ -660,9 +638,7 @@ function BondForm({
         return;
       }
 
-      if (
-        repayment.amount <= 0
-      ) {
+      if (repayment.amount <= 0) {
         setError(
           "Repayment amount must be greater than zero."
         );
@@ -719,13 +695,18 @@ function BondForm({
         Number(form.faceValue),
 
       purchaseValue:
-        Number(
-          form.purchaseValue
-        ),
+        Number(form.purchaseValue),
 
       couponRate:
+        Number(form.couponRate) || 0,
+
+      /* =========================================
+         INTEREST ADJUSTMENT
+      ========================================= */
+
+      interestAdjustment:
         Number(
-          form.couponRate
+          form.interestAdjustment
         ) || 0,
 
       principalRepayments:
@@ -801,9 +782,7 @@ function BondForm({
 
           <InputField
             label="Bond Name"
-            value={
-              form.bondName
-            }
+            value={form.bondName}
             onChange={(value) =>
               updateField(
                 "bondName",
@@ -816,9 +795,7 @@ function BondForm({
 
           <InputField
             label="ISIN"
-            value={
-              form.isin
-            }
+            value={form.isin}
             onChange={(value) =>
               updateField(
                 "isin",
@@ -856,9 +833,7 @@ function BondForm({
 
             <InputField
               label="Quantity"
-              value={
-                form.quantity
-              }
+              value={form.quantity}
               onChange={(value) =>
                 updateField(
                   "quantity",
@@ -872,9 +847,7 @@ function BondForm({
 
             <InputField
               label="Face Value"
-              value={
-                form.faceValue
-              }
+              value={form.faceValue}
               onChange={(value) =>
                 updateField(
                   "faceValue",
@@ -939,6 +912,33 @@ function BondForm({
             placeholder="8.50"
             suffix="% p.a."
           />
+
+          {/* INTEREST ADJUSTMENT */}
+
+          <InputField
+            label="Interest Adjustment"
+            value={
+              form.interestAdjustment
+            }
+            onChange={(value) =>
+              updateField(
+                "interestAdjustment",
+                value
+              )
+            }
+            type="number"
+            placeholder="e.g. -350 or +500"
+            prefix={
+              <IndianRupee
+                size={14}
+              />
+            }
+          />
+
+          <p className="-mt-2 text-[11px] text-slate-500">
+            Use + for additional interest
+            and - for deduction / TDS.
+          </p>
 
           <SelectField
             label="Coupon Frequency"
@@ -1082,9 +1082,7 @@ function BondForm({
 
           <button
             type="button"
-            onClick={
-              handleCancel
-            }
+            onClick={handleCancel}
             disabled={saving}
             className="
               flex
@@ -1135,7 +1133,6 @@ function BondForm({
               disabled:opacity-60
             "
           >
-
             <Save size={17} />
 
             {saving
@@ -1145,7 +1142,6 @@ function BondForm({
               : isEdit
               ? "Update Bond"
               : "Save Bond"}
-
           </button>
 
         </div>
