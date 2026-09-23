@@ -1,3 +1,4 @@
+
 import VortaxaInvestorCard from "./VortaxaInvestorCard";
 
 import VortaxaEmptyState from "../common/VortaxaEmptyState";
@@ -35,7 +36,7 @@ function VortaxaInvestorList({
           className="
             text-sm
             font-bold
-            text-white
+           
           "
         >
           Investors
@@ -76,24 +77,58 @@ function VortaxaInvestorList({
         >
 
           {investors.map(
-            (investor) => (
+            (investor) => {
 
-              <VortaxaInvestorCard
-                key={investor.id}
-                investor={investor}
-                summary={
-                  investorSummaries?.[
-                    investor.id
-                  ] || {}
-                }
-                onClick={() =>
-                  onInvestorClick(
-                    investor.id
-                  )
-                }
-              />
+              /*
+               * --------------------------------
+               * SUMMARY
+               * --------------------------------
+               *
+               * New Context:
+               *
+               * investor.summary
+               *
+               * Old/parent structure:
+               *
+               * investorSummaries[investor.id]
+               *
+               * Prefer the calculated summary
+               * attached to investor.
+               */
 
-            )
+              const summary =
+                investor?.summary ||
+                investorSummaries?.[
+                  investor.id
+                ] ||
+                {};
+
+
+              return (
+
+                <VortaxaInvestorCard
+                  key={
+                    investor.id
+                  }
+
+                  investor={
+                    investor
+                  }
+
+                  summary={
+                    summary
+                  }
+
+                  onClick={() =>
+                    onInvestorClick(
+                      investor.id
+                    )
+                  }
+                />
+
+              );
+
+            }
           )}
 
         </div>

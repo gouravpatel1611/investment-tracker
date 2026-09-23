@@ -15,17 +15,15 @@ import {
   useState,
 } from "react";
 
-import {
-  formatDate,
-} from "../../../utils/vortaxa/vortaxaFormatters";
-
 
 /* =========================================================
    DATE HELPERS
 ========================================================= */
 
 function getTodayDate() {
-  const date = new Date();
+
+  const date =
+    new Date();
 
   const year =
     date.getFullYear();
@@ -33,12 +31,18 @@ function getTodayDate() {
   const month =
     String(
       date.getMonth() + 1
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
   const day =
     String(
       date.getDate()
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
   return `${year}-${month}-${day}`;
 }
@@ -47,6 +51,7 @@ function getTodayDate() {
 function parseDate(
   dateString
 ) {
+
   if (!dateString) {
     return null;
   }
@@ -55,11 +60,12 @@ function parseDate(
     year,
     month,
     day,
-  ] = String(
-    dateString
-  )
-    .split("-")
-    .map(Number);
+  ] =
+    String(
+      dateString
+    )
+      .split("-")
+      .map(Number);
 
   if (
     !year ||
@@ -80,6 +86,7 @@ function parseDate(
 function formatDateInput(
   date
 ) {
+
   if (!date) {
     return "";
   }
@@ -90,12 +97,18 @@ function formatDateInput(
   const month =
     String(
       date.getMonth() + 1
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
   const day =
     String(
       date.getDate()
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
   return `${year}-${month}-${day}`;
 }
@@ -105,6 +118,7 @@ function changeDate(
   dateString,
   days
 ) {
+
   const date =
     parseDate(
       dateString
@@ -126,15 +140,12 @@ function changeDate(
 
 /* =========================================================
    DISPLAY DATE
-   Example:
-   2026-09-23
-   =>
-   23 Sep 2026
 ========================================================= */
 
 function formatDisplayDate(
   dateString
 ) {
+
   if (!dateString) {
     return "Select Date";
   }
@@ -151,7 +162,10 @@ function formatDisplayDate(
   const day =
     String(
       date.getDate()
-    ).padStart(2, "0");
+    ).padStart(
+      2,
+      "0"
+    );
 
   const month =
     date.toLocaleString(
@@ -179,6 +193,7 @@ function VortaxaRateForm({
   onCancel,
   saving = false,
 }) {
+
   const today =
     getTodayDate();
 
@@ -217,8 +232,7 @@ function VortaxaRateForm({
   /* =======================================================
      ORIGINAL RATE
      
-     Used to determine whether user actually changed
-     the current rate before pressing Previous / Next.
+     Used to detect changes before Previous / Next.
   ======================================================= */
 
   const [
@@ -243,6 +257,7 @@ function VortaxaRateForm({
 
   const selectedRate =
     useMemo(() => {
+
       if (!date) {
         return null;
       }
@@ -255,6 +270,7 @@ function VortaxaRateForm({
             ) === date
         ) || null
       );
+
     }, [
       rates,
       date,
@@ -262,20 +278,21 @@ function VortaxaRateForm({
 
 
   /* =======================================================
-     LOAD RATE WHEN DATE CHANGES
+     LOAD RATE FOR SELECTED DATE
      
-     Existing rate:
-       load saved value
+     Existing:
+       saved value
      
-     Missing rate:
-       show 0
+     Missing:
+       0
   ======================================================= */
 
   useEffect(() => {
+
     const currentValue =
       selectedRate
         ? String(
-            selectedRate.rate ??
+            selectedRate?.rate ??
               0
           )
         : "0";
@@ -289,6 +306,7 @@ function VortaxaRateForm({
     );
 
     setError("");
+
   }, [
     selectedRate,
     date,
@@ -297,18 +315,20 @@ function VortaxaRateForm({
 
   /* =======================================================
      EDIT MODE
-     
-     When opened from the list, jump to that date.
   ======================================================= */
 
   useEffect(() => {
+
     if (
       editingRate?.date
     ) {
+
       setDate(
         editingRate.date
       );
+
     }
+
   }, [
     editingRate,
   ]);
@@ -316,12 +336,6 @@ function VortaxaRateForm({
 
   /* =======================================================
      DISPLAY DATE
-     
-     Stored value:
-       2026-09-23
-     
-     Display:
-       23 Sep 2026
   ======================================================= */
 
   const displayDate =
@@ -331,7 +345,7 @@ function VortaxaRateForm({
 
 
   /* =======================================================
-     NEXT / PREVIOUS DATE
+     PREVIOUS / NEXT DATE
   ======================================================= */
 
   const previousDate =
@@ -365,28 +379,35 @@ function VortaxaRateForm({
 
 
   /* =======================================================
-     VALIDATE CURRENT RATE
+     VALIDATE RATE
   ======================================================= */
 
   const validateRate =
     () => {
+
       if (!date) {
+
         setError(
           "Please select a date."
         );
 
         return null;
+
       }
+
 
       if (
         date > today
       ) {
+
         setError(
           "Future dates are not allowed."
         );
 
         return null;
+
       }
+
 
       if (
         rate === "" ||
@@ -394,25 +415,47 @@ function VortaxaRateForm({
           Number(rate)
         )
       ) {
+
         setError(
           "Please enter a valid daily rate."
         );
 
         return null;
+
       }
+
 
       const rateValue =
         Number(rate);
 
+
+      if (
+        !Number.isFinite(
+          rateValue
+        )
+      ) {
+
+        setError(
+          "Please enter a valid daily rate."
+        );
+
+        return null;
+
+      }
+
+
       if (
         rateValue < 0
       ) {
+
         setError(
           "Rate cannot be negative."
         );
 
         return null;
+
       }
+
 
       return rateValue;
     };
@@ -421,22 +464,27 @@ function VortaxaRateForm({
   /* =======================================================
      SAVE CURRENT RATE
      
-     This is also used by Previous / Next.
+     Used by:
+     - Previous
+     - Next
+     - Date Picker
      
-     Important:
-     If the user did not change the rate,
-     nothing is saved.
+     If value has not changed:
+       no save required.
   ======================================================= */
 
   const saveCurrentRate =
     async () => {
+
       const rateValue =
         validateRate();
 
       if (
         rateValue === null
       ) {
+
         return false;
+
       }
 
 
@@ -446,30 +494,47 @@ function VortaxaRateForm({
         );
 
 
-      /*
-       * No change.
-       * Don't call Firebase/localStorage.
-       */
+      /* -----------------------------------------------
+         NO CHANGE
+      ----------------------------------------------- */
 
       if (
         rateValue ===
         originalValue
       ) {
+
         return true;
+
+      }
+
+
+      if (
+        typeof onSave !==
+        "function"
+      ) {
+
+        setError(
+          "Rate save handler is not available."
+        );
+
+        return false;
+
       }
 
 
       try {
+
         await onSave({
+
           ...(selectedRate || {}),
+
           date,
+
           rate:
             rateValue,
+
         });
 
-        /*
-         * Current value is now saved.
-         */
 
         setOriginalRate(
           String(
@@ -485,64 +550,68 @@ function VortaxaRateForm({
 
         return true;
 
-      } catch (error) {
+      } catch (
+        saveError
+      ) {
+
         setError(
-          error?.message ||
+          saveError?.message ||
             "Failed to save daily rate."
         );
 
         return false;
+
       }
+
     };
 
 
   /* =======================================================
-     CHANGE DATE
+     MOVE TO DATE
      
-     First save current rate.
-     Then move to the requested date.
+     Save current changed rate first.
   ======================================================= */
 
   const moveToDate =
     async (
       newDate
     ) => {
+
       if (
         saving ||
         !newDate
       ) {
+
         return;
+
       }
+
 
       if (
         newDate > today
       ) {
+
         return;
+
       }
 
 
       setError("");
 
 
-      /*
-       * Save current rate first.
-       */
-
       const saved =
         await saveCurrentRate();
+
 
       if (!saved) {
         return;
       }
 
 
-      /*
-       * Now move to the new date.
-       */
-
       setDate(
         newDate
       );
+
     };
 
 
@@ -552,15 +621,19 @@ function VortaxaRateForm({
 
   const handlePrevious =
     async () => {
+
       if (
         !canGoPrevious
       ) {
+
         return;
+
       }
 
       await moveToDate(
         previousDate
       );
+
     };
 
 
@@ -570,61 +643,68 @@ function VortaxaRateForm({
 
   const handleNext =
     async () => {
+
       if (
         !canGoNext
       ) {
+
         return;
+
       }
 
       await moveToDate(
         nextDate
       );
+
     };
 
 
   /* =======================================================
-     DATE PICKER
-     
-     Date picker change also saves the current rate first.
+     DATE PICKER CHANGE
   ======================================================= */
 
   const handleDateChange =
     async (
       event
     ) => {
+
       const newDate =
         event.target.value;
+
 
       if (!newDate) {
         return;
       }
 
+
       if (
         newDate > today
       ) {
+
         setError(
           "Future dates are not allowed."
         );
 
         return;
+
       }
+
 
       if (
         newDate === date
       ) {
+
         return;
+
       }
 
 
       setError("");
 
 
-      /*
-       * Save current date before changing date.
-       */
-
       const saved =
         await saveCurrentRate();
+
 
       if (!saved) {
         return;
@@ -634,6 +714,7 @@ function VortaxaRateForm({
       setDate(
         newDate
       );
+
     };
 
 
@@ -643,38 +724,41 @@ function VortaxaRateForm({
 
   const openDatePicker =
     () => {
+
       if (
         saving
       ) {
+
         return;
+
       }
+
 
       const input =
         dateInputRef.current;
+
 
       if (!input) {
         return;
       }
 
-      /*
-       * Modern browsers
-       */
 
       if (
         typeof input.showPicker ===
         "function"
       ) {
+
         input.showPicker();
+
         return;
+
       }
 
-      /*
-       * Fallback
-       */
 
       input.focus();
 
       input.click();
+
     };
 
 
@@ -684,48 +768,73 @@ function VortaxaRateForm({
 
   const handleRateChange =
     (event) => {
+
       setRate(
         event.target.value
       );
 
       setError("");
+
     };
 
 
   /* =======================================================
      FORM SUBMIT
+     
+     Explicit Save always calls onSave,
+     even when the value is unchanged.
   ======================================================= */
 
   const handleSubmit =
     async (
       event
     ) => {
+
       event.preventDefault();
 
       setError("");
 
+
       const rateValue =
         validateRate();
+
 
       if (
         rateValue === null
       ) {
+
         return;
+
       }
 
 
-      /*
-       * Save even when value is unchanged.
-       * This gives the user explicit Save behavior.
-       */
+      if (
+        typeof onSave !==
+        "function"
+      ) {
+
+        setError(
+          "Rate save handler is not available."
+        );
+
+        return;
+
+      }
+
 
       try {
+
         await onSave({
+
           ...(selectedRate || {}),
+
           date,
+
           rate:
             rateValue,
+
         });
+
 
         setOriginalRate(
           String(
@@ -739,24 +848,32 @@ function VortaxaRateForm({
           )
         );
 
+
         /*
-         * If opened through Edit button,
-         * close edit mode after explicit save.
+         * Explicit Save closes edit mode.
          */
 
         if (
           editingRate &&
-          onCancel
+          typeof onCancel ===
+            "function"
         ) {
+
           onCancel();
+
         }
 
-      } catch (error) {
+      } catch (
+        saveError
+      ) {
+
         setError(
-          error?.message ||
+          saveError?.message ||
             "Failed to save daily rate."
         );
+
       }
+
     };
 
 
@@ -766,13 +883,25 @@ function VortaxaRateForm({
 
   const handleCancel =
     () => {
-      if (saving) {
+
+      if (
+        saving
+      ) {
+
         return;
+
       }
 
-      if (onCancel) {
+
+      if (
+        typeof onCancel ===
+        "function"
+      ) {
+
         onCancel();
+
       }
+
     };
 
 
@@ -781,6 +910,7 @@ function VortaxaRateForm({
   ======================================================= */
 
   return (
+
     <div
       className="
         mb-4
@@ -791,6 +921,7 @@ function VortaxaRateForm({
         p-4
       "
     >
+
       {/* =================================================
           HEADER
       ================================================== */}
@@ -804,7 +935,9 @@ function VortaxaRateForm({
           gap-3
         "
       >
+
         <div>
+
           <p
             className="
               text-sm
@@ -824,16 +957,20 @@ function VortaxaRateForm({
           >
             Select a date and update its rate
           </p>
+
         </div>
 
 
         {editingRate && (
+
           <button
             type="button"
             onClick={
               handleCancel
             }
-            disabled={saving}
+            disabled={
+              saving
+            }
             className="
               flex
               h-8
@@ -854,14 +991,18 @@ function VortaxaRateForm({
             "
             aria-label="Cancel edit"
           >
+
             <X
               className="
                 h-4
                 w-4
               "
             />
+
           </button>
+
         )}
+
       </div>
 
 
@@ -870,6 +1011,7 @@ function VortaxaRateForm({
           handleSubmit
         }
       >
+
         {/* =================================================
             DATE SELECTOR
         ================================================== */}
@@ -883,6 +1025,7 @@ function VortaxaRateForm({
             p-3
           "
         >
+
           <div
             className="
               mb-2
@@ -891,6 +1034,7 @@ function VortaxaRateForm({
               justify-between
             "
           >
+
             <p
               className="
                 text-[10px]
@@ -905,6 +1049,7 @@ function VortaxaRateForm({
 
 
             {selectedRate && (
+
               <span
                 className="
                   rounded-full
@@ -918,7 +1063,9 @@ function VortaxaRateForm({
               >
                 Saved
               </span>
+
             )}
+
           </div>
 
 
@@ -929,9 +1076,8 @@ function VortaxaRateForm({
               gap-2
             "
           >
-            {/* =============================================
-                PREVIOUS
-            ============================================== */}
+
+            {/* PREVIOUS */}
 
             <button
               type="button"
@@ -963,18 +1109,18 @@ function VortaxaRateForm({
               "
               aria-label="Previous day"
             >
+
               <ChevronLeft
                 className="
                   h-5
                   w-5
                 "
               />
+
             </button>
 
 
-            {/* =============================================
-                DATE PICKER
-            ============================================== */}
+            {/* DATE PICKER */}
 
             <div
               className="
@@ -983,7 +1129,6 @@ function VortaxaRateForm({
                 flex-1
               "
             >
-              {/* Visible formatted date */}
 
               <button
                 type="button"
@@ -1018,6 +1163,7 @@ function VortaxaRateForm({
                   disabled:opacity-50
                 "
               >
+
                 <CalendarDays
                   className="
                     pointer-events-none
@@ -1034,18 +1180,21 @@ function VortaxaRateForm({
                 <span>
                   {displayDate}
                 </span>
+
               </button>
 
-
-              {/* Actual native date picker */}
 
               <input
                 ref={
                   dateInputRef
                 }
                 type="date"
-                value={date}
-                max={today}
+                value={
+                  date
+                }
+                max={
+                  today
+                }
                 onChange={
                   handleDateChange
                 }
@@ -1063,12 +1212,11 @@ function VortaxaRateForm({
                   opacity-0
                 "
               />
+
             </div>
 
 
-            {/* =============================================
-                NEXT
-            ============================================== */}
+            {/* NEXT */}
 
             <button
               type="button"
@@ -1100,17 +1248,18 @@ function VortaxaRateForm({
               "
               aria-label="Next day"
             >
+
               <ChevronRight
                 className="
                   h-5
                   w-5
                 "
               />
+
             </button>
+
           </div>
 
-
-          {/* Formatted date */}
 
           <p
             className="
@@ -1123,6 +1272,7 @@ function VortaxaRateForm({
           >
             {displayDate}
           </p>
+
         </div>
 
 
@@ -1135,6 +1285,7 @@ function VortaxaRateForm({
             mt-3
           "
         >
+
           <label
             className="
               mb-1.5
@@ -1153,6 +1304,7 @@ function VortaxaRateForm({
               relative
             "
           >
+
             <Percent
               className="
                 pointer-events-none
@@ -1171,7 +1323,9 @@ function VortaxaRateForm({
               type="number"
               step="0.01"
               min="0"
-              value={rate}
+              value={
+                rate
+              }
               onChange={
                 handleRateChange
               }
@@ -1198,6 +1352,7 @@ function VortaxaRateForm({
                 disabled:opacity-50
               "
             />
+
           </div>
 
 
@@ -1208,8 +1363,11 @@ function VortaxaRateForm({
               text-slate-500
             "
           >
+
             Example:
+
             {" "}
+
             <span
               className="
                 font-semibold
@@ -1218,9 +1376,13 @@ function VortaxaRateForm({
             >
               0.15
             </span>
+
             {" "}
+
             means 0.15%.
+
           </p>
+
         </div>
 
 
@@ -1229,6 +1391,7 @@ function VortaxaRateForm({
         ================================================== */}
 
         {error && (
+
           <div
             className="
               mt-3
@@ -1245,6 +1408,7 @@ function VortaxaRateForm({
           >
             {error}
           </div>
+
         )}
 
 
@@ -1277,6 +1441,7 @@ function VortaxaRateForm({
             disabled:opacity-50
           "
         >
+
           <Save
             className="
               h-4
@@ -1287,11 +1452,17 @@ function VortaxaRateForm({
           {saving
             ? "Saving..."
             : "Save Rate"}
+
         </button>
+
       </form>
+
     </div>
+
   );
+
 }
 
 
 export default VortaxaRateForm;
+

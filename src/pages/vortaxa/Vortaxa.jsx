@@ -1,3 +1,4 @@
+
 import {
   useNavigate,
 } from "react-router-dom";
@@ -20,9 +21,8 @@ function Vortaxa() {
 
 
   const {
-    investors,
-    investorSummaries,
-    totalSummary,
+    investorData,
+    allInvestorsSummary,
     loading,
     dataLoading,
   } = useVortaxa();
@@ -60,6 +60,64 @@ function Vortaxa() {
   }
 
 
+  /*
+   * --------------------------------
+   * INVESTORS
+   * --------------------------------
+   *
+   * investorData already contains:
+   *
+   * investor
+   * +
+   * calculated summary
+   *
+   * --------------------------------
+   */
+
+  const investors =
+    investorData || [];
+
+
+  /*
+   * --------------------------------
+   * INVESTOR SUMMARIES
+   * --------------------------------
+   *
+   * Keep this object because
+   * VortaxaInvestorList supports it.
+   *
+   * --------------------------------
+   */
+
+  const investorSummaries =
+    investors.reduce(
+      (
+        result,
+        investor
+      ) => {
+
+        result[
+          investor.id
+        ] =
+          investor.summary || {};
+
+        return result;
+
+      },
+      {}
+    );
+
+
+  /*
+   * --------------------------------
+   * TOTAL SUMMARY
+   * --------------------------------
+   */
+
+  const totalSummary =
+    allInvestorsSummary || {};
+
+
   return (
 
     <div
@@ -81,15 +139,21 @@ function Vortaxa() {
 
 
       <VortaxaSummaryCard
-        summary={totalSummary}
+        summary={
+          totalSummary
+        }
       />
 
 
       <VortaxaInvestorList
-        investors={investors}
+        investors={
+          investors
+        }
+
         investorSummaries={
           investorSummaries
         }
+
         onInvestorClick={(
           investorId
         ) =>
@@ -97,9 +161,11 @@ function Vortaxa() {
             `/vortaxa/${investorId}`
           )
         }
+
         onAdd={() =>
           navigate("/vortaxa/add")
         }
+
       />
 
     </div>

@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useRef,
@@ -54,6 +53,10 @@ function formatDisplayDate(value) {
   ).format(date);
 }
 
+
+/* =========================================================
+   COMPONENT
+========================================================= */
 
 function VortaxaTransactionForm({
   onSave,
@@ -162,8 +165,6 @@ function VortaxaTransactionForm({
     }
 
 
-    /* Modern browsers */
-
     if (
       typeof dateInputRef.current
         .showPicker === "function"
@@ -174,8 +175,6 @@ function VortaxaTransactionForm({
       return;
     }
 
-
-    /* Fallback */
 
     dateInputRef.current.focus();
   }
@@ -200,6 +199,25 @@ function VortaxaTransactionForm({
 
       setError(
         "Please select transaction date."
+      );
+
+      return;
+    }
+
+
+    /* =======================================================
+       FUTURE DATE
+    ======================================================= */
+
+    const today =
+      getTodayDate();
+
+    if (
+      form.date > today
+    ) {
+
+      setError(
+        "Transaction date cannot be in the future."
       );
 
       return;
@@ -233,21 +251,55 @@ function VortaxaTransactionForm({
 
     if (
       form.type ===
-        "EARN_WITHDRAW" &&
-      !isEditMode &&
-      amount >
-        Number(
-          availableEarn || 0
-        )
+      "EARN_WITHDRAW"
     ) {
 
-      setError(
-        `Available EARN is ${formatCurrency(
-          availableEarn
-        )}.`
-      );
+      /*
+       When editing an existing withdrawal,
+       add its old amount back temporarily.
 
-      return;
+       Example:
+       Available = $500
+       Existing withdrawal = $200
+
+       User edits withdrawal to $600.
+
+       Effective available amount for validation:
+       $500 + $200 = $700
+
+       Therefore $600 is valid.
+      */
+
+      const existingWithdrawalAmount =
+        isEditMode &&
+        editingTransaction?.type ===
+          "EARN_WITHDRAW"
+          ? Number(
+              editingTransaction?.amount || 0
+            )
+          : 0;
+
+
+      const effectiveAvailableEarn =
+        Number(
+          availableEarn || 0
+        ) +
+        existingWithdrawalAmount;
+
+
+      if (
+        amount >
+        effectiveAvailableEarn
+      ) {
+
+        setError(
+          `Available EARN is ${formatCurrency(
+            effectiveAvailableEarn
+          )}.`
+        );
+
+        return;
+      }
     }
 
 
@@ -256,6 +308,11 @@ function VortaxaTransactionForm({
     ======================================================= */
 
     onSave({
+
+      /*
+       Preserve existing transaction fields
+       such as id / createdAt during edit.
+      */
 
       ...(editingTransaction || {}),
 
@@ -339,6 +396,7 @@ function VortaxaTransactionForm({
           <button
             type="button"
             onClick={onCancel}
+            disabled={saving}
             className="
               flex
               h-8
@@ -350,6 +408,8 @@ function VortaxaTransactionForm({
               transition
               hover:bg-slate-800
               hover:text-white
+              disabled:cursor-not-allowed
+              disabled:opacity-50
             "
           >
             <X size={17} />
@@ -382,7 +442,10 @@ function VortaxaTransactionForm({
           name="type"
           value={form.type}
           onChange={handleChange}
-          disabled={isEditMode}
+          disabled={
+            isEditMode ||
+            saving
+          }
           className="
             w-full
             rounded-xl
@@ -438,11 +501,13 @@ function VortaxaTransactionForm({
 
         <div className="relative">
 
-          {/* Visible formatted date */}
+          {/* VISIBLE DATE */}
 
           <button
             type="button"
-            onClick={openDatePicker}
+            onClick={
+              openDatePicker
+            }
             disabled={saving}
             className="
               flex
@@ -492,7 +557,6 @@ function VortaxaTransactionForm({
 
           {/* =================================================
               REAL DATE INPUT
-              Hidden but used for native calendar picker
           ================================================= */}
 
           <input
@@ -546,6 +610,7 @@ function VortaxaTransactionForm({
           min="0"
           step="0.01"
           placeholder="Enter amount"
+          disabled={saving}
           className="
             w-full
             rounded-xl
@@ -559,10 +624,68 @@ function VortaxaTransactionForm({
             outline-none
             placeholder:text-slate-600
             focus:border-yellow-400
+            disabled:cursor-not-allowed
+            disabled:opacity-60
           "
         />
 
       </div>
+
+
+      {/* =====================================================
+          EARN INFO
+      ===================================================== */}
+
+      {form.type ===
+        "EARN_WITHDRAW" && (
+        <div
+          className="
+            mb-4
+            rounded-xl
+            border
+            border-slate-700
+            bg-slate-950
+            px-3
+            py-2.5
+          "
+        >
+
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              gap-3
+            "
+          >
+
+            <span
+              className="
+                text-xs
+                text-slate-400
+              "
+            >
+              Available EARN
+            </span>
+
+            <span
+              className="
+                text-xs
+                font-bold
+                text-emerald-400
+              "
+            >
+              {formatCurrency(
+                Number(
+                  availableEarn || 0
+                )
+              )}
+            </span>
+
+          </div>
+
+        </div>
+      )}
 
 
       {/* =====================================================
@@ -629,5 +752,5 @@ function VortaxaTransactionForm({
   );
 }
 
-export default VortaxaTransactionForm;
 
+export default VortaxaTransactionForm;

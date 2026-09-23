@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useMemo,
@@ -15,7 +14,6 @@ import {
   useParams,
 } from "react-router-dom";
 
-
 import VortaxaRateFilters from "../../components/vortaxa/rate/VortaxaRateFilters";
 
 import VortaxaRateForm from "../../components/vortaxa/rate/VortaxaRateForm";
@@ -28,6 +26,7 @@ import {
 
 
 function VortaxaRates() {
+
   const navigate =
     useNavigate();
 
@@ -40,14 +39,15 @@ function VortaxaRates() {
      VORTAXA CONTEXT
   ======================================================= */
 
-  const {
-    getInvestor,
-    rates,
-    addRate,
-    updateRate,
-    loading,
-    dataLoading,
-  } = useVortaxa();
+ const {
+  getInvestor,
+  investorData,
+  rates,
+  addRate,
+  updateRate,
+  loading,
+  dataLoading,
+} = useVortaxa();
 
 
   /* =======================================================
@@ -87,9 +87,6 @@ function VortaxaRates() {
 
   /* =======================================================
      FORM REF
-     
-     Used to smoothly scroll to the rate form
-     when Edit button is clicked.
   ======================================================= */
 
   const formRef =
@@ -97,25 +94,24 @@ function VortaxaRates() {
 
 
   /* =======================================================
-     SCROLL TO FORM WHEN EDIT MODE STARTS
+     SCROLL TO FORM
   ======================================================= */
 
   useEffect(() => {
+
     if (!editingRate) {
       return;
     }
 
-    /*
-     * Wait for React to render the updated edit state
-     * before scrolling.
-     */
-
     requestAnimationFrame(() => {
+
       formRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
+
     });
+
   }, [
     editingRate,
   ]);
@@ -123,12 +119,13 @@ function VortaxaRates() {
 
   /* =======================================================
      INVESTOR
-     
-     Investor is only used for:
-     - page heading
+
+     Rates are GLOBAL.
+
+     Investor is used only for:
+     - heading
      - back navigation
-     
-     Rates themselves are GLOBAL.
+     - route validation
   ======================================================= */
 
   const investor =
@@ -145,9 +142,6 @@ function VortaxaRates() {
 
   /* =======================================================
      GLOBAL RATES
-     
-     Make a copy so the original Context array
-     is never mutated accidentally.
   ======================================================= */
 
   const allRates =
@@ -160,57 +154,68 @@ function VortaxaRates() {
      AVAILABLE YEARS
   ======================================================= */
 
-  const years = useMemo(() => {
-    const yearSet =
-      new Set();
+  const years =
+    useMemo(() => {
 
-    allRates.forEach(
-      (rate) => {
-        const date =
-          String(
-            rate?.date || ""
-          );
+      const yearSet =
+        new Set();
 
-        if (
-          date.length >= 4
-        ) {
-          yearSet.add(
-            date.slice(0, 4)
-          );
+      allRates.forEach(
+        (rate) => {
+
+          const date =
+            String(
+              rate?.date || ""
+            );
+
+          if (
+            date.length >= 4
+          ) {
+
+            yearSet.add(
+              date.slice(0, 4)
+            );
+
+          }
+
         }
-      }
-    );
+      );
 
-    return [
-      ...yearSet,
-    ].sort(
-      (a, b) =>
-        Number(b) -
-        Number(a)
-    );
-  }, [
-    allRates,
-  ]);
+      return [
+        ...yearSet,
+      ].sort(
+        (a, b) =>
+          Number(b) -
+          Number(a)
+      );
+
+    }, [
+      allRates,
+    ]);
 
 
   /* =======================================================
      FILTER RATES
-     
+
      Global rates:
      Year + Month
   ======================================================= */
 
   const filteredRates =
     useMemo(() => {
+
       return [
         ...allRates,
       ]
+
         .filter(
           (rate) => {
+
             const date =
               String(
                 rate?.date || ""
               );
+
 
             /* ---------------------------------------------
                YEAR
@@ -223,7 +228,9 @@ function VortaxaRates() {
                 4
               ) !== year
             ) {
+
               return false;
+
             }
 
 
@@ -238,15 +245,20 @@ function VortaxaRates() {
                 7
               ) !== month
             ) {
+
               return false;
+
             }
 
 
             return true;
+
           }
         )
+
         .sort(
           (a, b) => {
+
             const dateA =
               String(
                 a?.date || ""
@@ -260,8 +272,10 @@ function VortaxaRates() {
             return dateB.localeCompare(
               dateA
             );
+
           }
         );
+
     }, [
       allRates,
       year,
@@ -271,30 +285,51 @@ function VortaxaRates() {
 
   /* =======================================================
      SAVE / UPDATE RATE
-     
-     Global rate:
-     - Existing date -> update
-     - Missing date -> add
-     
-     investorId is NOT required.
+
+     Rates are GLOBAL.
+
+     Existing date:
+       -> updateRate(rateId, updates)
+
+     Missing date:
+       -> addRate(rateData)
   ======================================================= */
 
   const handleSave =
     async (
       formData
     ) => {
+
       setSaving(true);
 
       try {
+
+        const date =
+          String(
+            formData?.date || ""
+          );
+
+        const rateValue =
+          Number(
+            formData?.rate || 0
+          );
+
+
+        if (!date) {
+          return;
+        }
+
+
+        /* -----------------------------------------------
+           FIND EXISTING RATE
+        ----------------------------------------------- */
+
         const existingRate =
           allRates.find(
             (rate) =>
               String(
                 rate?.date || ""
-              ) ===
-              String(
-                formData?.date || ""
-              )
+              ) === date
           );
 
 
@@ -303,59 +338,44 @@ function VortaxaRates() {
         ----------------------------------------------- */
 
         if (existingRate) {
+
           await updateRate(
-            null,
             existingRate.id,
             {
               rate:
-                Number(
-                  formData?.rate || 0
-                ),
+                rateValue,
             }
           );
 
           /*
-           * IMPORTANT:
            * Do not close edit mode here.
            *
-           * VortaxaRateForm closes edit mode only
-           * after explicit "Save Rate".
-           *
-           * This prevents Previous / Next / Date Picker
-           * auto-save from closing edit mode.
+           * VortaxaRateForm controls edit mode
+           * after explicit Save Rate.
            */
 
           return;
+
         }
 
 
         /* -----------------------------------------------
-           ADD RATE
-           
-           Normally dates are already generated
-           automatically by Context.
-           
-           This is only a safe fallback.
+           ADD NEW RATE
         ----------------------------------------------- */
 
-        await addRate(
-          null,
-          {
-            date:
-              formData.date,
-
-            rate:
-              Number(
-                formData.rate || 0
-              ),
-
-            type: "DAILY",
-          }
-        );
+        await addRate({
+          date,
+          rate:
+            rateValue,
+          type: "DAILY",
+        });
 
       } finally {
+
         setSaving(false);
+
       }
+
     };
 
 
@@ -365,9 +385,11 @@ function VortaxaRates() {
 
   const handleEdit =
     (rate) => {
+
       setEditingRate(
         rate
       );
+
     };
 
 
@@ -377,9 +399,11 @@ function VortaxaRates() {
 
   const handleCancel =
     () => {
+
       setEditingRate(
         null
       );
+
     };
 
 
@@ -391,7 +415,9 @@ function VortaxaRates() {
     loading ||
     dataLoading
   ) {
+
     return (
+
       <div
         className="
           flex
@@ -400,6 +426,7 @@ function VortaxaRates() {
           justify-center
         "
       >
+
         <p
           className="
             text-sm
@@ -409,21 +436,25 @@ function VortaxaRates() {
         >
           Loading Daily Rates...
         </p>
+
       </div>
+
     );
+
   }
 
 
   /* =======================================================
      INVESTOR NOT FOUND
-     
-     Rates are global, but this page still expects
-     an investorId because it is opened from an
-     investor's details page.
+
+     Rates are global, but this route is opened
+     from an investor's details page.
   ======================================================= */
 
   if (!investor) {
+
     return (
+
       <div
         className="
           mx-auto
@@ -431,6 +462,7 @@ function VortaxaRates() {
           max-w-5xl
         "
       >
+
         <div
           className="
             rounded-2xl
@@ -441,6 +473,7 @@ function VortaxaRates() {
             text-center
           "
         >
+
           <p
             className="
               text-sm
@@ -474,9 +507,13 @@ function VortaxaRates() {
           >
             Back to Vortaxa
           </button>
+
         </div>
+
       </div>
+
     );
+
   }
 
 
@@ -485,6 +522,7 @@ function VortaxaRates() {
   ======================================================= */
 
   return (
+
     <div
       className="
         mx-auto
@@ -492,6 +530,7 @@ function VortaxaRates() {
         max-w-5xl
       "
     >
+
       {/* =================================================
           HEADER
       ================================================== */}
@@ -510,6 +549,7 @@ function VortaxaRates() {
           py-3
         "
       >
+
         {/* Back */}
 
         <button
@@ -538,12 +578,14 @@ function VortaxaRates() {
           "
           aria-label="Back"
         >
+
           <ArrowLeft
             className="
               h-4
               w-4
             "
           />
+
         </button>
 
 
@@ -555,6 +597,7 @@ function VortaxaRates() {
             flex-1
           "
         >
+
           <h1
             className="
               truncate
@@ -577,6 +620,7 @@ function VortaxaRates() {
             Global rates •{" "}
             {investorName}
           </p>
+
         </div>
 
 
@@ -594,16 +638,16 @@ function VortaxaRates() {
             text-slate-400
           "
         >
-          {filteredRates.length}
+          {
+            filteredRates.length
+          }
         </div>
+
       </div>
 
 
       {/* =================================================
           RATE FORM
-          
-          Ref is used for smooth scroll when
-          Edit button is clicked.
       ================================================== */}
 
       <div
@@ -612,8 +656,11 @@ function VortaxaRates() {
           scroll-mt-4
         "
       >
+
         <VortaxaRateForm
-          rates={allRates}
+          rates={
+            allRates
+          }
           editingRate={
             editingRate
           }
@@ -627,6 +674,7 @@ function VortaxaRates() {
             saving
           }
         />
+
       </div>
 
 
@@ -635,9 +683,15 @@ function VortaxaRates() {
       ================================================== */}
 
       <VortaxaRateFilters
-        year={year}
-        month={month}
-        years={years}
+        year={
+          year
+        }
+        month={
+          month
+        }
+        years={
+          years
+        }
         onYearChange={
           setYear
         }
@@ -649,7 +703,7 @@ function VortaxaRates() {
 
       {/* =================================================
           RATE LIST
-      ================================================== */}
+      ================================================= */}
 
       <VortaxaRateList
         rates={
@@ -658,9 +712,15 @@ function VortaxaRates() {
         onEdit={
           handleEdit
         }
+        investors={
+          investorData
+        }
       />
+
     </div>
+
   );
+
 }
 
 

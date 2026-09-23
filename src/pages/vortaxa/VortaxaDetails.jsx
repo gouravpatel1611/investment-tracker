@@ -1,70 +1,180 @@
 
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 
 import VortaxaDetailsHeader from "../../components/vortaxa/details/VortaxaDetailsHeader";
 import VortaxaDetailsSummary from "../../components/vortaxa/details/VortaxaDetailsSummary";
 import VortaxaTransactionPreview from "../../components/vortaxa/transaction/VortaxaTransactionPreview";
 import VortaxaRatePreview from "../../components/vortaxa/rate/VortaxaRatePreview";
 
-import { useVortaxa } from "../../context/VortaxaContext";
+import {
+  useVortaxa,
+} from "../../context/VortaxaContext";
+
 
 function VortaxaDetails() {
-  const navigate = useNavigate();
-  const { investorId } = useParams();
+
+  const navigate =
+    useNavigate();
+
+  const {
+    investorId,
+  } = useParams();
+
 
   const {
     getInvestor,
-    getInvestorSummary,
     investorData,
     rates,
     loading,
     dataLoading,
   } = useVortaxa();
 
-  const investor = getInvestor(investorId);
 
   /*
-   * Route investorId aur internal investor.id
-   * alag ho sakte hain.
+   * --------------------------------
+   * FIND INVESTOR
+   * --------------------------------
    *
-   * investorData internal investor.id ke according
-   * stored hai, isliye actual investor.id use karenge.
+   * Route investorId can be either:
+   *
+   * - internal investor.id
+   * - external investor.investorId
+   *
+   * getInvestor() already handles both.
+   *
+   * --------------------------------
    */
-  const data = investor
-    ? investorData?.[investor.id] || {}
-    : {};
 
-  const summary = investor
-    ? getInvestorSummary(investor.id)
-    : {};
+  const investor =
+    getInvestor(investorId);
 
-  const transactions = Array.isArray(data.transactions)
-    ? data.transactions
-    : [];
 
   /*
-   * Daily Rates ab GLOBAL hain.
+   * --------------------------------
+   * FIND CALCULATED INVESTOR DATA
+   * --------------------------------
    *
-   * Isliye investorData ke andar se rates nahi lenge.
-   * Context ka global `rates` directly use hoga.
+   * investorData is an ARRAY:
+   *
+   * [
+   *   {
+   *     ...investor,
+   *     summary: {...}
+   *   }
+   * ]
+   *
+   * --------------------------------
    */
-  const dailyRates = Array.isArray(rates)
-    ? rates
-    : [];
 
-  if (loading || dataLoading) {
+  const investorDataItem =
+    investor
+      ? investorData?.find(
+          (item) =>
+            item.id === investor.id
+        )
+      : null;
+
+
+  /*
+   * --------------------------------
+   * SUMMARY
+   * --------------------------------
+   */
+
+  const summary =
+    investorDataItem?.summary || {};
+
+
+  /*
+   * --------------------------------
+   * TRANSACTIONS
+   * --------------------------------
+   */
+
+  const transactions =
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
+
+
+  /*
+   * --------------------------------
+   * GLOBAL DAILY RATES
+   * --------------------------------
+   *
+   * Rates are shared by all investors.
+   *
+   * --------------------------------
+   */
+
+  const dailyRates =
+    Array.isArray(rates)
+      ? rates
+      : [];
+
+
+  /*
+   * --------------------------------
+   * LOADING
+   * --------------------------------
+   */
+
+  if (
+    loading ||
+    dataLoading
+  ) {
+
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-sm font-semibold text-slate-400">
+
+      <div
+        className="
+          flex
+          min-h-[60vh]
+          items-center
+          justify-center
+        "
+      >
+
+        <p
+          className="
+            text-sm
+            font-semibold
+            text-slate-400
+          "
+        >
           Loading Vortaxa...
         </p>
+
       </div>
+
     );
+
   }
 
+
+  /*
+   * --------------------------------
+   * INVESTOR NOT FOUND
+   * --------------------------------
+   */
+
   if (!investor) {
+
     return (
-      <div className="mx-auto w-full max-w-5xl">
+
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-5xl
+        "
+      >
+
         <div
           className="
             rounded-2xl
@@ -75,17 +185,33 @@ function VortaxaDetails() {
             text-center
           "
         >
-          <p className="text-sm font-bold text-white">
+
+          <p
+            className="
+              text-sm
+              font-bold
+              text-white
+            "
+          >
             Investor not found
           </p>
 
-          <p className="mt-1 text-xs text-slate-500">
-            This Vortaxa investment could not be found.
+          <p
+            className="
+              mt-1
+              text-xs
+              text-slate-500
+            "
+          >
+            This Vortaxa investment
+            could not be found.
           </p>
 
           <button
             type="button"
-            onClick={() => navigate("/vortaxa")}
+            onClick={() =>
+              navigate("/vortaxa")
+            }
             className="
               mt-4
               rounded-xl
@@ -101,33 +227,62 @@ function VortaxaDetails() {
           >
             Back to Vortaxa
           </button>
+
         </div>
+
       </div>
+
     );
+
   }
+
 
   const investorName =
     investor.investorName ||
     investor.name ||
     "Investor";
 
+
   return (
-    <div className="mx-auto w-full max-w-5xl">
+
+    <div
+      className="
+        mx-auto
+        w-full
+        max-w-5xl
+      "
+    >
+
       {/* Header */}
+
       <VortaxaDetailsHeader
-        investorName={investorName}
-        startDate={investor.startDate}
-        onBack={() => navigate("/vortaxa")}
+        investorName={
+          investorName
+        }
+        startDate={
+          investor.startDate
+        }
+        onBack={() =>
+          navigate("/vortaxa")
+        }
       />
+
 
       {/* Summary */}
+
       <VortaxaDetailsSummary
-        summary={summary}
+        summary={
+          summary
+        }
       />
 
+
       {/* Recent Transactions */}
+
       <VortaxaTransactionPreview
-        transactions={transactions}
+        transactions={
+          transactions
+        }
         onViewAll={() =>
           navigate(
             `/vortaxa/${investorId}/transactions`
@@ -135,18 +290,26 @@ function VortaxaDetails() {
         }
       />
 
+
       {/* Recent Daily Rates */}
+
       <VortaxaRatePreview
-        rates={dailyRates}
+        rates={
+          dailyRates
+        }
         onViewAll={() =>
           navigate(
             `/vortaxa/${investorId}/rates`
           )
         }
       />
+
     </div>
+
   );
+
 }
+
 
 export default VortaxaDetails;
 

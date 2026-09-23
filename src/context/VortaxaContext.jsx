@@ -1,12 +1,17 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
+
+import {
+  calculateInvestorSummary,
+  calculateAllInvestorsSummary,
+} from "../utils/vortaxa/vortaxaCalculations";
+
 
 /* =========================================================
    CONSTANTS
@@ -15,25 +20,37 @@ import {
 const STORAGE_KEY =
   "investmentTracker_vortaxa";
 
+
+/* =========================================================
+   CONTEXT
+========================================================= */
+
 const VortaxaContext =
   createContext(null);
 
 
 /* =========================================================
-   HELPERS
+   BASIC HELPERS
 ========================================================= */
 
 function generateId(
   prefix = "vortaxa"
 ) {
-  return `${prefix}_${Date.now()}_${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
+  return (
+    prefix +
+    "_" +
+    Date.now() +
+    "_" +
+    Math.random()
+      .toString(36)
+      .slice(2, 9)
+  );
 }
 
 
 function toNumber(value) {
-  const number = Number(value);
+  const number =
+    Number(value);
 
   return Number.isFinite(number)
     ? number
@@ -41,29 +58,22 @@ function toNumber(value) {
 }
 
 
-/*
- * Local date.
- *
- * Important:
- * Do not use:
- *
- * new Date().toISOString().slice(0, 10)
- *
- * because ISO uses UTC.
- */
 function getTodayDate() {
-  const date = new Date();
+  const today =
+    new Date();
 
   const year =
-    date.getFullYear();
+    today.getFullYear();
 
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
+  const month =
+    String(
+      today.getMonth() + 1
+    ).padStart(2, "0");
 
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const day =
+    String(
+      today.getDate()
+    ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -75,814 +85,519 @@ function getCreatedAt() {
 
 
 /* =========================================================
-   DATE HELPERS
-========================================================= */
-
-function parseDateOnly(value) {
-  if (!value) {
-    return null;
-  }
-
-  const parts =
-    String(value).split("-");
-
-  if (parts.length !== 3) {
-    return null;
-  }
-
-  const year =
-    Number(parts[0]);
-
-  const month =
-    Number(parts[1]);
-
-  const day =
-    Number(parts[2]);
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
-  ) {
-    return null;
-  }
-
-  return new Date(
-    year,
-    month - 1,
-    day
-  );
-}
-
-
-function formatDateOnly(date) {
-  if (!date) {
-    return "";
-  }
-
-  const year =
-    date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-
-function addDays(
-  dateString,
-  days
-) {
-  const date =
-    parseDateOnly(dateString);
-
-  if (!date) {
-    return "";
-  }
-
-  date.setDate(
-    date.getDate() + days
-  );
-
-  return formatDateOnly(
-    date
-  );
-}
-
-
-/* =========================================================
    LOCAL STORAGE
 ========================================================= */
 
-function readLocalData() {
+function readStorage() {
   try {
+
     const raw =
       localStorage.getItem(
         STORAGE_KEY
       );
 
+
     if (!raw) {
+
       return {
         investors: [],
         rates: [],
       };
+
     }
+
 
     const parsed =
       JSON.parse(raw);
 
-    if (
-      !parsed ||
-      typeof parsed !== "object"
-    ) {
-      return {
-        investors: [],
-        rates: [],
-      };
-    }
 
     return {
+
       investors:
         Array.isArray(
-          parsed.investors
+          parsed?.investors
         )
           ? parsed.investors
           : [],
 
       rates:
         Array.isArray(
-          parsed.rates
+          parsed?.rates
         )
           ? parsed.rates
           : [],
+
     };
+
   } catch (error) {
+
     console.error(
       "Vortaxa LocalStorage read error:",
       error
     );
 
+
     return {
       investors: [],
       rates: [],
     };
+
   }
 }
 
 
-function writeLocalData(data) {
+function writeStorage(data) {
   try {
+
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(data)
     );
+
   } catch (error) {
+
     console.error(
       "Vortaxa LocalStorage write error:",
       error
     );
+
+    throw new Error(
+      "Unable to save Vortaxa data."
+    );
+
   }
 }
 
 
 /* =========================================================
-   TRANSACTION NORMALIZER
+   NORMALIZE TRANSACTION
 ========================================================= */
 
 function normalizeTransaction(
-  transaction,
-  fallbackInvestorId = ""
+  transaction
 ) {
-  if (!transaction) {
-    return null;
-  }
 
   return {
+
     id:
-      transaction.id ||
-      generateId(
-        "transaction"
-      ),
+      transaction?.id ||
+      generateId("txn"),
 
     investorId:
-      transaction.investorId ||
-      fallbackInvestorId,
+      transaction?.investorId ||
+      "",
 
     type:
-      transaction.type ||
-      "TRANSACTION",
+      transaction?.type ||
+      "INITIAL",
 
     date:
-      transaction.date ||
-      transaction.transactionDate ||
+      transaction?.date ||
       getTodayDate(),
 
-    amount: toNumber(
-      transaction.amount
-    ),
+    amount:
+      toNumber(
+        transaction?.amount
+      ),
 
     createdAt:
-      transaction.createdAt ||
+      transaction?.createdAt ||
       getCreatedAt(),
+
   };
+
 }
 
 
 /* =========================================================
-   GLOBAL RATE NORMALIZER
+   NORMALIZE RATE
 ========================================================= */
 
-function normalizeRate(rate) {
-  if (!rate) {
-    return null;
-  }
+function normalizeRate(
+  rate
+) {
 
   return {
+
     id:
-      rate.id ||
+      rate?.id ||
       generateId("rate"),
 
     date:
-      rate.date ||
-      rate.rateDate ||
+      rate?.date ||
       getTodayDate(),
 
-    rate: toNumber(
-      rate.rate
-    ),
+    rate:
+      toNumber(
+        rate?.rate
+      ),
 
     type:
-      rate.type ||
+      rate?.type ||
       "DAILY",
 
     createdAt:
-      rate.createdAt ||
+      rate?.createdAt ||
       getCreatedAt(),
+
   };
+
 }
 
 
 /* =========================================================
-   INVESTOR NORMALIZER
+   NORMALIZE INVESTOR
 ========================================================= */
 
 function normalizeInvestor(
   investor
 ) {
-  if (!investor) {
-    return null;
-  }
-
-  const internalId =
-    investor.id ||
-    generateId("investor");
-
-  const externalInvestorId =
-    investor.investorId ||
-    internalId;
 
   const initial =
-    investor.initial || {};
-
-
-  const liquidity =
-    toNumber(
-      initial.liquidity ??
-        investor.liquidity
-    );
-
-
-  const fule =
-    toNumber(
-      initial.fule ??
-        investor.fule
-    );
-
-
-  const piFule =
-    toNumber(
-      initial.piFule ??
-        investor.piFule
-    );
-
-
-  /* =======================================================
-     TRANSACTIONS
-  ======================================================= */
-
-  const transactions =
-    Array.isArray(
-      investor.transactions
-    )
-      ? investor.transactions
-          .map(
-            (transaction) =>
-              normalizeTransaction(
-                transaction,
-                externalInvestorId
-              )
-          )
-          .filter(Boolean)
-      : [];
-
-
-  /* =======================================================
-     INITIAL TRANSACTION COMPATIBILITY
-  ======================================================= */
-
-  const hasInitialTransaction =
-    transactions.some(
-      (transaction) =>
-        transaction.type ===
-        "INITIAL"
-    );
-
-
-  const initialAmount =
-    liquidity +
-    fule +
-    piFule;
-
-
-  if (
-    initialAmount > 0 &&
-    !hasInitialTransaction
-  ) {
-    transactions.unshift({
-      id: generateId(
-        "transaction"
-      ),
-
-      investorId:
-        externalInvestorId,
-
-      type: "INITIAL",
-
-      date:
-        investor.startDate ||
-        investor.transactionDate ||
-        getTodayDate(),
-
-      amount:
-        initialAmount,
-
-      createdAt:
-        investor.createdAt ||
-        getCreatedAt(),
-    });
-  }
+    investor?.initial || {};
 
 
   return {
-    ...investor,
 
-    id: internalId,
+    id:
+      investor?.id ||
+      generateId("investor"),
 
     investorId:
-      externalInvestorId,
+      investor?.investorId ||
+      "",
 
     investorName:
-      investor.investorName ||
-      investor.name ||
+      investor?.investorName ||
+      investor?.name ||
       "",
 
     startDate:
-      investor.startDate ||
-      investor.transactionDate ||
+      investor?.startDate ||
       getTodayDate(),
 
     initial: {
-      liquidity,
-      fule,
-      piFule,
+
+      liquidity:
+        toNumber(
+          initial?.liquidity ??
+          investor?.liquidity
+        ),
+
+      fule:
+        toNumber(
+          initial?.fule ??
+          investor?.fule
+        ),
+
+      piFule:
+        toNumber(
+          initial?.piFule ??
+          investor?.piFule
+        ),
+
     },
 
-    transactions,
+    transactions:
+      Array.isArray(
+        investor?.transactions
+      )
+        ? investor.transactions.map(
+            normalizeTransaction
+          )
+        : [],
 
-    /*
-     * Rates are GLOBAL.
-     *
-     * No rates are stored inside
-     * individual investors.
-     */
-    rates: [],
+    createdAt:
+      investor?.createdAt ||
+      getCreatedAt(),
+
   };
+
 }
 
 
 /* =========================================================
-   LEGACY RATE MIGRATION
+   NORMALIZE DATA
+========================================================= */
+
+function normalizeData(
+  data
+) {
+
+  const investors =
+    Array.isArray(
+      data?.investors
+    )
+      ? data.investors.map(
+          normalizeInvestor
+        )
+      : [];
+
+
+  const rates =
+    Array.isArray(
+      data?.rates
+    )
+      ? data.rates.map(
+          normalizeRate
+        )
+      : [];
+
+
+  return {
+    investors,
+    rates,
+  };
+
+}
+
+
+/* =========================================================
+   RATE HELPERS
 ========================================================= */
 
 /*
- * Old Vortaxa data may have rates inside
- * individual investors.
+ * Rates are GLOBAL.
  *
- * We move those rates into the global
- * rate collection.
+ * Same rate is used by every investor.
  */
-function collectLegacyRates(
-  rawInvestors
+
+function sortRates(
+  rates
 ) {
-  const collected = [];
 
-  if (
-    !Array.isArray(
-      rawInvestors
-    )
-  ) {
-    return collected;
-  }
-
-  rawInvestors.forEach(
-    (investor) => {
-      if (!investor) {
-        return;
-      }
-
-      const investorRates =
-        Array.isArray(
-          investor.rates
-        )
-          ? investor.rates
-          : Array.isArray(
-              investor.dailyRates
-            )
-            ? investor.dailyRates
-            : [];
-
-      investorRates.forEach(
-        (rate) => {
-          const normalized =
-            normalizeRate(
-              rate
-            );
-
-          if (
-            normalized
-          ) {
-            collected.push(
-              normalized
-            );
-          }
-        }
-      );
-    }
-  );
-
-  return collected;
-}
-
-
-/* =========================================================
-   MERGE GLOBAL RATES
-========================================================= */
-
-function mergeRates(
-  existingRates = [],
-  legacyRates = []
-) {
-  const resultByDate =
-    new Map();
-
-  /*
-   * Global rates get priority.
-   */
-  [
-    ...existingRates,
-    ...legacyRates,
-  ].forEach(
-    (rate) => {
-      const normalized =
-        normalizeRate(
-          rate
-        );
-
-      if (
-        !normalized ||
-        !normalized.date
-      ) {
-        return;
-      }
-
-      if (
-        !resultByDate.has(
-          normalized.date
-        )
-      ) {
-        resultByDate.set(
-          normalized.date,
-          normalized
-        );
-      }
-    }
-  );
-
-  return Array.from(
-    resultByDate.values()
-  ).sort(
+  return [...rates].sort(
     (a, b) =>
-      String(a.date).localeCompare(
-        String(b.date)
-      )
+      String(a?.date || "")
+        .localeCompare(
+          String(b?.date || "")
+        )
   );
+
 }
 
 
-/* =========================================================
-   FIND EARLIEST INVESTMENT DATE
-========================================================= */
+/*
+ * Get earliest investment date.
+ */
 
 function getEarliestInvestmentDate(
   investors
 ) {
-  if (
-    !Array.isArray(
-      investors
-    ) ||
-    investors.length === 0
-  ) {
-    return null;
-  }
 
-  let earliestDate =
-    null;
+  const dates =
+    investors
+      .map(
+        (investor) =>
+          investor?.startDate
+      )
+      .filter(Boolean)
+      .sort();
 
-  investors.forEach(
-    (investor) => {
-      if (!investor) {
-        return;
-      }
 
-      let date =
-        investor.startDate ||
-        null;
+  return dates[0] || null;
 
-      /*
-       * Fallback to INITIAL transaction.
-       */
-      if (!date) {
-        const initialTransaction =
-          Array.isArray(
-            investor.transactions
-          )
-            ? investor.transactions.find(
-                (transaction) =>
-                  transaction.type ===
-                  "INITIAL"
-              )
-            : null;
-
-        date =
-          initialTransaction?.date ||
-          null;
-      }
-
-      const parsed =
-        parseDateOnly(
-          date
-        );
-
-      if (!parsed) {
-        return;
-      }
-
-      if (
-        !earliestDate ||
-        parsed < earliestDate
-      ) {
-        earliestDate =
-          parsed;
-      }
-    }
-  );
-
-  if (!earliestDate) {
-    return null;
-  }
-
-  return formatDateOnly(
-    earliestDate
-  );
 }
 
 
-/* =========================================================
-   RATE HISTORY START
-========================================================= */
-
 /*
- * Rate starts two days after the earliest
- * initial investment date.
+ * Rate history starts from:
  *
- * Example:
- *
- * 25 Sep = Initial
- * 26 Sep = No Rate
- * 27 Sep = Rate starts
+ * Earliest investment date + 2 days
  */
+
 function getRateStartDate(
   investors
 ) {
-  const earliestDate =
+
+  const earliest =
     getEarliestInvestmentDate(
       investors
     );
 
-  if (!earliestDate) {
+
+  if (!earliest) {
     return null;
   }
 
-  return addDays(
-    earliestDate,
-    2
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    earliest
+      .split("-")
+      .map(Number);
+
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day
+    );
+
+
+  date.setDate(
+    date.getDate() + 2
   );
+
+
+  const resultYear =
+    date.getFullYear();
+
+  const resultMonth =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const resultDay =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
+
+
+  return `${resultYear}-${resultMonth}-${resultDay}`;
+
 }
 
 
-/* =========================================================
-   ENSURE MISSING RATE HISTORY
-========================================================= */
+/*
+ * Add one day.
+ */
+
+function addOneDay(
+  dateString
+) {
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    dateString
+      .split("-")
+      .map(Number);
+
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day
+    );
+
+
+  date.setDate(
+    date.getDate() + 1
+  );
+
+
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      date.getDate()
+    ).padStart(2, "0"),
+  ].join("-");
+
+}
+
 
 /*
- * This function NEVER overwrites existing rates.
+ * Create missing rate dates.
  *
- * It only creates missing daily fields.
- *
- * Example:
- *
- * 27 Sep = 0.15
- * 28 Sep = 0.20
- * 29 Sep = missing
- * 30 Sep = missing
- * 01 Oct = today
- *
- * Result:
- *
- * 27 Sep = 0.15
- * 28 Sep = 0.20
- * 29 Sep = 0
- * 30 Sep = 0
- * 01 Oct = 0
+ * Existing rates are NEVER overwritten.
  */
+
 function ensureMissingRateHistory(
   investors,
-  existingRates = []
+  rates
 ) {
-  const rates =
-    mergeRates(
-      existingRates
-    );
 
   const startDate =
     getRateStartDate(
       investors
     );
 
+
   if (!startDate) {
     return rates;
   }
 
+
   const today =
     getTodayDate();
 
-  if (
-    startDate > today
-  ) {
+
+  if (startDate > today) {
     return rates;
   }
 
-  const ratesByDate =
-    new Map();
 
-  /*
-   * Preserve every existing rate.
-   */
-  rates.forEach(
-    (rate) => {
-      if (
-        rate?.date
-      ) {
-        ratesByDate.set(
-          rate.date,
-          rate
-        );
-      }
-    }
-  );
+  const existingDates =
+    new Set(
+      rates.map(
+        (rate) =>
+          rate?.date
+      )
+    );
 
-  /*
-   * Fill every missing day.
-   */
+
+  const result =
+    [...rates];
+
+
   let currentDate =
     startDate;
 
+
   while (
-    currentDate <=
-    today
+    currentDate <= today
   ) {
+
     if (
-      !ratesByDate.has(
+      !existingDates.has(
         currentDate
       )
     ) {
-      ratesByDate.set(
-        currentDate,
-        {
-          id: generateId(
-            "rate"
-          ),
+
+      result.push(
+        normalizeRate({
+
+          id:
+            generateId("rate"),
 
           date:
             currentDate,
 
-          rate: 0,
+          rate:
+            0,
 
           type:
             "DAILY",
 
-          createdAt:
-            getCreatedAt(),
-        }
+        })
       );
+
     }
 
+
     currentDate =
-      addDays(
-        currentDate,
-        1
+      addOneDay(
+        currentDate
       );
+
   }
 
-  return Array.from(
-    ratesByDate.values()
-  ).sort(
-    (a, b) =>
-      String(a.date).localeCompare(
-        String(b.date)
-      )
+
+  return sortRates(
+    result
   );
-}
 
-
-/* =========================================================
-   PREPARE EXISTING DATA
-========================================================= */
-
-/*
- * Used only while loading existing data.
- *
- * Responsibilities:
- *
- * 1. Normalize investors
- * 2. Normalize global rates
- * 3. Migrate legacy investor rates
- * 4. Fill missing rate history
- */
-function prepareLoadedData(
-  rawData
-) {
-  const rawInvestors =
-    Array.isArray(
-      rawData?.investors
-    )
-      ? rawData.investors
-      : [];
-
-  const investors =
-    rawInvestors
-      .map(
-        normalizeInvestor
-      )
-      .filter(Boolean);
-
-  const globalRates =
-    Array.isArray(
-      rawData?.rates
-    )
-      ? rawData.rates
-          .map(
-            normalizeRate
-          )
-          .filter(Boolean)
-      : [];
-
-  const legacyRates =
-    collectLegacyRates(
-      rawInvestors
-    );
-
-  const mergedRates =
-    mergeRates(
-      globalRates,
-      legacyRates
-    );
-
-  /*
-   * Important:
-   *
-   * Existing data load should also repair
-   * any missed days.
-   *
-   * This handles days when the app
-   * was not opened.
-   */
-  const rates =
-    ensureMissingRateHistory(
-      investors,
-      mergedRates
-    );
-
-  return {
-    investors,
-    rates,
-  };
 }
 
 
@@ -893,17 +608,26 @@ function prepareLoadedData(
 export function VortaxaProvider({
   children,
 }) {
-  const [data, setData] =
-    useState({
-      investors: [],
-      rates: [],
-    });
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    data,
+    setData,
+  ] = useState({
+    investors: [],
+    rates: [],
+  });
 
-  const [dataLoading, setDataLoading] =
-    useState(true);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  const [
+    dataLoading,
+    setDataLoading,
+  ] = useState(false);
 
 
   /* =======================================================
@@ -911,39 +635,75 @@ export function VortaxaProvider({
   ======================================================= */
 
   useEffect(() => {
-    const loadedData =
-      readLocalData();
 
-    const preparedData =
-      prepareLoadedData(
-        loadedData
+    try {
+
+      const stored =
+        readStorage();
+
+
+      const normalized =
+        normalizeData(
+          stored
+        );
+
+
+      const rates =
+        ensureMissingRateHistory(
+          normalized.investors,
+          normalized.rates
+        );
+
+
+      const finalData = {
+
+        investors:
+          normalized.investors,
+
+        rates,
+
+      };
+
+
+      setData(
+        finalData
       );
 
-    setData(
-      preparedData
-    );
 
-    /*
-     * Save migrated / missing
-     * daily-rate records.
-     */
-    writeLocalData(
-      preparedData
-    );
+      /*
+       * Save normalized/backfilled data.
+       */
 
-    setLoading(false);
-    setDataLoading(false);
+      writeStorage(
+        finalData
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Vortaxa initialization error:",
+        error
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
   }, []);
 
 
   /* =======================================================
-     STORAGE SYNC
+     STORAGE EVENT
   ======================================================= */
 
   useEffect(() => {
-    function handleStorage(
+
+    function handleStorageChange(
       event
     ) {
+
       if (
         event.key !==
         STORAGE_KEY
@@ -951,34 +711,51 @@ export function VortaxaProvider({
         return;
       }
 
-      const loadedData =
-        readLocalData();
 
-      const preparedData =
-        prepareLoadedData(
-          loadedData
+      const stored =
+        readStorage();
+
+
+      const normalized =
+        normalizeData(
+          stored
         );
 
-      setData(
-        preparedData
-      );
 
-      writeLocalData(
-        preparedData
-      );
+      const rates =
+        ensureMissingRateHistory(
+          normalized.investors,
+          normalized.rates
+        );
+
+
+      setData({
+
+        investors:
+          normalized.investors,
+
+        rates,
+
+      });
+
     }
+
 
     window.addEventListener(
       "storage",
-      handleStorage
+      handleStorageChange
     );
 
+
     return () => {
+
       window.removeEventListener(
         "storage",
-        handleStorage
+        handleStorageChange
       );
+
     };
+
   }, []);
 
 
@@ -986,1423 +763,1186 @@ export function VortaxaProvider({
      SAVE DATA
   ======================================================= */
 
-  /*
-   * IMPORTANT:
-   *
-   * saveData does NOT generate rates.
-   *
-   * Rate generation is explicitly called
-   * only when required:
-   *
-   * - initial data load
-   * - investor add
-   * - investor update
-   */
-  const saveData =
-    useCallback(
-      (nextData) => {
-        const cleanData = {
-          investors:
-            Array.isArray(
-              nextData?.investors
-            )
-              ? nextData.investors
-              : [],
+  function saveData(
+    nextData
+  ) {
 
-          rates:
-            Array.isArray(
-              nextData?.rates
-            )
-              ? nextData.rates
-              : [],
-        };
+    const normalized =
+      normalizeData(
+        nextData
+      );
 
-        setData(
-          cleanData
-        );
 
-        writeLocalData(
-          cleanData
-        );
-      },
-      []
+    const rates =
+      ensureMissingRateHistory(
+        normalized.investors,
+        normalized.rates
+      );
+
+
+    const finalData = {
+
+      investors:
+        normalized.investors,
+
+      rates,
+
+    };
+
+
+    writeStorage(
+      finalData
     );
 
 
-  /* =======================================================
-     DATA
-  ======================================================= */
+    setData(
+      finalData
+    );
 
-  const investors =
-    data.investors || [];
 
-  const rates =
-    data.rates || [];
+    return finalData;
+
+  }
 
 
   /* =======================================================
      GET INVESTOR
   ======================================================= */
 
-  const getInvestor =
-    useCallback(
-      (investorId) => {
-        if (!investorId) {
-          return null;
-        }
+  function getInvestor(
+    investorId
+  ) {
 
-        return (
-          investors.find(
-            (investor) =>
-              investor.id ===
-                investorId ||
-              investor.investorId ===
-                investorId
-          ) || null
-        );
-      },
-      [investors]
+    return (
+      data.investors.find(
+        (investor) =>
+          investor.id ===
+            investorId ||
+          investor.investorId ===
+            investorId
+      ) ||
+      null
     );
+
+  }
 
 
   /* =======================================================
      GET INVESTOR DATA
   ======================================================= */
 
-  const getInvestorData =
-    useCallback(
-      (investorId) => {
-        const investor =
-          getInvestor(
-            investorId
-          );
+  function getInvestorData(
+    investorId
+  ) {
 
-        if (!investor) {
-          return null;
-        }
-
-        return {
-          investor,
-
-          transactions:
-            Array.isArray(
-              investor.transactions
-            )
-              ? investor.transactions
-              : [],
-
-          /*
-           * GLOBAL RATES
-           */
-          rates,
-
-          /*
-           * Compatibility alias
-           */
-          dailyRates:
-            rates,
-        };
-      },
-      [
-        getInvestor,
-        rates,
-      ]
-    );
+    const investor =
+      getInvestor(
+        investorId
+      );
 
 
-  /* =======================================================
-     SUMMARY
-  ======================================================= */
-
-  const calculateInvestorSummary =
-    useCallback(
-      (investor) => {
-        if (!investor) {
-          return {
-            liquidity: 0,
-            initialFule: 0,
-            initialPiFule: 0,
-            fuleAdded: 0,
-            piFuleAdded: 0,
-            currentFule: 0,
-            currentPiFule: 0,
-            totalInvested: 0,
-            totalEarn: 0,
-            totalWithdraw: 0,
-            availableEarn: 0,
-          };
-        }
-
-        const initial =
-          investor.initial || {};
-
-        const transactions =
-          Array.isArray(
-            investor.transactions
-          )
-            ? investor.transactions
-            : [];
-
-        const liquidity =
-          toNumber(
-            initial.liquidity
-          );
-
-        const initialFule =
-          toNumber(
-            initial.fule
-          );
-
-        const initialPiFule =
-          toNumber(
-            initial.piFule
-          );
-
-        let fuleAdded = 0;
-        let piFuleAdded = 0;
-        let totalWithdraw = 0;
-
-        transactions.forEach(
-          (transaction) => {
-            const amount =
-              toNumber(
-                transaction.amount
-              );
-
-            switch (
-              transaction.type
-            ) {
-              case "FULE_ADD":
-                fuleAdded += amount;
-                break;
-
-              case "PI_FULE_ADD":
-                piFuleAdded += amount;
-                break;
-
-              case "EARN_WITHDRAW":
-                totalWithdraw += amount;
-                break;
-
-              default:
-                break;
-            }
-          }
-        );
-
-        const currentFule =
-          initialFule +
-          fuleAdded;
-
-        const currentPiFule =
-          initialPiFule +
-          piFuleAdded;
-
-        const totalInvested =
-          liquidity +
-          currentFule +
-          currentPiFule;
-
-        /*
-         * Daily earning calculation
-         * will be implemented later.
-         */
-        const totalEarn = 0;
-
-        const availableEarn =
-          Math.max(
-            0,
-            totalEarn -
-              totalWithdraw
-          );
-
-        return {
-          liquidity,
-
-          initialFule,
-
-          initialPiFule,
-
-          fuleAdded,
-
-          piFuleAdded,
-
-          currentFule,
-
-          currentPiFule,
-
-          totalInvested,
-
-          totalEarn,
-
-          totalWithdraw,
-
-          availableEarn,
-        };
-      },
-      []
-    );
+    if (!investor) {
+      return null;
+    }
 
 
-  const getInvestorSummary =
-    useCallback(
-      (investorId) => {
-        const investor =
-          getInvestor(
-            investorId
-          );
+    const summary =
+      calculateInvestorSummary(
+        investor,
+        data.rates
+      );
 
-        return calculateInvestorSummary(
-          investor
-        );
-      },
-      [
-        getInvestor,
-        calculateInvestorSummary,
-      ]
-    );
+
+    return {
+
+      investor,
+
+      summary,
+
+      rates:
+        data.rates,
+
+    };
+
+  }
 
 
   /* =======================================================
      ADD INVESTOR
   ======================================================= */
 
-  const addInvestor =
-    useCallback(
-      (investorData) => {
-        const internalId =
-          generateId(
-            "investor"
-          );
+  async function addInvestor(
+    payload
+  ) {
 
-        const externalInvestorId =
-          investorData?.investorId ||
-          internalId;
+    const {
 
-        const liquidity =
-          toNumber(
-            investorData?.liquidity
-          );
+      investorId,
+      investorName,
+      startDate,
 
-        const fule =
-          toNumber(
-            investorData?.fule
-          );
+      liquidity = 0,
+      fule = 0,
+      piFule = 0,
 
-        const piFule =
-          toNumber(
-            investorData?.piFule
-          );
+    } = payload || {};
 
-        const startDate =
-          investorData?.startDate ||
-          investorData?.transactionDate ||
-          getTodayDate();
 
-        const initialAmount =
-          liquidity +
-          fule +
-          piFule;
+    if (!investorId) {
 
-        const initialTransaction =
-          initialAmount > 0
-            ? {
-                id: generateId(
-                  "transaction"
-                ),
+      throw new Error(
+        "Investor is required."
+      );
 
-                investorId:
-                  externalInvestorId,
+    }
 
-                type: "INITIAL",
 
-                date:
-                  startDate,
+    /*
+     * Prevent duplicate Vortaxa investment
+     * for same investor.
+     */
 
-                amount:
-                  initialAmount,
+    const alreadyExists =
+      data.investors.some(
+        (investor) =>
+          investor.investorId ===
+          investorId
+      );
 
-                createdAt:
-                  getCreatedAt(),
-              }
-            : null;
 
-        const investor = {
-          ...investorData,
+    if (alreadyExists) {
 
-          id: internalId,
+      throw new Error(
+        "Vortaxa investment already exists for this investor."
+      );
 
-          investorId:
-            externalInvestorId,
+    }
 
-          investorName:
-            investorData?.investorName ||
-            investorData?.name ||
-            "",
 
-          startDate,
+    const newInvestorId =
+      generateId(
+        "investor"
+      );
 
-          initial: {
-            liquidity,
-            fule,
-            piFule,
-          },
 
-          transactions:
-            initialTransaction
-              ? [
-                  initialTransaction,
-                ]
-              : [],
+    const initialTransaction =
+      normalizeTransaction({
 
-          rates: [],
+        id:
+          generateId("txn"),
 
-          createdAt:
-            getCreatedAt(),
-        };
+        investorId:
+          newInvestorId,
+
+        type:
+          "INITIAL",
+
+        date:
+          startDate ||
+          getTodayDate(),
 
         /*
-         * Add investor first,
-         * then create missing rate history.
+         * Initial transaction is kept
+         * only for history.
+         *
+         * Actual FULE / PI FULE /
+         * Liquidity values are stored
+         * separately in initial.
          */
-        const nextInvestors = [
-          ...investors,
-          investor,
-        ];
 
-        const nextRates =
-          ensureMissingRateHistory(
-            nextInvestors,
-            rates
-          );
+        amount:
+          toNumber(liquidity) +
+          toNumber(fule) +
+          toNumber(piFule),
 
-        saveData({
-          investors:
-            nextInvestors,
+      });
 
-          rates:
-            nextRates,
-        });
 
-        return investor;
-      },
-      [
-        investors,
-        rates,
-        saveData,
-      ]
-    );
+    const newInvestor =
+      normalizeInvestor({
+
+        id:
+          newInvestorId,
+
+        investorId,
+
+        investorName:
+
+          investorName || "",
+
+        startDate:
+          startDate ||
+          getTodayDate(),
+
+        initial: {
+
+          liquidity:
+            toNumber(
+              liquidity
+            ),
+
+          fule:
+            toNumber(
+              fule
+            ),
+
+          piFule:
+            toNumber(
+              piFule
+            ),
+
+        },
+
+        transactions: [
+          initialTransaction,
+        ],
+
+      });
+
+
+    saveData({
+
+      investors: [
+        ...data.investors,
+        newInvestor,
+      ],
+
+      rates:
+        data.rates,
+
+    });
+
+
+    return newInvestor;
+
+  }
 
 
   /* =======================================================
      UPDATE INVESTOR
   ======================================================= */
 
-  const updateInvestor =
-    useCallback(
-      (
-        investorId,
-        updates
-      ) => {
-        const existing =
-          getInvestor(
+  async function updateInvestor(
+    investorId,
+    updates
+  ) {
+
+    const investors =
+      data.investors.map(
+        (investor) => {
+
+          if (
+            investor.id !==
             investorId
-          );
+          ) {
+            return investor;
+          }
 
-        if (!existing) {
-          return null;
+
+          return normalizeInvestor({
+
+            ...investor,
+
+            ...updates,
+
+            initial: {
+
+              ...investor.initial,
+
+              ...(updates?.initial || {}),
+
+            },
+
+          });
+
         }
+      );
 
-        const updatedInvestor = {
-          ...existing,
 
-          ...updates,
+    saveData({
 
-          id:
-            existing.id,
+      investors,
 
-          investorId:
-            existing.investorId,
+      rates:
+        data.rates,
 
-          initial: {
-            ...existing.initial,
+    });
 
-            ...(updates.initial ||
-              {}),
-          },
 
-          rates: [],
-        };
-
-        const nextInvestors =
-          investors.map(
-            (investor) =>
-              investor.id ===
-              existing.id
-                ? updatedInvestor
-                : investor
-          );
-
-        /*
-         * Investor update may change the
-         * initial/start date.
-         *
-         * Therefore ensure all missing
-         * historical rate fields now exist.
-         */
-        const nextRates =
-          ensureMissingRateHistory(
-            nextInvestors,
-            rates
-          );
-
-        saveData({
-          investors:
-            nextInvestors,
-
-          rates:
-            nextRates,
-        });
-
-        return updatedInvestor;
-      },
-      [
-        investors,
-        rates,
-        getInvestor,
-        saveData,
-      ]
+    return getInvestor(
+      investorId
     );
+
+  }
 
 
   /* =======================================================
      DELETE INVESTOR
   ======================================================= */
 
-  const deleteInvestor =
-    useCallback(
-      (investorId) => {
-        const existing =
-          getInvestor(
-            investorId
-          );
+  async function deleteInvestor(
+    investorId
+  ) {
 
-        if (!existing) {
-          return false;
-        }
+    const investors =
+      data.investors.filter(
+        (investor) =>
+          investor.id !==
+          investorId
+      );
 
-        /*
-         * IMPORTANT:
-         *
-         * Global rates remain.
-         */
-        const nextData = {
-          investors:
-            investors.filter(
-              (investor) =>
-                investor.id !==
-                existing.id
-            ),
 
-          rates,
-        };
+    saveData({
 
-        saveData(
-          nextData
-        );
+      investors,
 
-        return true;
-      },
-      [
-        investors,
-        rates,
-        getInvestor,
-        saveData,
-      ]
-    );
+      rates:
+        data.rates,
+
+    });
+
+  }
 
 
   /* =======================================================
-     UPDATE INVESTOR TRANSACTIONS
+     ADD TRANSACTION
   ======================================================= */
 
-  const updateInvestorTransactions =
-    useCallback(
-      (
-        investorId,
-        updater
-      ) => {
-        const investor =
-          getInvestor(
-            investorId
-          );
+  async function addTransaction(
+    transaction
+  ) {
 
-        if (!investor) {
-          return null;
-        }
-
-        const currentTransactions =
-          Array.isArray(
-            investor.transactions
-          )
-            ? investor.transactions
-            : [];
-
-        const nextTransactions =
-          updater(
-            currentTransactions
-          );
-
-        const updatedInvestor = {
-          ...investor,
-
-          transactions:
-            nextTransactions,
-
-          rates: [],
-        };
-
-        const nextData = {
-          investors:
-            investors.map(
-              (item) =>
-                item.id ===
-                investor.id
-                  ? updatedInvestor
-                  : item
-            ),
-
-          rates,
-        };
-
-        /*
-         * Transaction changes do NOT
-         * regenerate rate history.
-         */
-        saveData(
-          nextData
-        );
-
-        return updatedInvestor;
-      },
-      [
-        investors,
-        rates,
-        getInvestor,
-        saveData,
-      ]
-    );
+    const targetInvestor =
+      getInvestor(
+        transaction?.investorId
+      );
 
 
-  /* =======================================================
-     ADD GENERIC TRANSACTION
-  ======================================================= */
+    if (!targetInvestor) {
 
-  const addTransaction =
-    useCallback(
-      (
-        investorId,
-        transaction
-      ) => {
-        const investor =
-          getInvestor(
-            investorId
-          );
+      throw new Error(
+        "Investor not found."
+      );
 
-        if (!investor) {
-          throw new Error(
-            "Investor not found"
-          );
-        }
-
-        const normalized =
-          normalizeTransaction(
-            {
-              ...transaction,
-
-              investorId:
-                investor.investorId,
-            },
-            investor.investorId
-          );
-
-        if (!normalized) {
-          throw new Error(
-            "Invalid transaction"
-          );
-        }
-
-        updateInvestorTransactions(
-          investor.id,
-          (
-            currentTransactions
-          ) => [
-            ...currentTransactions,
-            normalized,
-          ]
-        );
-
-        return normalized;
-      },
-      [
-        getInvestor,
-        updateInvestorTransactions,
-      ]
-    );
+    }
 
 
-  /* =======================================================
-     FULE ADD
-  ======================================================= */
+    const newTransaction =
+      normalizeTransaction({
 
-  const addFule =
-    useCallback(
-      (
-        investorId,
-        transaction
-      ) => {
-        return addTransaction(
-          investorId,
-          {
-            ...transaction,
+        ...transaction,
 
-            type:
-              "FULE_ADD",
+        id:
+          generateId("txn"),
+
+        createdAt:
+          getCreatedAt(),
+
+      });
+
+
+    const investors =
+      data.investors.map(
+        (investor) => {
+
+          if (
+            investor.id !==
+            targetInvestor.id
+          ) {
+            return investor;
           }
-        );
-      },
-      [addTransaction]
-    );
+
+
+          return {
+
+            ...investor,
+
+            transactions: [
+
+              ...investor.transactions,
+
+              newTransaction,
+
+            ],
+
+          };
+
+        }
+      );
+
+
+    saveData({
+
+      investors,
+
+      /*
+       * IMPORTANT:
+       * Adding a transaction does NOT
+       * regenerate or overwrite rates.
+       */
+
+      rates:
+        data.rates,
+
+    });
+
+
+    return newTransaction;
+
+  }
 
 
   /* =======================================================
-     PI FULE ADD
+     ADD FULE
   ======================================================= */
 
-  const addPiFule =
-    useCallback(
-      (
-        investorId,
-        transaction
-      ) => {
-        return addTransaction(
-          investorId,
-          {
-            ...transaction,
+  async function addFule(
+    investorId,
+    amount,
+    date = getTodayDate()
+  ) {
 
-            type:
-              "PI_FULE_ADD",
-          }
-        );
-      },
-      [addTransaction]
-    );
+    const value =
+      toNumber(amount);
+
+
+    if (value <= 0) {
+
+      throw new Error(
+        "FULE amount must be greater than zero."
+      );
+
+    }
+
+
+    return addTransaction({
+
+      investorId,
+
+      type:
+        "FULE_ADD",
+
+      date,
+
+      amount:
+        value,
+
+    });
+
+  }
 
 
   /* =======================================================
-     EARN WITHDRAW
+     ADD PI FULE
   ======================================================= */
 
-  const addEarnWithdrawal =
-    useCallback(
-      (
-        investorId,
-        transaction
-      ) => {
-        const summary =
-          getInvestorSummary(
-            investorId
-          );
+  async function addPiFule(
+    investorId,
+    amount,
+    date = getTodayDate()
+  ) {
 
-        const amount =
-          toNumber(
-            transaction?.amount
-          );
+    const value =
+      toNumber(amount);
 
-        if (amount <= 0) {
-          throw new Error(
-            "Withdrawal amount must be greater than zero."
-          );
-        }
 
-        if (
-          amount >
-          Number(
-            summary?.availableEarn ||
-              0
-          )
-        ) {
-          throw new Error(
-            "Withdrawal amount exceeds available EARN."
-          );
-        }
+    if (value <= 0) {
 
-        return addTransaction(
-          investorId,
-          {
-            ...transaction,
+      throw new Error(
+        "PI FULE amount must be greater than zero."
+      );
 
-            type:
-              "EARN_WITHDRAW",
-          }
-        );
-      },
-      [
-        getInvestorSummary,
-        addTransaction,
-      ]
-    );
+    }
+
+
+    return addTransaction({
+
+      investorId,
+
+      type:
+        "PI_FULE_ADD",
+
+      date,
+
+      amount:
+        value,
+
+    });
+
+  }
 
 
   /* =======================================================
-     DELETE TRANSACTION
+     ADD EARN WITHDRAWAL
   ======================================================= */
 
-  const deleteTransaction =
-    useCallback(
-      (
-        investorId,
-        transactionId
-      ) => {
-        const investor =
-          getInvestor(
-            investorId
-          );
+  async function addEarnWithdrawal(
+    investorId,
+    amount,
+    date = getTodayDate()
+  ) {
 
-        if (!investor) {
-          return false;
-        }
+    const value =
+      toNumber(amount);
 
-        const transaction =
-          investor.transactions?.find(
-            (item) =>
-              item.id ===
-              transactionId
-          );
 
-        if (!transaction) {
-          return false;
-        }
+    if (value <= 0) {
 
-        /*
-         * INITIAL delete =
-         * complete investor delete.
-         */
-        if (
-          transaction.type ===
-          "INITIAL"
-        ) {
-          return deleteInvestor(
-            investor.id
-          );
-        }
+      throw new Error(
+        "Withdrawal amount must be greater than zero."
+      );
 
-        updateInvestorTransactions(
-          investor.id,
-          (
-            currentTransactions
-          ) =>
-            currentTransactions.filter(
-              (item) =>
-                item.id !==
-                transactionId
-            )
-        );
+    }
 
-        return true;
-      },
-      [
-        getInvestor,
-        deleteInvestor,
-        updateInvestorTransactions,
-      ]
-    );
+
+    const investor =
+      getInvestor(
+        investorId
+      );
+
+
+    if (!investor) {
+
+      throw new Error(
+        "Investor not found."
+      );
+
+    }
+
+
+    /*
+     * Calculate current available earnings.
+     */
+
+    const summary =
+      calculateInvestorSummary(
+        investor,
+        data.rates
+      );
+
+
+    if (
+      value >
+      summary.availableEarn
+    ) {
+
+      throw new Error(
+        `Withdrawal cannot exceed available earnings of ${summary.availableEarn.toFixed(2)}.`
+      );
+
+    }
+
+
+    return addTransaction({
+
+      investorId,
+
+      type:
+        "EARN_WITHDRAW",
+
+      date,
+
+      amount:
+        value,
+
+    });
+
+  }
 
 
   /* =======================================================
      UPDATE TRANSACTION
   ======================================================= */
 
-  const updateTransaction =
-    useCallback(
-      (
-        investorId,
-        transactionId,
-        updates
-      ) => {
-        const investor =
-          getInvestor(
+  async function updateTransaction(
+    investorId,
+    transactionId,
+    updates
+  ) {
+
+    const investors =
+      data.investors.map(
+        (investor) => {
+
+          if (
+            investor.id !==
             investorId
-          );
-
-        if (!investor) {
-          return null;
-        }
-
-        const existingTransaction =
-          investor.transactions?.find(
-            (transaction) =>
-              transaction.id ===
-              transactionId
-          );
-
-        if (
-          !existingTransaction
-        ) {
-          return null;
-        }
-
-        let updatedTransaction =
-          null;
+          ) {
+            return investor;
+          }
 
 
-        /* =================================================
-           INITIAL TRANSACTION
-        ================================================= */
+          const transactions =
+            investor.transactions.map(
+              (transaction) => {
 
-        if (
-          existingTransaction.type ===
-          "INITIAL"
-        ) {
-          const newAmount =
-            toNumber(
-              updates?.amount ??
-                existingTransaction.amount
+                if (
+                  transaction.id !==
+                  transactionId
+                ) {
+                  return transaction;
+                }
+
+
+                return normalizeTransaction({
+
+                  ...transaction,
+
+                  ...updates,
+
+                  id:
+                    transaction.id,
+
+                  investorId:
+                    investor.investorId,
+
+                });
+
+              }
             );
 
-          const newDate =
-            updates?.date ||
-            existingTransaction.date;
 
-          updatedTransaction = {
-            ...existingTransaction,
+          return {
 
-            id:
-              existingTransaction.id,
-
-            investorId:
-              existingTransaction.investorId ||
-              investor.investorId,
-
-            type:
-              "INITIAL",
-
-            date:
-              newDate,
-
-            amount:
-              newAmount,
-          };
-
-          /*
-           * Existing INITIAL behavior preserved.
-           *
-           * We do not guess the distribution
-           * between Liquidity / FULE / PI FULE.
-           */
-          const updatedInvestor = {
             ...investor,
 
-            transactions:
-              investor.transactions.map(
-                (transaction) =>
-                  transaction.id ===
-                  transactionId
-                    ? updatedTransaction
-                    : transaction
-              ),
+            transactions,
 
-            rates: [],
           };
 
-          const nextData = {
-            investors:
-              investors.map(
-                (item) =>
-                  item.id ===
-                  investor.id
-                    ? updatedInvestor
-                    : item
-              ),
-
-            rates,
-          };
-
-          saveData(
-            nextData
-          );
-
-          return updatedTransaction;
         }
+      );
 
 
-        /* =================================================
-           NORMAL TRANSACTION
-        ================================================= */
+    saveData({
 
-        updatedTransaction = {
-          ...existingTransaction,
+      investors,
 
-          ...updates,
+      rates:
+        data.rates,
 
-          id:
-            existingTransaction.id,
+    });
 
-          investorId:
-            existingTransaction.investorId ||
-            investor.investorId,
 
-          type:
-            existingTransaction.type,
-
-          amount:
-            toNumber(
-              updates?.amount ??
-                existingTransaction.amount
-            ),
-
-          date:
-            updates?.date ||
-            existingTransaction.date,
-        };
-
-        updateInvestorTransactions(
-          investor.id,
-          (
-            currentTransactions
-          ) =>
-            currentTransactions.map(
-              (transaction) =>
-                transaction.id ===
-                transactionId
-                  ? updatedTransaction
-                  : transaction
-            )
-        );
-
-        return updatedTransaction;
-      },
-      [
-        investors,
-        rates,
-        getInvestor,
-        updateInvestorTransactions,
-        saveData,
-      ]
+    return getInvestor(
+      investorId
     );
+
+  }
 
 
   /* =======================================================
-     GLOBAL RATES
+     DELETE TRANSACTION
   ======================================================= */
+
+  async function deleteTransaction(
+    investorId,
+    transactionId
+  ) {
+
+    const investors =
+      data.investors.map(
+        (investor) => {
+
+          if (
+            investor.id !==
+            investorId
+          ) {
+            return investor;
+          }
+
+
+          return {
+
+            ...investor,
+
+            transactions:
+              investor.transactions.filter(
+                (transaction) =>
+                  transaction.id !==
+                  transactionId
+              ),
+
+          };
+
+        }
+      );
+
+
+    saveData({
+
+      investors,
+
+      rates:
+        data.rates,
+
+    });
+
+  }
+
+
+  /* =======================================================
+     UPDATE ALL TRANSACTIONS
+  ======================================================= */
+
+  async function updateInvestorTransactions(
+    investorId,
+    transactions
+  ) {
+
+    const investors =
+      data.investors.map(
+        (investor) => {
+
+          if (
+            investor.id !==
+            investorId
+          ) {
+            return investor;
+          }
+
+
+          return {
+
+            ...investor,
+
+            transactions:
+              Array.isArray(
+                transactions
+              )
+                ? transactions.map(
+                    normalizeTransaction
+                  )
+                : [],
+
+          };
+
+        }
+      );
+
+
+    saveData({
+
+      investors,
+
+      rates:
+        data.rates,
+
+    });
+
+  }
 
 
   /* =======================================================
      ADD RATE
   ======================================================= */
 
-  const addRate =
-    useCallback(
-      (
-        investorId,
-        rateData
-      ) => {
-        /*
-         * investorId intentionally ignored.
-         *
-         * Rates are global.
-         */
+  async function addRate(
+    rateData
+  ) {
 
-        const input =
-          rateData || {};
+    const date =
+      rateData?.date;
 
-        const normalized =
-          normalizeRate(
-            input
-          );
 
-        if (!normalized) {
-          throw new Error(
-            "Invalid rate"
-          );
-        }
+    if (!date) {
 
-        if (!normalized.date) {
-          throw new Error(
-            "Rate date is required"
-          );
-        }
+      throw new Error(
+        "Rate date is required."
+      );
 
-        const existing =
-          rates.find(
-            (rate) =>
-              rate.date ===
-              normalized.date
-          );
+    }
 
-        /*
-         * Never create duplicate date.
-         */
-        if (existing) {
-          return existing;
-        }
 
-        const nextRates =
-          mergeRates(
-            [
-              ...rates,
-              normalized,
-            ]
-          );
+    /*
+     * Rate dates are unique.
+     */
 
-        /*
-         * Adding/editing a rate does NOT
-         * generate any other dates.
-         */
-        saveData({
-          investors,
+    const alreadyExists =
+      data.rates.some(
+        (rate) =>
+          rate.date ===
+          date
+      );
 
-          rates:
-            nextRates,
-        });
 
-        return normalized;
-      },
-      [
-        investors,
-        rates,
-        saveData,
-      ]
-    );
+    if (alreadyExists) {
+
+      throw new Error(
+        "A rate already exists for this date. Use edit instead."
+      );
+
+    }
+
+
+    const newRate =
+      normalizeRate({
+
+        ...rateData,
+
+        id:
+          generateId("rate"),
+
+        type:
+          "DAILY",
+
+      });
+
+
+    saveData({
+
+      investors:
+        data.investors,
+
+      rates: [
+        ...data.rates,
+        newRate,
+      ],
+
+    });
+
+
+    return newRate;
+
+  }
 
 
   /* =======================================================
      UPDATE RATE
   ======================================================= */
 
-  const updateRate =
-    useCallback(
-      (
-        investorId,
-        rateId,
-        updates
-      ) => {
-        /*
-         * investorId intentionally ignored.
-         */
+  async function updateRate(
+    rateId,
+    updates
+  ) {
 
-        const existing =
-          rates.find(
-            (rate) =>
-              rate.id ===
-              rateId
-          );
+    const targetRate =
+      data.rates.find(
+        (rate) =>
+          rate.id ===
+          rateId
+      );
 
-        if (!existing) {
-          return null;
+
+    if (!targetRate) {
+
+      throw new Error(
+        "Rate not found."
+      );
+
+    }
+
+
+    /*
+     * Date should not be changed
+     * accidentally during edit.
+     *
+     * The rate date remains the
+     * same record date.
+     */
+
+    const rates =
+      data.rates.map(
+        (rate) => {
+
+          if (
+            rate.id !==
+            rateId
+          ) {
+            return rate;
+          }
+
+
+          return normalizeRate({
+
+            ...rate,
+
+            ...updates,
+
+            id:
+              rate.id,
+
+            date:
+              rate.date,
+
+            createdAt:
+              rate.createdAt,
+
+          });
+
         }
+      );
 
-        /*
-         * Date represents the daily field.
-         * Therefore date cannot be changed.
-         */
-        const updatedRate = {
-          ...existing,
 
-          id:
-            existing.id,
+    saveData({
 
-          date:
-            existing.date,
+      investors:
+        data.investors,
 
-          type:
-            existing.type ||
-            "DAILY",
+      rates,
 
-          rate:
-            toNumber(
-              updates?.rate ??
-                existing.rate
-            ),
-        };
+    });
 
-        const nextRates =
-          rates.map(
-            (rate) =>
-              rate.id ===
-              rateId
-                ? updatedRate
-                : rate
-          );
 
-        saveData({
-          investors,
-
-          rates:
-            nextRates,
-        });
-
-        return updatedRate;
-      },
-      [
-        investors,
-        rates,
-        saveData,
-      ]
+    return rates.find(
+      (rate) =>
+        rate.id ===
+        rateId
     );
+
+  }
 
 
   /* =======================================================
-     GET GLOBAL RATES
+     GET RATES
   ======================================================= */
 
-  const getRates =
-    useCallback(
-      () => {
-        return rates;
-      },
-      [rates]
+  function getRates() {
+
+    return sortRates(
+      data.rates
     );
+
+  }
 
 
   /* =======================================================
-     INVESTOR DATA MAP
+     REFRESH / BACKFILL
+  ======================================================= */
+
+  function reloadData() {
+
+    setDataLoading(
+      true
+    );
+
+
+    try {
+
+      const stored =
+        readStorage();
+
+
+      const normalized =
+        normalizeData(
+          stored
+        );
+
+
+      const rates =
+        ensureMissingRateHistory(
+          normalized.investors,
+          normalized.rates
+        );
+
+
+      const finalData = {
+
+        investors:
+          normalized.investors,
+
+        rates,
+
+      };
+
+
+      writeStorage(
+        finalData
+      );
+
+
+      setData(
+        finalData
+      );
+
+
+      return finalData;
+
+    } finally {
+
+      setDataLoading(
+        false
+      );
+
+    }
+
+  }
+
+
+  /* =======================================================
+     CLEAR ALL DATA
+  ======================================================= */
+
+  function clearAllVortaxaData() {
+
+    const emptyData = {
+
+      investors: [],
+
+      rates: [],
+
+    };
+
+
+    writeStorage(
+      emptyData
+    );
+
+
+    setData(
+      emptyData
+    );
+
+  }
+
+
+  /* =======================================================
+     INVESTOR DATA WITH CALCULATIONS
   ======================================================= */
 
   const investorData =
     useMemo(() => {
-      const result = {};
 
-      investors.forEach(
+      return data.investors.map(
         (investor) => {
+
           const summary =
             calculateInvestorSummary(
-              investor
+              investor,
+              data.rates
             );
 
-          const investorDataItem = {
-            investor,
 
-            transactions:
-              Array.isArray(
-                investor.transactions
-              )
-                ? investor.transactions
-                : [],
+          return {
 
-            /*
-             * GLOBAL RATES
-             */
-            rates,
-
-            dailyRates:
-              rates,
+            ...investor,
 
             summary,
+
           };
 
-          /*
-           * Internal ID
-           */
-          result[
-            investor.id
-          ] =
-            investorDataItem;
-
-          /*
-           * External ID
-           */
-          if (
-            investor.investorId
-          ) {
-            result[
-              investor.investorId
-            ] =
-              investorDataItem;
-          }
         }
       );
 
-      return result;
     }, [
-      investors,
-      rates,
-      calculateInvestorSummary,
+      data.investors,
+      data.rates,
     ]);
 
 
   /* =======================================================
-     CLEAR ALL
+     ALL INVESTORS SUMMARY
   ======================================================= */
 
-  const clearAllVortaxaData =
-    useCallback(
-      () => {
-        const emptyData = {
-          investors: [],
-          rates: [],
-        };
+  const allInvestorsSummary =
+    useMemo(() => {
 
-        saveData(
-          emptyData
-        );
-      },
-      [saveData]
-    );
+      return calculateAllInvestorsSummary(
+        data.investors,
+        data.rates
+      );
 
-
-  /* =======================================================
-     RELOAD
-  ======================================================= */
-
-  const reloadData =
-    useCallback(
-      () => {
-        setDataLoading(
-          true
-        );
-
-        const loadedData =
-          readLocalData();
-
-        const preparedData =
-          prepareLoadedData(
-            loadedData
-          );
-
-        setData(
-          preparedData
-        );
-
-        writeLocalData(
-          preparedData
-        );
-
-        setDataLoading(
-          false
-        );
-      },
-      []
-    );
+    }, [
+      data.investors,
+      data.rates,
+    ]);
 
 
   /* =======================================================
      CONTEXT VALUE
   ======================================================= */
 
-  const value =
-    useMemo(
-      () => ({
-        /* State */
-        data,
+  const value = {
 
-        loading,
+    /*
+     * State
+     */
 
-        dataLoading,
+    data,
 
-        /* Investors */
-        investors,
+    investors:
+      data.investors,
 
-        getInvestor,
+    rates:
+      data.rates,
 
-        getInvestorData,
+    investorData,
 
-        addInvestor,
+    allInvestorsSummary,
 
-        updateInvestor,
+    loading,
 
-        deleteInvestor,
+    dataLoading,
 
-        /* Summary */
-        getInvestorSummary,
 
-        /* Data */
-        investorData,
+    /*
+     * Investor
+     */
 
-        /* Transactions */
-        addTransaction,
+    getInvestor,
 
-        addFule,
+    getInvestorData,
 
-        addPiFule,
+    addInvestor,
 
-        addEarnWithdrawal,
+    updateInvestor,
 
-        deleteTransaction,
+    deleteInvestor,
 
-        updateTransaction,
 
-        /* Global Rates */
-        rates,
+    /*
+     * Transactions
+     */
 
-        getRates,
+    addTransaction,
 
-        addRate,
+    addFule,
 
-        updateRate,
+    addPiFule,
 
-        /* Utilities */
-        clearAllVortaxaData,
+    addEarnWithdrawal,
 
-        reloadData,
-      }),
-      [
-        data,
+    updateTransaction,
 
-        loading,
+    deleteTransaction,
 
-        dataLoading,
+    updateInvestorTransactions,
 
-        investors,
 
-        getInvestor,
+    /*
+     * Rates
+     */
 
-        getInvestorData,
+    addRate,
 
-        addInvestor,
+    updateRate,
 
-        updateInvestor,
+    getRates,
 
-        deleteInvestor,
 
-        getInvestorSummary,
+    /*
+     * Storage
+     */
 
-        investorData,
+    saveData,
 
-        addTransaction,
+    reloadData,
 
-        addFule,
+    clearAllVortaxaData,
 
-        addPiFule,
-
-        addEarnWithdrawal,
-
-        deleteTransaction,
-
-        updateTransaction,
-
-        rates,
-
-        getRates,
-
-        addRate,
-
-        updateRate,
-
-        clearAllVortaxaData,
-
-        reloadData,
-      ]
-    );
+  };
 
 
   return (
+
     <VortaxaContext.Provider
       value={value}
     >
       {children}
     </VortaxaContext.Provider>
+
   );
+
 }
 
 
@@ -2411,20 +1951,25 @@ export function VortaxaProvider({
 ========================================================= */
 
 export function useVortaxa() {
+
   const context =
     useContext(
       VortaxaContext
     );
 
+
   if (!context) {
+
     throw new Error(
-      "useVortaxa must be used inside VortaxaProvider"
+      "useVortaxa must be used inside VortaxaProvider."
     );
+
   }
 
+
   return context;
+
 }
 
 
 export default VortaxaContext;
-

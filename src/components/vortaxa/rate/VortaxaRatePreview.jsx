@@ -1,4 +1,3 @@
-
 import {
   ChevronRight,
   Percent,
@@ -6,11 +5,17 @@ import {
 
 import {
   formatDate,
+  formatCurrency,
 } from "../../../utils/vortaxa/vortaxaFormatters";
+
+import {
+  calculateRateSummary,
+} from "../../../utils/vortaxa/vortaxaCalculations";
 
 
 function VortaxaRatePreview({
   rates = [],
+  investors = [],
   onViewAll,
 }) {
   /* =======================================================
@@ -165,108 +170,267 @@ function VortaxaRatePreview({
           "
         >
           {recentRates.map(
-            (rate) => (
-              <div
-                key={rate.id}
-                className="
-                  flex
-                  items-center
-                  justify-between
-                  gap-3
-                  py-3
-                  first:pt-0
-                  last:pb-0
-                "
-              >
-                {/* =====================================
-                    DATE
-                ====================================== */}
+            (rate) => {
+              /* ==========================================
+                 RATE CALCULATION
+              ========================================== */
 
+              const rateSummary =
+                calculateRateSummary(
+                  rate?.date,
+                  rate?.rate,
+                  investors
+                );
+
+              const apr =
+                Number(
+                  rateSummary?.apr || 0
+                );
+
+              const pi =
+                Number(
+                  rateSummary?.pi || 0
+                );
+
+              const total =
+                Number(
+                  rateSummary?.total || 0
+                );
+
+
+              return (
                 <div
+                  key={rate.id}
                   className="
-                    flex
-                    min-w-0
-                    items-center
-                    gap-3
+                    py-3
+                    first:pt-0
+                    last:pb-0
                   "
                 >
+                  {/* =====================================
+                      TOP ROW
+                  ====================================== */}
+
                   <div
                     className="
                       flex
-                      h-8
-                      w-8
-                      shrink-0
                       items-center
-                      justify-center
-                      rounded-xl
-                      bg-orange-500/15
-                      text-orange-300
+                      justify-between
+                      gap-3
                     "
                   >
-                    <Percent
+                    {/* =================================
+                        DATE
+                    ================================== */}
+
+                    <div
                       className="
-                        h-4
-                        w-4
+                        flex
+                        min-w-0
+                        items-center
+                        gap-3
                       "
-                    />
+                    >
+                      <div
+                        className="
+                          flex
+                          h-8
+                          w-8
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-xl
+                          bg-orange-500/15
+                          text-orange-300
+                        "
+                      >
+                        <Percent
+                          className="
+                            h-4
+                            w-4
+                          "
+                        />
+                      </div>
+
+
+                      <div
+                        className="
+                          min-w-0
+                        "
+                      >
+                        <p
+                          className="
+                            text-xs
+                            font-bold
+                            text-slate-200
+                          "
+                        >
+                          {formatDate(
+                            rate?.date
+                          )}
+                        </p>
+
+                        <p
+                          className="
+                            mt-0.5
+                            text-[10px]
+                            text-slate-500
+                          "
+                        >
+                          Daily Rate
+                        </p>
+                      </div>
+                    </div>
+
+
+                    {/* =================================
+                        RATE
+                    ================================== */}
+
+                    <div
+                      className="
+                        shrink-0
+                        text-right
+                      "
+                    >
+                      <p
+                        className="
+                          text-sm
+                          font-extrabold
+                          text-orange-300
+                        "
+                      >
+                        {Number(
+                          rate?.rate || 0
+                        ).toFixed(2)}
+                        %
+                      </p>
+                    </div>
                   </div>
 
+
+                  {/* =====================================
+                      EARNING SUMMARY
+                  ====================================== */}
 
                   <div
                     className="
-                      min-w-0
+                      mt-2
+                      grid
+                      grid-cols-3
+                      gap-2
                     "
                   >
-                    <p
-                      className="
-                        text-xs
-                        font-bold
-                        text-slate-200
-                      "
-                    >
-                      {formatDate(
-                        rate?.date
-                      )}
-                    </p>
+                    {/* APR */}
 
-                    <p
+                    <div
                       className="
-                        mt-0.5
-                        text-[10px]
-                        text-slate-500
+                        rounded-lg
+                        bg-slate-900/60
+                        px-2
+                        py-1.5
                       "
                     >
-                      Daily Rate
-                    </p>
+                      <p
+                        className="
+                          text-[9px]
+                          font-semibold
+                          text-slate-500
+                        "
+                      >
+                        APR $
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          text-[10px]
+                          font-bold
+                          text-slate-200
+                        "
+                      >
+                        {formatCurrency(
+                          apr,
+                          "USD"
+                        )}
+                      </p>
+                    </div>
+
+
+                    {/* PI */}
+
+                    <div
+                      className="
+                        rounded-lg
+                        bg-slate-900/60
+                        px-2
+                        py-1.5
+                      "
+                    >
+                      <p
+                        className="
+                          text-[9px]
+                          font-semibold
+                          text-slate-500
+                        "
+                      >
+                        PI $
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          text-[10px]
+                          font-bold
+                          text-slate-200
+                        "
+                      >
+                        {formatCurrency(
+                          pi,
+                          "USD"
+                        )}
+                      </p>
+                    </div>
+
+
+                    {/* TOTAL */}
+
+                    <div
+                      className="
+                        rounded-lg
+                        bg-orange-500/10
+                        px-2
+                        py-1.5
+                      "
+                    >
+                      <p
+                        className="
+                          text-[9px]
+                          font-semibold
+                          text-orange-300/70
+                        "
+                      >
+                        TOTAL $
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          text-[10px]
+                          font-extrabold
+                          text-orange-300
+                        "
+                      >
+                        {formatCurrency(
+                          total,
+                          "USD"
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-
-                {/* =====================================
-                    RATE
-                ====================================== */}
-
-                <div
-                  className="
-                    shrink-0
-                    text-right
-                  "
-                >
-                  <p
-                    className="
-                      text-sm
-                      font-extrabold
-                      text-orange-300
-                    "
-                  >
-                    {Number(
-                      rate?.rate || 0
-                    ).toFixed(2)}
-                    %
-                  </p>
-                </div>
-              </div>
-            )
+              );
+            }
           )}
         </div>
       )}
@@ -317,4 +481,3 @@ function VortaxaRatePreview({
 
 
 export default VortaxaRatePreview;
-

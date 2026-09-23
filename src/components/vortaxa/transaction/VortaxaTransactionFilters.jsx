@@ -1,8 +1,8 @@
-
 import {
   CalendarDays,
   Filter,
 } from "lucide-react";
+
 
 function VortaxaTransactionFilters({
   year = "all",
@@ -24,7 +24,11 @@ function VortaxaTransactionFilters({
         p-4
       "
     >
-      {/* Filters */}
+
+      {/* =====================================================
+          FILTERS
+      ===================================================== */}
+
       <div
         className="
           grid
@@ -33,8 +37,13 @@ function VortaxaTransactionFilters({
           sm:grid-cols-3
         "
       >
-        {/* Year */}
+
+        {/* ===================================================
+            YEAR
+        =================================================== */}
+
         <div className="relative">
+
           <CalendarDays
             className="
               pointer-events-none
@@ -83,10 +92,16 @@ function VortaxaTransactionFilters({
               </option>
             ))}
           </select>
+
         </div>
 
-        {/* Month */}
+
+        {/* ===================================================
+            MONTH
+        =================================================== */}
+
         <div className="relative">
+
           <CalendarDays
             className="
               pointer-events-none
@@ -126,57 +141,27 @@ function VortaxaTransactionFilters({
               All Months
             </option>
 
-            <option value="01">
-              January
-            </option>
-
-            <option value="02">
-              February
-            </option>
-
-            <option value="03">
-              March
-            </option>
-
-            <option value="04">
-              April
-            </option>
-
-            <option value="05">
-              May
-            </option>
-
-            <option value="06">
-              June
-            </option>
-
-            <option value="07">
-              July
-            </option>
-
-            <option value="08">
-              August
-            </option>
-
-            <option value="09">
-              September
-            </option>
-
-            <option value="10">
-              October
-            </option>
-
-            <option value="11">
-              November
-            </option>
-
-            <option value="12">
-              December
-            </option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
           </select>
+
         </div>
 
-        {/* Category */}
+
+        {/* ===================================================
+            TRANSACTION TYPE
+        =================================================== */}
+
         <div
           className="
             relative
@@ -184,6 +169,7 @@ function VortaxaTransactionFilters({
             sm:col-span-1
           "
         >
+
           <Filter
             className="
               pointer-events-none
@@ -219,6 +205,7 @@ function VortaxaTransactionFilters({
               focus:border-orange-500/60
             "
           >
+
             <option value="all">
               All Categories
             </option>
@@ -238,12 +225,16 @@ function VortaxaTransactionFilters({
             <option value="INITIAL">
               Initial Investment
             </option>
+
           </select>
+
         </div>
+
       </div>
+
     </div>
   );
 }
 
-export default VortaxaTransactionFilters;
 
+export default VortaxaTransactionFilters;

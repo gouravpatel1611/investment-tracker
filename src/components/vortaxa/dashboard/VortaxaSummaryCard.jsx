@@ -1,4 +1,3 @@
-
 import {
   CircleDollarSign,
   Users,
@@ -9,44 +8,116 @@ import {
   formatNumber,
 } from "../../../utils/vortaxa/vortaxaFormatters";
 
+import {
+  useVortaxa,
+} from "../../../context/VortaxaContext";
+
 
 function VortaxaSummaryCard() {
 
   /*
    * ==========================================
-   * DUMMY INVESTORS
+   * REAL INVESTOR DATA
    * ==========================================
+   *
+   * investorData comes from VortaxaContext.
+   *
+   * Each investor contains:
+   *
+   * {
+   *   ...investor,
+   *   summary
+   * }
+   *
+   * summary contains:
+   *
+   * apr
+   * pi
+   * totalEarn
+   * totalEarnWithdrawn
+   * availableEarn
    */
 
-  const investors = [
-    {
-      id: "dummy-investor-1",
-      name: "Investor 1",
+  const {
+    investorData = [],
+  } = useVortaxa();
 
-      // Future fields
-      apr: 0,
-      pi: 0,
 
-      // Dummy values
-      total: 1250,
-      wdl: 250,
-      balance: 1000,
-    },
+  const investors =
+    Array.isArray(investorData)
+      ? investorData
+      : [];
 
-    {
-      id: "dummy-investor-2",
-      name: "Investor 2",
 
-      // Future fields
-      apr: 0,
-      pi: 0,
+  /*
+   * ==========================================
+   * NORMALIZED SUMMARY VALUES
+   * ==========================================
+   *
+   * Keep the table independent from the
+   * internal summary property names.
+   */
 
-      // Dummy values
-      total: 2000,
-      wdl: 500,
-      balance: 1500,
-    },
-  ];
+  const investorRows =
+    investors.map(
+      (investor) => {
+
+        const summary =
+          investor?.summary || {};
+
+
+        const apr =
+          Number(
+            summary?.apr || 0
+          );
+
+
+        const pi =
+          Number(
+            summary?.pi || 0
+          );
+
+
+        const total =
+          Number(
+            summary?.totalEarn ??
+            summary?.total ??
+            apr + pi
+          );
+
+
+        const wdl =
+          Number(
+            summary?.totalEarnWithdrawn || 0
+          );
+
+
+        const balance =
+          Number(
+            summary?.availableEarn ??
+            summary?.balance ??
+            total - wdl
+          );
+
+
+        return {
+          id:
+            investor?.id,
+
+          name:
+            investor?.investorName ||
+            investor?.name ||
+            "Investor",
+
+          apr,
+          pi,
+          total,
+          wdl,
+          balance,
+        };
+
+      }
+    );
 
 
   /*
@@ -55,30 +126,59 @@ function VortaxaSummaryCard() {
    * ==========================================
    */
 
-  const totalApr = investors.reduce(
-    (sum, investor) => sum + investor.apr,
-    0
-  );
+  const totalApr =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.apr || 0
+        ),
+      0
+    );
 
-  const totalPi = investors.reduce(
-    (sum, investor) => sum + investor.pi,
-    0
-  );
 
-  const totalEarn = investors.reduce(
-    (sum, investor) => sum + investor.total,
-    0
-  );
+  const totalPi =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.pi || 0
+        ),
+      0
+    );
 
-  const totalWdl = investors.reduce(
-    (sum, investor) => sum + investor.wdl,
-    0
-  );
 
-  const totalBalance = investors.reduce(
-    (sum, investor) => sum + investor.balance,
-    0
-  );
+  const totalEarn =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.total || 0
+        ),
+      0
+    );
+
+
+  const totalWdl =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.wdl || 0
+        ),
+      0
+    );
+
+
+  const totalBalance =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.balance || 0
+        ),
+      0
+    );
 
 
   return (
@@ -94,7 +194,8 @@ function VortaxaSummaryCard() {
         sm:p-4
       "
       style={{
-        fontFamily: "Calibri, Arial, sans-serif",
+        fontFamily:
+          "Calibri, Arial, sans-serif",
       }}
     >
 
@@ -133,6 +234,7 @@ function VortaxaSummaryCard() {
               bg-orange-500/15
             "
           >
+
             <CircleDollarSign
               className="
                 h-5
@@ -140,9 +242,15 @@ function VortaxaSummaryCard() {
                 text-orange-300
               "
             />
+
           </div>
 
-          <div className="min-w-0">
+
+          <div
+            className="
+              min-w-0
+            "
+          >
 
             <p
               className="
@@ -199,7 +307,11 @@ function VortaxaSummaryCard() {
             "
           />
 
-          {formatNumber(investors.length)}
+          {
+            formatNumber(
+              investorRows.length
+            )
+          }
 
         </div>
 
@@ -207,401 +319,548 @@ function VortaxaSummaryCard() {
 
 
       {/* =====================================
-          SUMMARY TABLE
+          NO INVESTOR
       ===================================== */}
 
-      <div
-        className="
-          overflow-x-auto
-          rounded-xl
-          border
-          border-slate-700
-        "
-      >
+      {investorRows.length === 0 ? (
 
-        <table
+        <div
           className="
-            w-full
-            min-w-max
-            border-collapse
+            rounded-xl
+            border
+            border-slate-700
+            bg-slate-900/50
+            px-4
+            py-8
+            text-center
           "
         >
 
-          {/* =================================
-              HEADER
-          ================================= */}
+          <p
+            className="
+              text-sm
+              font-bold
+              text-white
+            "
+          >
+            No Vortaxa investors
+          </p>
 
-          <thead>
+          <p
+            className="
+              mt-1
+              text-xs
+              text-slate-500
+            "
+          >
+            Add an investor to see the summary.
+          </p>
 
-            <tr className="bg-slate-900/80">
+        </div>
 
-              <th
+      ) : (
+
+        /* =====================================
+           SUMMARY TABLE
+        ===================================== */
+
+        <div
+          className="
+            overflow-x-auto
+            rounded-xl
+            border
+            border-slate-700
+          "
+        >
+
+          <table
+            className="
+              w-full
+              min-w-max
+              border-collapse
+            "
+          >
+
+            {/* =================================
+                HEADER
+            ================================= */}
+
+            <thead>
+
+              <tr
                 className="
-                  sticky
-                  left-0
-                  z-10
-                  min-w-[90px]
-                  border-b
-                  border-r
-                  border-slate-700
-                  bg-slate-900
-                  px-3
-                  py-3
-                  text-left
-                  text-sm
-                  font-extrabold
-                  text-white
+                  bg-slate-900/80
                 "
               >
-                Investor
-              </th>
-
-
-              {investors.map((investor) => (
 
                 <th
-                  key={investor.id}
+                  className="
+                    sticky
+                    left-0
+                    z-10
+                    min-w-[90px]
+                    border-b
+                    border-r
+                    border-slate-700
+                    bg-slate-900
+                    px-3
+                    py-3
+                    text-left
+                    text-sm
+                    font-extrabold
+                    text-white
+                  "
+                >
+                  Investor
+                </th>
+
+
+                {investorRows.map(
+                  (investor) => (
+
+                    <th
+                      key={
+                        investor.id
+                      }
+                      className="
+                        min-w-[110px]
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-sm
+                        font-extrabold
+                        text-orange-300
+                      "
+                    >
+
+                      {
+                        investor.name
+                      }
+
+                    </th>
+
+                  )
+                )}
+
+
+                <th
                   className="
                     min-w-[110px]
                     border-b
+                    border-l
                     border-slate-700
+                    bg-slate-900
                     px-3
                     py-3
                     text-center
                     text-sm
                     font-extrabold
-                    text-orange-300
+                    text-white
                   "
                 >
-                  {investor.name}
+                  Total
                 </th>
 
-              ))}
+              </tr>
+
+            </thead>
 
 
-              <th
-                className="
-                  min-w-[110px]
-                  border-b
-                  border-l
-                  border-slate-700
-                  bg-slate-900
-                  px-3
-                  py-3
-                  text-center
-                  text-sm
-                  font-extrabold
-                  text-white
-                "
-              >
-                Total
-              </th>
+            <tbody>
 
-            </tr>
+              {/* =================================
+                  APR $
+              ================================= */}
 
-          </thead>
-
-
-          <tbody>
-
-            {/* =================================
-                APR $
-            ================================= */}
-
-            <tr>
-
-              <td
-                className="
-                  sticky
-                  left-0
-                  z-10
-                  border-r
-                  border-b
-                  border-slate-700
-                  bg-slate-800
-                  px-3
-                  py-3
-                  text-sm
-                  font-bold
-                  text-white
-                "
-              >
-                APR $
-              </td>
-
-
-              {investors.map((investor) => (
+              <tr>
 
                 <td
-                  key={investor.id}
                   className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
                     border-b
                     border-slate-700
+                    bg-slate-800
                     px-3
                     py-3
-                    text-center
-                    text-base
+                    text-sm
                     font-bold
                     text-white
                   "
                 >
-                  {formatCurrency(investor.apr)}
+                  APR $
                 </td>
 
-              ))}
 
+                {investorRows.map(
+                  (investor) => (
 
-              <td
-                className="
-                  border-b
-                  border-l
-                  border-slate-700
-                  bg-slate-900/50
-                  px-3
-                  py-3
-                  text-center
-                  text-base
-                  font-extrabold
-                  text-white
-                "
-              >
-                {formatCurrency(totalApr)}
-              </td>
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-bold
+                        text-white
+                      "
+                    >
 
-            </tr>
+                      {
+                        formatCurrency(
+                          investor.apr
+                        )
+                      }
 
+                    </td>
 
-            {/* =================================
-                PI $
-            ================================= */}
+                  )
+                )}
 
-            <tr>
-
-              <td
-                className="
-                  sticky
-                  left-0
-                  z-10
-                  border-r
-                  border-b
-                  border-slate-700
-                  bg-slate-800
-                  px-3
-                  py-3
-                  text-sm
-                  font-bold
-                  text-fuchsia-300
-                "
-              >
-                PI $
-              </td>
-
-
-              {investors.map((investor) => (
 
                 <td
-                  key={investor.id}
                   className="
                     border-b
+                    border-l
                     border-slate-700
+                    bg-slate-900/50
                     px-3
                     py-3
                     text-center
                     text-base
-                    font-bold
-                    text-fuchsia-400
+                    font-extrabold
+                    text-white
                   "
                 >
-                  {formatCurrency(investor.pi)}
+
+                  {
+                    formatCurrency(
+                      totalApr
+                    )
+                  }
+
                 </td>
 
-              ))}
+              </tr>
 
 
-              <td
-                className="
-                  border-b
-                  border-l
-                  border-slate-700
-                  bg-slate-900/50
-                  px-3
-                  py-3
-                  text-center
-                  text-base
-                  font-extrabold
-                  text-fuchsia-400
-                "
-              >
-                {formatCurrency(totalPi)}
-              </td>
+              {/* =================================
+                  PI $
+              ================================= */}
 
-            </tr>
-
-
-            {/* =================================
-                TOTAL $
-            ================================= */}
-
-            <tr>
-
-              <td
-                className="
-                  sticky
-                  left-0
-                  z-10
-                  border-r
-                  border-b
-                  border-slate-700
-                  bg-slate-800
-                  px-3
-                  py-3
-                  text-sm
-                  font-bold
-                  text-emerald-300
-                "
-              >
-                Total $
-              </td>
-
-
-              {investors.map((investor) => (
+              <tr>
 
                 <td
-                  key={investor.id}
                   className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
                     border-b
                     border-slate-700
+                    bg-slate-800
+                    px-3
+                    py-3
+                    text-sm
+                    font-bold
+                    text-yellow-400
+                  "
+                >
+                  PI $
+                </td>
+
+
+                {investorRows.map(
+                  (investor) => (
+
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-bold
+                        text-yellow-400
+                      "
+                    >
+
+                      {
+                        formatCurrency(
+                          investor.pi
+                        )
+                      }
+
+                    </td>
+
+                  )
+                )}
+
+
+                <td
+                  className="
+                    border-b
+                    border-l
+                    border-slate-700
+                    bg-slate-900/50
                     px-3
                     py-3
                     text-center
                     text-base
+                    font-extrabold
+                    text-yellow-400
+                  "
+                >
+
+                  {
+                    formatCurrency(
+                      totalPi
+                    )
+                  }
+
+                </td>
+
+              </tr>
+
+
+              {/* =================================
+                  TOTAL $
+              ================================= */}
+
+              <tr>
+
+                <td
+                  className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
+                    border-b
+                    border-slate-700
+                    bg-slate-800
+                    px-3
+                    py-3
+                    text-sm
                     font-bold
+                    text-emerald-300
+                  "
+                >
+                  Total $
+                </td>
+
+
+                {investorRows.map(
+                  (investor) => (
+
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-bold
+                        text-emerald-400
+                      "
+                    >
+
+                      {
+                        formatCurrency(
+                          investor.total
+                        )
+                      }
+
+                    </td>
+
+                  )
+                )}
+
+
+                <td
+                  className="
+                    border-b
+                    border-l
+                    border-slate-700
+                    bg-slate-900/50
+                    px-3
+                    py-3
+                    text-center
+                    text-base
+                    font-extrabold
                     text-emerald-400
                   "
                 >
-                  {formatCurrency(investor.total)}
+
+                  {
+                    formatCurrency(
+                      totalEarn
+                    )
+                  }
+
                 </td>
 
-              ))}
+              </tr>
 
 
-              <td
-                className="
-                  border-b
-                  border-l
-                  border-slate-700
-                  bg-slate-900/50
-                  px-3
-                  py-3
-                  text-center
-                  text-base
-                  font-extrabold
-                  text-emerald-400
-                "
-              >
-                {formatCurrency(totalEarn)}
-              </td>
+              {/* =================================
+                  WDL
+              ================================= */}
 
-            </tr>
-
-
-            {/* =================================
-                WDL
-            ================================= */}
-
-            <tr>
-
-              <td
-                className="
-                  sticky
-                  left-0
-                  z-10
-                  border-r
-                  border-b
-                  border-slate-700
-                  bg-slate-800
-                  px-3
-                  py-3
-                  text-sm
-                  font-bold
-                  text-rose-300
-                "
-              >
-                WDL
-              </td>
-
-
-              {investors.map((investor) => (
+              <tr>
 
                 <td
-                  key={investor.id}
                   className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
                     border-b
                     border-slate-700
+                    bg-slate-800
                     px-3
                     py-3
-                    text-center
-                    text-base
+                    text-sm
                     font-bold
                     text-rose-400
                   "
                 >
-                  {formatCurrency(investor.wdl)}
+                  WDL
                 </td>
 
-              ))}
 
+                {investorRows.map(
+                  (investor) => (
 
-              <td
-                className="
-                  border-b
-                  border-l
-                  border-slate-700
-                  bg-slate-900/50
-                  px-3
-                  py-3
-                  text-center
-                  text-base
-                  font-extrabold
-                  text-rose-400
-                "
-              >
-                {formatCurrency(totalWdl)}
-              </td>
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-bold
+                        text-rose-400
+                      "
+                    >
 
-            </tr>
+                      {
+                        formatCurrency(
+                          investor.wdl
+                        )
+                      }
 
+                    </td>
 
-            {/* =================================
-                BAL $
-            ================================= */}
+                  )
+                )}
 
-            <tr>
-
-              <td
-                className="
-                  sticky
-                  left-0
-                  z-10
-                  border-r
-                  border-slate-700
-                  bg-slate-800
-                  px-3
-                  py-3
-                  text-sm
-                  font-bold
-                  text-green-400
-                "
-              >
-                BAL $
-              </td>
-
-
-              {investors.map((investor) => (
 
                 <td
-                  key={investor.id}
                   className="
+                    border-b
+                    border-l
+                    border-slate-700
+                    bg-slate-900/50
+                    px-3
+                    py-3
+                    text-center
+                    text-base
+                    font-extrabold
+                    text-rose-400
+                  "
+                >
+
+                  {
+                    formatCurrency(
+                      totalWdl
+                    )
+                  }
+
+                </td>
+
+              </tr>
+
+
+              {/* =================================
+                  BAL $
+              ================================= */}
+
+              <tr>
+
+                <td
+                  className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
+                    border-slate-700
+                    bg-slate-800
+                    px-3
+                    py-3
+                    text-sm
+                    font-bold
+                    text-green-400
+                  "
+                >
+                  BAL $
+                </td>
+
+
+                {investorRows.map(
+                  (investor) => (
+
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-extrabold
+                        text-green-400
+                      "
+                    >
+
+                      {
+                        formatCurrency(
+                          investor.balance
+                        )
+                      }
+
+                    </td>
+
+                  )
+                )}
+
+
+                <td
+                  className="
+                    border-l
+                    border-slate-700
+                    bg-slate-900/50
                     px-3
                     py-3
                     text-center
@@ -610,35 +869,24 @@ function VortaxaSummaryCard() {
                     text-green-400
                   "
                 >
-                  {formatCurrency(investor.balance)}
+
+                  {
+                    formatCurrency(
+                      totalBalance
+                    )
+                  }
+
                 </td>
 
-              ))}
+              </tr>
 
+            </tbody>
 
-              <td
-                className="
-                  border-l
-                  border-slate-700
-                  bg-slate-900/50
-                  px-3
-                  py-3
-                  text-center
-                  text-base
-                  font-extrabold
-                  text-green-400
-                "
-              >
-                {formatCurrency(totalBalance)}
-              </td>
+          </table>
 
-            </tr>
+        </div>
 
-          </tbody>
-
-        </table>
-
-      </div>
+      )}
 
     </div>
   );

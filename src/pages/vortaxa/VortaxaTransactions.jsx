@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useMemo,
@@ -39,7 +38,7 @@ function VortaxaTransactions() {
 
   const {
     getInvestor,
-    getInvestorData,
+    investorData,
 
     addFule,
     addPiFule,
@@ -61,8 +60,18 @@ function VortaxaTransactions() {
   const investor =
     getInvestor(investorId);
 
+
+  /* =========================================================
+     CALCULATED INVESTOR DATA
+  ========================================================= */
+
   const investorDetailsData =
-    getInvestorData(investorId);
+    investor
+      ? investorData?.find(
+          (item) =>
+            item.id === investor.id
+        )
+      : null;
 
 
   /* =========================================================
@@ -70,7 +79,11 @@ function VortaxaTransactions() {
   ========================================================= */
 
   const transactions =
-    investorDetailsData?.transactions || [];
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
 
 
   /* =========================================================
@@ -79,7 +92,9 @@ function VortaxaTransactions() {
 
   const availableEarn =
     Number(
-      investorDetailsData?.summary?.availableEarn || 0
+      investorDetailsData
+        ?.summary
+        ?.availableEarn || 0
     );
 
 
@@ -114,7 +129,8 @@ function VortaxaTransactions() {
 
 
   /* =========================================================
-     RESET FORM / FILTERS WHEN INVESTOR CHANGES
+     RESET FORM / FILTERS
+     WHEN INVESTOR CHANGES
   ========================================================= */
 
   useEffect(() => {
@@ -161,10 +177,11 @@ function VortaxaTransactions() {
       }
     );
 
-    return Array.from(uniqueYears)
-      .sort(
-        (a, b) => b - a
-      );
+    return Array.from(
+      uniqueYears
+    ).sort(
+      (a, b) => b - a
+    );
 
   }, [transactions]);
 
@@ -177,6 +194,7 @@ function VortaxaTransactions() {
     useMemo(() => {
 
       return [...transactions]
+
         .filter(
           (transaction) => {
 
@@ -228,7 +246,7 @@ function VortaxaTransactions() {
 
 
             /* ================================================
-               CATEGORY
+               TYPE
             ================================================= */
 
             if (
@@ -341,7 +359,7 @@ function VortaxaTransactions() {
 
 
       /* =====================================================
-         ADD NEW
+         ADD FULE
       ===================================================== */
 
       if (
@@ -351,8 +369,14 @@ function VortaxaTransactions() {
 
         await addFule(
           currentInvestorId,
-          transaction
+          transaction.amount,
+          transaction.date
         );
+
+
+      /* =====================================================
+         ADD PI FULE
+      ===================================================== */
 
       } else if (
         transaction.type ===
@@ -361,8 +385,14 @@ function VortaxaTransactions() {
 
         await addPiFule(
           currentInvestorId,
-          transaction
+          transaction.amount,
+          transaction.date
         );
+
+
+      /* =====================================================
+         WITHDRAW EARN
+      ===================================================== */
 
       } else if (
         transaction.type ===
@@ -371,7 +401,8 @@ function VortaxaTransactions() {
 
         await addEarnWithdrawal(
           currentInvestorId,
-          transaction
+          transaction.amount,
+          transaction.date
         );
       }
 
@@ -624,7 +655,20 @@ function VortaxaTransactions() {
               onClick={
                 handleAddTransaction
               }
-              className="flex items-center gap-1.5 rounded-xl bg-yellow-400 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-yellow-300"
+              className="
+                flex
+                items-center
+                gap-1.5
+                rounded-xl
+                bg-yellow-400
+                px-3
+                py-2
+                text-xs
+                font-semibold
+                text-slate-950
+                transition
+                hover:bg-yellow-300
+              "
             >
               <Plus size={15} />
 
@@ -709,5 +753,5 @@ function VortaxaTransactions() {
   );
 }
 
-export default VortaxaTransactions;
 
+export default VortaxaTransactions;

@@ -11,6 +11,11 @@ import {
 
 function getTransactionTypeInfo(type) {
   switch (type) {
+
+    /* =====================================================
+       INITIAL
+    ===================================================== */
+
     case "INITIAL":
       return {
         label: "Initial",
@@ -18,6 +23,11 @@ function getTransactionTypeInfo(type) {
         className:
           "bg-blue-500/10 text-blue-400 border-blue-500/20",
       };
+
+
+    /* =====================================================
+       FULE ADD
+    ===================================================== */
 
     case "FULE_ADD":
       return {
@@ -27,6 +37,11 @@ function getTransactionTypeInfo(type) {
           "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
       };
 
+
+    /* =====================================================
+       PI FULE ADD
+    ===================================================== */
+
     case "PI_FULE_ADD":
       return {
         label: "PI FULE Added",
@@ -35,6 +50,11 @@ function getTransactionTypeInfo(type) {
           "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
       };
 
+
+    /* =====================================================
+       EARN WITHDRAWAL
+    ===================================================== */
+
     case "EARN_WITHDRAW":
       return {
         label: "EARN Withdrawal",
@@ -42,6 +62,11 @@ function getTransactionTypeInfo(type) {
         className:
           "bg-red-500/10 text-red-400 border-red-500/20",
       };
+
+
+    /* =====================================================
+       FALLBACK
+    ===================================================== */
 
     default:
       return {
@@ -61,18 +86,40 @@ function getTransactionTypeInfo(type) {
 function VortaxaTransactionTypeBadge({
   type,
 }) {
-  const info = getTransactionTypeInfo(type);
+  const info =
+    getTransactionTypeInfo(
+      type
+    );
 
-  const Icon = info.icon;
+  const Icon =
+    info.icon;
+
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${info.className}`}
+      className={`
+        inline-flex
+        items-center
+        gap-1.5
+        rounded-full
+        border
+        px-2.5
+        py-1
+        text-xs
+        font-medium
+        ${info.className}
+      `}
     >
-      <Icon size={13} />
+
+      <Icon
+        size={13}
+      />
+
       {info.label}
+
     </span>
   );
 }
+
 
 export default VortaxaTransactionTypeBadge;

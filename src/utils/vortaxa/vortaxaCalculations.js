@@ -1,106 +1,119 @@
 /* =========================================================
    VORTAXA CALCULATIONS
+   ---------------------------------------------------------
+   This file contains calculation logic only.
+
+   Rules:
+   - Liquidity is never used for earning calculation.
+   - FULE earning = Effective FULE × Daily Rate% × 70%
+   - PI FULE earning = Effective PI FULE × Daily Rate% × 3%
+   - FULE / PI FULE additions become effective after 2 days.
+   - Initial FULE / PI FULE also become effective after 2 days.
+   - Rates are global and applicable to all investors.
+   - Withdrawal is deducted only from total earned amount.
 ========================================================= */
+
 
 /* =========================================================
-   DATE HELPERS
+   BASIC HELPERS
 ========================================================= */
 
-/**
- * Convert any supported date value into YYYY-MM-DD.
- */
-function toDateString(value) {
-  if (!value) return "";
+function toNumber(value) {
+  const number = Number(value);
 
-  if (typeof value === "string") {
-    return value.slice(0, 10);
-  }
-
-  if (value instanceof Date) {
-    const year = value.getFullYear();
-    const month = String(
-      value.getMonth() + 1
-    ).padStart(2, "0");
-    const day = String(
-      value.getDate()
-    ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  }
-
-  if (
-    value &&
-    typeof value.toDate === "function"
-  ) {
-    return toDateString(value.toDate());
-  }
-
-  return "";
+  return Number.isFinite(number)
+    ? number
+    : 0;
 }
 
-/**
- * Add days to YYYY-MM-DD.
- */
-function addDays(dateString, days) {
-  const date = new Date(
-    `${dateString}T00:00:00`
+
+function parseDateOnly(value) {
+  if (!value) {
+    return null;
+  }
+
+  const [year, month, day] =
+    String(value).split("-").map(Number);
+
+  if (
+    !year ||
+    !month ||
+    !day
+  ) {
+    return null;
+  }
+
+  return new Date(
+    year,
+    month - 1,
+    day
   );
+}
+
+
+function formatDateOnly(date) {
+  if (!(date instanceof Date)) {
+    return "";
+  }
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+
+function addDays(
+  dateString,
+  days
+) {
+  const date =
+    parseDateOnly(dateString);
+
+  if (!date) {
+    return "";
+  }
 
   date.setDate(
     date.getDate() + days
   );
 
-  const year = date.getFullYear();
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return formatDateOnly(date);
 }
 
-/**
- * Get all dates between start and end.
- */
-function getDateRange(
-  startDate,
-  endDate
-) {
-  if (!startDate || !endDate) {
-    return [];
-  }
 
-  const dates = [];
+function getTodayDate() {
+  const today = new Date();
 
-  let current = startDate;
-
-  while (current <= endDate) {
-    dates.push(current);
-    current = addDays(
-      current,
-      1
-    );
-  }
-
-  return dates;
+  return formatDateOnly(today);
 }
+
 
 /* =========================================================
-   TRANSACTION HELPERS
+   EFFECTIVE DATE
 ========================================================= */
 
-/**
- * Get FULE amount that becomes eligible
- * from a FULE_ADD transaction.
+/*
+ * Any FULE / PI FULE amount added on a particular date
+ * becomes effective exactly 2 days later.
  *
  * Example:
  *
- * FULE added 25 Sep
- * Profit starts 27 Sep
+ * Addition       Effective
+ * 25 Sep         27 Sep
  */
-function getFuleEffectiveDate(
+
+export function getEffectiveDate(
   transactionDate
 ) {
   return addDays(
@@ -109,293 +122,461 @@ function getFuleEffectiveDate(
   );
 }
 
-/**
- * Get all FULE / PI FULE applicable
- * on a particular date.
+
+/* =========================================================
+   RATE
+========================================================= */
+
+/*
+ * Rate is stored as percentage.
+ *
+ * Example:
+ * rate = 0.15
+ *
+ * Means:
+ * 0.15%
+ *
+ * Therefore:
+ *
+ * amount × (0.15 / 100)
  */
-export function getFuleBalanceForDate(
-  transactions = [],
-  targetDate
+
+function getRatePercent(rate) {
+  return toNumber(rate) / 100;
+}
+
+
+/* =========================================================
+   DAILY FULE / PI FULE AMOUNTS
+========================================================= */
+
+/*
+ * Calculate FULE amount which is effective
+ * on a particular date.
+ *
+ * Initial FULE becomes effective:
+ * initial date + 2 days
+ *
+ * Every FULE_ADD becomes effective:
+ * transaction date + 2 days
+ */
+
+export function getEffectiveFule(
+  investor,
+  date
 ) {
-  let fule = 0;
-  let piFule = 0;
+  if (
+    !investor ||
+    !date
+  ) {
+    return 0;
+  }
 
-  const sortedTransactions = [
-    ...transactions,
-  ].sort((a, b) => {
-    const dateA = toDateString(
-      a.date
-    );
-    const dateB = toDateString(
-      b.date
+  const targetDate =
+    parseDateOnly(date);
+
+  if (!targetDate) {
+    return 0;
+  }
+
+
+  /* -----------------------------------------
+     INITIAL FULE
+  ----------------------------------------- */
+
+  const initialFule =
+    toNumber(
+      investor?.initial?.fule
     );
 
-    return dateA.localeCompare(
-      dateB
+  const initialDate =
+    getEffectiveDate(
+      investor?.startDate
     );
-  });
 
-  for (const transaction of sortedTransactions) {
-    const type = transaction.type;
+  let effectiveFule = 0;
+
+
+  if (
+    initialDate &&
+    targetDate >=
+      parseDateOnly(initialDate)
+  ) {
+    effectiveFule +=
+      initialFule;
+  }
+
+
+  /* -----------------------------------------
+     ADDITIONAL FULE
+  ----------------------------------------- */
+
+  const transactions =
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
+
+
+  for (
+    const transaction
+    of transactions
+  ) {
+
+    if (
+      transaction?.type !==
+      "FULE_ADD"
+    ) {
+      continue;
+    }
+
 
     const transactionDate =
-      toDateString(
-        transaction.date
-      );
+      transaction?.date;
 
     if (!transactionDate) {
       continue;
     }
 
-    /* =====================================================
-       INITIAL
-    ===================================================== */
 
-    if (type === "INITIAL") {
-      const effectiveDate =
-        transactionDate;
+    const effectiveDate =
+      getEffectiveDate(
+        transactionDate
+      );
 
-      if (
-        targetDate >=
-        effectiveDate
-      ) {
-        fule +=
-          Number(
-            transaction.fule
-          ) || 0;
-
-        piFule +=
-          Number(
-            transaction.piFule
-          ) || 0;
-      }
-
+    if (!effectiveDate) {
       continue;
     }
 
-    /* =====================================================
-       FULE ADD
-    ===================================================== */
-
-    if (type === "FULE_ADD") {
-      const effectiveDate =
-        getFuleEffectiveDate(
-          transactionDate
-        );
-
-      if (
-        targetDate >=
-        effectiveDate
-      ) {
-        fule +=
-          Number(
-            transaction.amount
-          ) || 0;
-      }
-
-      continue;
-    }
-
-    /* =====================================================
-       PI FULE ADD
-    ===================================================== */
 
     if (
-      type === "PI_FULE_ADD"
+      targetDate >=
+      parseDateOnly(effectiveDate)
     ) {
-      const effectiveDate =
-        getFuleEffectiveDate(
-          transactionDate
+
+      effectiveFule +=
+        toNumber(
+          transaction?.amount
         );
 
-      if (
-        targetDate >=
-        effectiveDate
-      ) {
-        piFule +=
-          Number(
-            transaction.amount
-          ) || 0;
-      }
     }
+
   }
 
-  return {
-    fule,
-    piFule,
-  };
+
+  return effectiveFule;
 }
 
-/* =========================================================
-   DAILY PROFIT
-========================================================= */
 
-/**
- * Calculate profit for one particular day.
- *
- * Formula:
- *
- * FULE Profit
- * = FULE × Rate% × 70%
- *
- * PI FULE Profit
- * = PI FULE × Rate% × 3%
- *
- * Daily Profit
- * = FULE Profit + PI FULE Profit
+/*
+ * Calculate PI FULE amount which is effective
+ * on a particular date.
  */
-export function calculateVortaxaDailyProfit(
-  fule,
-  piFule,
-  rate
+
+export function getEffectivePiFule(
+  investor,
+  date
 ) {
-  const fuleAmount =
-    Number(fule) || 0;
+  if (
+    !investor ||
+    !date
+  ) {
+    return 0;
+  }
 
-  const piFuleAmount =
-    Number(piFule) || 0;
+  const targetDate =
+    parseDateOnly(date);
 
-  const rateValue =
-    Number(rate) || 0;
+  if (!targetDate) {
+    return 0;
+  }
 
-  const ratePercent =
-    rateValue / 100;
 
-  const fuleProfit =
-    fuleAmount *
-    ratePercent *
-    0.70;
+  /* -----------------------------------------
+     INITIAL PI FULE
+  ----------------------------------------- */
 
-  const piFuleProfit =
-    piFuleAmount *
-    ratePercent *
-    0.03;
-
-  const dailyProfit =
-    fuleProfit +
-    piFuleProfit;
-
-  return {
-    fuleProfit,
-    piFuleProfit,
-    dailyProfit,
-  };
-}
-
-/* =========================================================
-   DAILY RATE MAP
-========================================================= */
-
-/**
- * Convert daily rates into:
- *
- * {
- *   "2026-09-22": 0.20,
- *   "2026-09-23": 0.25
- * }
- */
-function createRateMap(
-  dailyRates = []
-) {
-  const rateMap = {};
-
-  for (const item of dailyRates) {
-    const date = toDateString(
-      item.date
+  const initialPiFule =
+    toNumber(
+      investor?.initial?.piFule
     );
 
-    if (!date) continue;
+  const initialDate =
+    getEffectiveDate(
+      investor?.startDate
+    );
 
-    rateMap[date] =
-      Number(item.rate) || 0;
+  let effectivePiFule = 0;
+
+
+  if (
+    initialDate &&
+    targetDate >=
+      parseDateOnly(initialDate)
+  ) {
+
+    effectivePiFule +=
+      initialPiFule;
+
   }
 
-  return rateMap;
+
+  /* -----------------------------------------
+     ADDITIONAL PI FULE
+  ----------------------------------------- */
+
+  const transactions =
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
+
+
+  for (
+    const transaction
+    of transactions
+  ) {
+
+    if (
+      transaction?.type !==
+      "PI_FULE_ADD"
+    ) {
+      continue;
+    }
+
+
+    const transactionDate =
+      transaction?.date;
+
+    if (!transactionDate) {
+      continue;
+    }
+
+
+    const effectiveDate =
+      getEffectiveDate(
+        transactionDate
+      );
+
+    if (!effectiveDate) {
+      continue;
+    }
+
+
+    if (
+      targetDate >=
+      parseDateOnly(effectiveDate)
+    ) {
+
+      effectivePiFule +=
+        toNumber(
+          transaction?.amount
+        );
+
+    }
+
+  }
+
+
+  return effectivePiFule;
 }
+
 
 /* =========================================================
-   GET EARN WITHDRAWALS
+   DAILY EARNING
 ========================================================= */
 
-/**
- * Get total EARN withdrawals
- * up to a particular date.
+/*
+ * Calculate earning for ONE investor
+ * for ONE date.
  */
-export function getEarnWithdrawnUntilDate(
-  transactions = [],
-  targetDate
+
+export function calculateDailyEarning(
+  investor,
+  rate,
+  date
 ) {
-  return transactions.reduce(
-    (total, transaction) => {
-      if (
-        transaction.type !==
-        "EARN_WITHDRAW"
-      ) {
-        return total;
-      }
 
-      const date =
-        toDateString(
-          transaction.date
-        );
+  const dailyRate =
+    getRatePercent(rate);
 
-      if (
-        date &&
-        date <= targetDate
-      ) {
-        return (
-          total +
-          (Number(
-            transaction.amount
-          ) || 0)
-        );
-      }
 
-      return total;
-    },
-    0
-  );
+  const fule =
+    getEffectiveFule(
+      investor,
+      date
+    );
+
+
+  const piFule =
+    getEffectivePiFule(
+      investor,
+      date
+    );
+
+
+  /*
+   * APR
+   *
+   * FULE × daily rate × 70%
+   */
+
+  const apr =
+    fule *
+    dailyRate *
+    0.70;
+
+
+  /*
+   * PI
+   *
+   * PI FULE × daily rate × 3%
+   */
+
+  const pi =
+    piFule *
+    dailyRate *
+    0.03;
+
+
+  const total =
+    apr + pi;
+
+
+  return {
+    date,
+    rate: toNumber(rate),
+
+    fule,
+    piFule,
+
+    apr,
+    pi,
+    total,
+  };
 }
+
+
+/* =========================================================
+   DATE RANGE
+========================================================= */
+
+export function getDateRange(
+  startDate,
+  endDate = getTodayDate()
+) {
+  const start =
+    parseDateOnly(startDate);
+
+  const end =
+    parseDateOnly(endDate);
+
+
+  if (
+    !start ||
+    !end ||
+    start > end
+  ) {
+    return [];
+  }
+
+
+  const dates = [];
+
+  const current =
+    new Date(start);
+
+
+  while (
+    current <= end
+  ) {
+
+    dates.push(
+      formatDateOnly(current)
+    );
+
+    current.setDate(
+      current.getDate() + 1
+    );
+
+  }
+
+
+  return dates;
+}
+
 
 /* =========================================================
    DAILY CALCULATION
 ========================================================= */
 
-/**
- * Calculate all daily Vortaxa profits.
+/*
+ * Calculate every day for one investor.
  *
- * Returns:
+ * rates:
  *
  * [
  *   {
- *     date,
- *     rate,
- *     fule,
- *     piFule,
- *     fuleProfit,
- *     piFuleProfit,
- *     dailyProfit,
- *     cumulativeEarn
+ *     date: "2026-09-27",
+ *     rate: 0.15
  *   }
  * ]
  */
-export function calculateVortaxaDailyHistory(
-  transactions = [],
-  dailyRates = [],
-  startDate,
-  endDate
+
+export function calculateInvestorDailyEarnings(
+  investor,
+  rates = [],
+  endDate = getTodayDate()
 ) {
-  if (
-    !startDate ||
-    !endDate
-  ) {
+
+  if (!investor) {
     return [];
   }
 
+
   const rateMap =
-    createRateMap(
-      dailyRates
+    new Map();
+
+
+  for (
+    const rate
+    of rates
+  ) {
+
+    if (
+      !rate?.date
+    ) {
+      continue;
+    }
+
+
+    rateMap.set(
+      rate.date,
+      toNumber(
+        rate.rate
+      )
     );
+
+  }
+
+
+  /*
+   * Daily calculation starts from
+   * initial investment date + 2 days.
+   */
+
+  const startDate =
+    getEffectiveDate(
+      investor?.startDate
+    );
+
+
+  if (!startDate) {
+    return [];
+  }
+
 
   const dates =
     getDateRange(
@@ -403,310 +584,538 @@ export function calculateVortaxaDailyHistory(
       endDate
     );
 
-  let cumulativeEarn = 0;
 
   return dates.map(
     (date) => {
-      const {
-        fule,
-        piFule,
-      } =
-        getFuleBalanceForDate(
-          transactions,
-          date
-        );
 
       const rate =
-        rateMap[date] || 0;
+        rateMap.get(
+          date
+        ) ?? 0;
 
-      const {
-        fuleProfit,
-        piFuleProfit,
-        dailyProfit,
-      } =
-        calculateVortaxaDailyProfit(
-          fule,
-          piFule,
-          rate
-        );
 
-      cumulativeEarn +=
-        dailyProfit;
-
-      return {
-        date,
-
+      return calculateDailyEarning(
+        investor,
         rate,
+        date
+      );
 
-        fule,
-        piFule,
-
-        fuleProfit,
-        piFuleProfit,
-
-        dailyProfit,
-
-        cumulativeEarn,
-      };
     }
   );
 }
 
-/* =========================================================
-   GROSS EARN
-========================================================= */
-
-export function calculateGrossEarn(
-  dailyHistory = []
-) {
-  return dailyHistory.reduce(
-    (total, item) => {
-      return (
-        total +
-        (Number(
-          item.dailyProfit
-        ) || 0)
-      );
-    },
-    0
-  );
-}
 
 /* =========================================================
-   TOTAL EARN WITHDRAWAL
+   WITHDRAWAL
 ========================================================= */
 
-export function calculateTotalEarnWithdrawn(
-  transactions = []
+export function calculateTotalWithdrawn(
+  investor
 ) {
+
+  const transactions =
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
+
+
   return transactions.reduce(
-    (total, transaction) => {
+    (
+      total,
+      transaction
+    ) => {
+
       if (
-        transaction.type !==
+        transaction?.type !==
         "EARN_WITHDRAW"
       ) {
         return total;
       }
 
+
       return (
         total +
-        (Number(
-          transaction.amount
-        ) || 0)
+        toNumber(
+          transaction?.amount
+        )
       );
+
     },
     0
   );
 }
 
-/* =========================================================
-   AVAILABLE EARN
-========================================================= */
-
-export function calculateAvailableEarn(
-  grossEarn,
-  totalEarnWithdrawn
-) {
-  const gross =
-    Number(grossEarn) || 0;
-
-  const withdrawn =
-    Number(
-      totalEarnWithdrawn
-    ) || 0;
-
-  return Math.max(
-    0,
-    gross - withdrawn
-  );
-}
 
 /* =========================================================
-   CURRENT FULE / PI FULE
+   INVESTOR SUMMARY
 ========================================================= */
 
-export function calculateCurrentFule(
-  transactions = []
+export function calculateInvestorSummary(
+  investor,
+  rates = [],
+  endDate = getTodayDate()
 ) {
-  let fule = 0;
-  let piFule = 0;
 
-  for (const transaction of transactions) {
-    if (
-      transaction.type ===
-      "INITIAL"
-    ) {
-      fule +=
-        Number(
-          transaction.fule
-        ) || 0;
+  if (!investor) {
 
-      piFule +=
-        Number(
-          transaction.piFule
-        ) || 0;
-    }
+    return {
+      liquidity: 0,
 
-    if (
-      transaction.type ===
-      "FULE_ADD"
-    ) {
-      fule +=
-        Number(
-          transaction.amount
-        ) || 0;
-    }
+      fule: 0,
+      piFule: 0,
 
-    if (
-      transaction.type ===
-      "PI_FULE_ADD"
-    ) {
-      piFule +=
-        Number(
-          transaction.amount
-        ) || 0;
-    }
+      apr: 0,
+      pi: 0,
+      totalEarn: 0,
+
+      totalEarnWithdrawn: 0,
+      availableEarn: 0,
+
+      grossEarn: 0,
+
+      total: 0,
+      balance: 0,
+
+      dailyEarnings: [],
+    };
+
   }
 
-  return {
-    fule,
-    piFule,
-  };
-}
 
-/* =========================================================
-   CURRENT LIQUIDITY
-========================================================= */
-
-export function calculateCurrentLiquidity(
-  transactions = []
-) {
-  const initialTransaction =
-    transactions.find(
-      (transaction) =>
-        transaction.type ===
-        "INITIAL"
-    );
-
-  if (!initialTransaction) {
-    return 0;
-  }
-
-  return (
-    Number(
-      initialTransaction.liquidity
-    ) || 0
-  );
-}
-
-/* =========================================================
-   COMPLETE VORTAXA SUMMARY
-========================================================= */
-
-export function calculateVortaxaSummary({
-  transactions = [],
-  dailyRates = [],
-  startDate,
-  endDate,
-}) {
-  const {
-    fule,
-    piFule,
-  } =
-    calculateCurrentFule(
-      transactions
-    );
+  /* -----------------------------------------
+     CURRENT INVESTMENT AMOUNTS
+  ----------------------------------------- */
 
   const liquidity =
-    calculateCurrentLiquidity(
-      transactions
+    toNumber(
+      investor?.initial?.liquidity
     );
 
-  const dailyHistory =
-    calculateVortaxaDailyHistory(
-      transactions,
-      dailyRates,
-      startDate,
+
+  let fule =
+    toNumber(
+      investor?.initial?.fule
+    );
+
+
+  let piFule =
+    toNumber(
+      investor?.initial?.piFule
+    );
+
+
+  const transactions =
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
+
+
+  for (
+    const transaction
+    of transactions
+  ) {
+
+    const amount =
+      toNumber(
+        transaction?.amount
+      );
+
+
+    if (
+      transaction?.type ===
+      "FULE_ADD"
+    ) {
+
+      fule += amount;
+
+    }
+
+
+    if (
+      transaction?.type ===
+      "PI_FULE_ADD"
+    ) {
+
+      piFule += amount;
+
+    }
+
+  }
+
+
+  /* -----------------------------------------
+     DAILY EARNINGS
+  ----------------------------------------- */
+
+  const dailyEarnings =
+    calculateInvestorDailyEarnings(
+      investor,
+      rates,
       endDate
     );
 
-  const grossEarn =
-    calculateGrossEarn(
-      dailyHistory
+
+  /* -----------------------------------------
+     APR TOTAL
+  ----------------------------------------- */
+
+  const apr =
+    dailyEarnings.reduce(
+      (
+        total,
+        day
+      ) => {
+
+        return (
+          total +
+          toNumber(
+            day?.apr
+          )
+        );
+
+      },
+      0
     );
+
+
+  /* -----------------------------------------
+     PI TOTAL
+  ----------------------------------------- */
+
+  const pi =
+    dailyEarnings.reduce(
+      (
+        total,
+        day
+      ) => {
+
+        return (
+          total +
+          toNumber(
+            day?.pi
+          )
+        );
+
+      },
+      0
+    );
+
+
+  /* -----------------------------------------
+     TOTAL EARN
+  ----------------------------------------- */
+
+  const totalEarn =
+    apr + pi;
+
+
+  /* -----------------------------------------
+     WITHDRAWAL
+  ----------------------------------------- */
 
   const totalEarnWithdrawn =
-    calculateTotalEarnWithdrawn(
-      transactions
+    calculateTotalWithdrawn(
+      investor
     );
+
+
+  /* -----------------------------------------
+     AVAILABLE EARN
+  ----------------------------------------- */
 
   const availableEarn =
-    calculateAvailableEarn(
-      grossEarn,
-      totalEarnWithdrawn
+    Math.max(
+      0,
+      totalEarn -
+        totalEarnWithdrawn
     );
 
-  const currentValue =
-    liquidity +
-    fule +
-    piFule +
-    availableEarn;
 
   return {
+
+    /*
+     * Static investment values
+     */
+
     liquidity,
 
     fule,
-
     piFule,
 
-    grossEarn,
+
+    /*
+     * Earnings
+     */
+
+    apr,
+    pi,
+
+    totalEarn,
+
+    grossEarn:
+      totalEarn,
+
+
+    /*
+     * Withdrawal
+     */
 
     totalEarnWithdrawn,
 
+
+    /*
+     * Remaining earnings
+     */
+
     availableEarn,
 
-    currentValue,
 
-    dailyHistory,
+    /*
+     * Aliases for summary components
+     */
+
+    total:
+      totalEarn,
+
+    balance:
+      availableEarn,
+
+
+    /*
+     * Daily breakdown
+     */
+
+    dailyEarnings,
+
   };
+
 }
 
+
 /* =========================================================
-   EARN WITHDRAWAL VALIDATION
+   RATE-WISE CALCULATION
 ========================================================= */
 
-export function canWithdrawEarn(
-  withdrawalAmount,
-  availableEarn
+/*
+ * Used by Rate List.
+ *
+ * Returns:
+ *
+ * {
+ *   date,
+ *   rate,
+ *   apr,
+ *   pi,
+ *   total
+ * }
+ *
+ * across all investors.
+ */
+
+export function calculateRateSummary(
+  date,
+  rate,
+  investors = []
 ) {
-  const amount =
-    Number(
-      withdrawalAmount
-    ) || 0;
 
-  const available =
-    Number(
-      availableEarn
-    ) || 0;
+  let apr = 0;
+  let pi = 0;
 
-  if (amount <= 0) {
-    return {
-      valid: false,
-      message:
-        "Withdrawal amount must be greater than zero.",
-    };
+
+  for (
+    const investor
+    of investors
+  ) {
+
+    const daily =
+      calculateDailyEarning(
+        investor,
+        rate,
+        date
+      );
+
+
+    apr +=
+      daily.apr;
+
+
+    pi +=
+      daily.pi;
+
   }
 
-  if (amount > available) {
-    return {
-      valid: false,
-      message:
-        "Withdrawal amount cannot be greater than available EARN.",
-    };
-  }
 
   return {
-    valid: true,
-    message: "",
+
+    date,
+
+    rate:
+      toNumber(rate),
+
+    apr,
+
+    pi,
+
+    total:
+      apr + pi,
+
   };
+
+}
+
+
+/* =========================================================
+   GLOBAL RATE HISTORY SUMMARY
+========================================================= */
+
+/*
+ * Creates rate-wise calculations for all saved rates.
+ *
+ * Important:
+ * Rates are GLOBAL.
+ * Therefore every investor uses the same rate
+ * on the same date.
+ */
+
+export function calculateRateHistory(
+  rates = [],
+  investors = []
+) {
+
+  return [...rates]
+    .sort(
+      (a, b) =>
+        String(a?.date || "")
+          .localeCompare(
+            String(b?.date || "")
+          )
+    )
+    .map(
+      (rate) =>
+        calculateRateSummary(
+          rate?.date,
+          rate?.rate,
+          investors
+        )
+    );
+
+}
+
+
+/* =========================================================
+   TOTAL SUMMARY FOR ALL INVESTORS
+========================================================= */
+
+export function calculateAllInvestorsSummary(
+  investors = [],
+  rates = [],
+  endDate = getTodayDate()
+) {
+
+  const summaries =
+    investors.map(
+      (investor) => {
+
+        const summary =
+          calculateInvestorSummary(
+            investor,
+            rates,
+            endDate
+          );
+
+
+        return {
+          investor,
+          summary,
+        };
+
+      }
+    );
+
+
+  const totalApr =
+    summaries.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        toNumber(
+          item?.summary?.apr
+        ),
+      0
+    );
+
+
+  const totalPi =
+    summaries.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        toNumber(
+          item?.summary?.pi
+        ),
+      0
+    );
+
+
+  const totalEarn =
+    totalApr +
+    totalPi;
+
+
+  const totalWithdrawn =
+    summaries.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        toNumber(
+          item?.summary
+            ?.totalEarnWithdrawn
+        ),
+      0
+    );
+
+
+  const availableEarn =
+    Math.max(
+      0,
+      totalEarn -
+        totalWithdrawn
+    );
+
+
+  return {
+
+    investors:
+      summaries,
+
+    apr:
+      totalApr,
+
+    pi:
+      totalPi,
+
+    totalEarn,
+
+    totalWithdrawn,
+
+    availableEarn,
+
+    total:
+      totalEarn,
+
+    balance:
+      availableEarn,
+
+  };
+
 }
