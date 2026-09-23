@@ -1,3 +1,4 @@
+
 import {
   useMemo,
 } from "react";
@@ -178,30 +179,69 @@ function AssetBreakdown() {
     useMemo(
       () => {
 
-        return calculations.assets.map(
-          (calculatedAsset) => {
+        const calculatedAssets =
+          calculations.assets.map(
+            (calculatedAsset) => {
 
-            const config =
-              assetBreakdownConfig.find(
-                (item) =>
-                  item.id ===
-                  calculatedAsset.id
-              );
+              const config =
+                assetBreakdownConfig.find(
+                  (item) =>
+                    item.id ===
+                    calculatedAsset.id
+                );
 
 
-            return {
-              ...config,
+              return {
+                ...config,
 
-              ...calculatedAsset,
+                ...calculatedAsset,
 
-              formattedValue:
-                formatCurrency(
-                  calculatedAsset.currentValue
-                ),
-            };
+                formattedValue:
+                  formatCurrency(
+                    calculatedAsset.currentValue
+                  ),
+              };
 
-          }
-        );
+            }
+          );
+
+
+        // ====================================
+        // VORTAXA
+        // ====================================
+
+        const vortaxaConfig =
+          assetBreakdownConfig.find(
+            (item) =>
+              item.id === "vortaxa"
+          );
+
+
+        calculatedAssets.push({
+          ...vortaxaConfig,
+
+          id:
+            "vortaxa",
+
+          name:
+            vortaxaConfig?.name ||
+            "Vortaxa",
+
+          currentValue:
+            0,
+
+          formattedValue:
+            formatCurrency(0),
+
+          profit:
+            0,
+
+          returnPercentage:
+            0,
+        });
+
+
+        return calculatedAssets;
 
       },
       [
@@ -239,6 +279,9 @@ function AssetBreakdown() {
 
         fd:
           "/int-fd",
+
+        vortaxa:
+          "/vortaxa",
       };
 
 
@@ -334,3 +377,4 @@ function AssetBreakdown() {
 }
 
 export default AssetBreakdown;
+

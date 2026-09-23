@@ -2,8 +2,7 @@ import {
   PieChart,
   BriefcaseBusiness,
   WalletCards,
-  CircleGauge,
-  Bitcoin,
+  CircleDollarSign,
   FileText,
   Gem,
   ShieldCheck,
@@ -214,7 +213,28 @@ export const assetBreakdownConfig = [
   },
 
 
+{
+  id:
+    "vortaxa",
 
+  name:
+    "Vortaxa",
+
+  type:
+    "Cryptocurrency",
+
+  icon:
+    CircleDollarSign,
+
+  iconClass:
+    "bg-orange-500/15 text-orange-300",
+
+  value:
+    0,
+
+  holdings:
+    0,
+},
 
 
 

@@ -988,6 +988,8 @@ export function calculateDashboardTotals(
       : 0;
 
 
+
+      /*
   // ========================================
   // DEBUG CONSOLE
   // ========================================
@@ -1477,7 +1479,7 @@ export function calculateDashboardTotals(
 
 
   console.groupEnd();
-
+*/
 
   // ========================================
   // FINAL RESULT
