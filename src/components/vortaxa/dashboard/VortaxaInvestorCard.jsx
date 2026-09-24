@@ -1,4 +1,3 @@
-
 import {
   ChevronRight,
   CircleDollarSign,
@@ -9,6 +8,7 @@ import {
   ArrowDownToLine,
   Percent,
   DollarSign,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -79,6 +79,7 @@ function VortaxaInvestorCard({
   investor,
   summary = {},
   onClick,
+  onDelete,
 }) {
 
   const investorName =
@@ -94,18 +95,42 @@ function VortaxaInvestorCard({
     grossEarn = 0,
     totalEarnWithdrawn = 0,
     availableEarn = 0,
-
-    // Future fields
     apr = 0,
     pi = 0,
-
   } = summary;
 
 
+  /* =========================================================
+     DELETE
+  ========================================================= */
+
+  const handleDelete = (event) => {
+
+    /*
+     * Delete button par click karne par
+     * card ka onClick trigger nahi hoga.
+     */
+    event.stopPropagation();
+
+    if (!onDelete) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete ${investorName}?\n\nThis will permanently delete this investor and all associated transactions.`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    onDelete(investor);
+  };
+
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className="
         group
         w-full
@@ -129,9 +154,25 @@ function VortaxaInvestorCard({
       {/* =========================
           HEADER
       ========================= */}
+
       <div className="flex items-center justify-between gap-3">
 
-        <div className="flex min-w-0 items-center gap-2.5">
+        {/* =========================
+            INVESTOR CLICK AREA
+        ========================= */}
+
+        <button
+          type="button"
+          onClick={onClick}
+          className="
+            flex
+            min-w-0
+            flex-1
+            items-center
+            gap-2.5
+            text-left
+          "
+        >
 
           <div
             className="
@@ -182,19 +223,77 @@ function VortaxaInvestorCard({
 
           </div>
 
-        </div>
+        </button>
 
 
-        <ChevronRight
+        {/* =========================
+            ACTIONS
+        ========================= */}
+
+        <div
           className="
-            h-5
-            w-5
+            flex
             shrink-0
-            text-slate-500
-            transition
-            group-hover:text-white
+            items-center
+            gap-1
           "
-        />
+        >
+
+          {/* DELETE */}
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="
+                flex
+                h-8
+                w-8
+                items-center
+                justify-center
+                rounded-lg
+                text-slate-400
+                transition
+                hover:bg-red-500/10
+                hover:text-red-400
+              "
+              title="Delete investor"
+            >
+              <Trash2
+                className="h-4 w-4"
+              />
+            </button>
+          )}
+
+
+          {/* OPEN */}
+
+          <button
+            type="button"
+            onClick={onClick}
+            className="
+              flex
+              h-8
+              w-8
+              items-center
+              justify-center
+              rounded-lg
+              text-slate-500
+              transition
+              hover:bg-slate-700
+              hover:text-white
+            "
+            title="Open investor"
+          >
+            <ChevronRight
+              className="
+                h-5
+                w-5
+              "
+            />
+          </button>
+
+        </div>
 
       </div>
 
@@ -202,6 +301,7 @@ function VortaxaInvestorCard({
       {/* =========================
           EIGHT SUMMARY FIELDS
       ========================= */}
+
       <div
         className="
           mt-3
@@ -213,6 +313,7 @@ function VortaxaInvestorCard({
       >
 
         {/* Liquidity */}
+
         <MetricCard
           icon={Wallet}
           label="Liquidity"
@@ -223,6 +324,7 @@ function VortaxaInvestorCard({
 
 
         {/* EARN */}
+
         <MetricCard
           icon={TrendingUp}
           label="$ EARN"
@@ -233,6 +335,7 @@ function VortaxaInvestorCard({
 
 
         {/* FULE */}
+
         <MetricCard
           icon={BarChart3}
           label="FULE"
@@ -243,6 +346,7 @@ function VortaxaInvestorCard({
 
 
         {/* Withdrawn */}
+
         <MetricCard
           icon={ArrowDownToLine}
           label="$ Withdrawn"
@@ -253,6 +357,7 @@ function VortaxaInvestorCard({
 
 
         {/* PI FULE */}
+
         <MetricCard
           icon={PiggyBank}
           label="PI FULE"
@@ -263,6 +368,7 @@ function VortaxaInvestorCard({
 
 
         {/* Balance */}
+
         <MetricCard
           icon={TrendingUp}
           label="$ BLANCE"
@@ -273,6 +379,7 @@ function VortaxaInvestorCard({
 
 
         {/* APR $ */}
+
         <MetricCard
           icon={Percent}
           label="APR $"
@@ -283,6 +390,7 @@ function VortaxaInvestorCard({
 
 
         {/* PI $ */}
+
         <MetricCard
           icon={DollarSign}
           label="PI $"
@@ -293,10 +401,9 @@ function VortaxaInvestorCard({
 
       </div>
 
-    </button>
+    </div>
   );
 }
 
 
 export default VortaxaInvestorCard;
-

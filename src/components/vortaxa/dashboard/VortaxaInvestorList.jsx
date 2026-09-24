@@ -1,4 +1,3 @@
-
 import VortaxaInvestorCard from "./VortaxaInvestorCard";
 
 import VortaxaEmptyState from "../common/VortaxaEmptyState";
@@ -13,6 +12,7 @@ function VortaxaInvestorList({
   investorSummaries = {},
   onInvestorClick,
   onAdd,
+  onDelete,
 }) {
 
   return (
@@ -36,7 +36,6 @@ function VortaxaInvestorList({
           className="
             text-sm
             font-bold
-           
           "
         >
           Investors
@@ -79,23 +78,6 @@ function VortaxaInvestorList({
           {investors.map(
             (investor) => {
 
-              /*
-               * --------------------------------
-               * SUMMARY
-               * --------------------------------
-               *
-               * New Context:
-               *
-               * investor.summary
-               *
-               * Old/parent structure:
-               *
-               * investorSummaries[investor.id]
-               *
-               * Prefer the calculated summary
-               * attached to investor.
-               */
-
               const summary =
                 investor?.summary ||
                 investorSummaries?.[
@@ -124,6 +106,11 @@ function VortaxaInvestorList({
                       investor.id
                     )
                   }
+
+                  onDelete={
+                    onDelete
+                  }
+
                 />
 
               );

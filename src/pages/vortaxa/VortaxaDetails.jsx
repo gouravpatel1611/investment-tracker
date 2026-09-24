@@ -1,4 +1,3 @@
-
 import {
   useNavigate,
   useParams,
@@ -30,6 +29,7 @@ function VortaxaDetails() {
     rates,
     loading,
     dataLoading,
+    deleteInvestor,
   } = useVortaxa();
 
 
@@ -55,17 +55,6 @@ function VortaxaDetails() {
   /*
    * --------------------------------
    * FIND CALCULATED INVESTOR DATA
-   * --------------------------------
-   *
-   * investorData is an ARRAY:
-   *
-   * [
-   *   {
-   *     ...investor,
-   *     summary: {...}
-   *   }
-   * ]
-   *
    * --------------------------------
    */
 
@@ -116,6 +105,53 @@ function VortaxaDetails() {
     Array.isArray(rates)
       ? rates
       : [];
+
+
+  /*
+   * --------------------------------
+   * DELETE INVESTOR
+   * --------------------------------
+   *
+   * deleteInvestor() already handles:
+   *
+   * 1. Firebase investor document
+   * 2. All nested transactions
+   * 3. Context refresh
+   *
+   * Global daily rates are NOT deleted.
+   *
+   * --------------------------------
+   */
+
+  const handleDeleteInvestor =
+    async () => {
+
+      if (!investor?.id) {
+        return;
+      }
+
+      try {
+
+        await deleteInvestor(
+          investor.id
+        );
+
+        navigate("/vortaxa");
+
+      } catch (error) {
+
+        console.error(
+          "Failed to delete Vortaxa investor:",
+          error
+        );
+
+        window.alert(
+          "Failed to delete investor. Please try again."
+        );
+
+      }
+
+    };
 
 
   /*
@@ -265,6 +301,9 @@ function VortaxaDetails() {
         onBack={() =>
           navigate("/vortaxa")
         }
+        onDelete={
+          handleDeleteInvestor
+        }
       />
 
 
@@ -312,4 +351,3 @@ function VortaxaDetails() {
 
 
 export default VortaxaDetails;
-
