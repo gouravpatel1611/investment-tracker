@@ -4,402 +4,904 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  orderBy,
+  query,
   serverTimestamp,
-  setDoc,
   updateDoc,
 } from "firebase/firestore";
 
 import db from "./firestore";
+import auth from "./auth";
+
 
 /* =========================================================
-   HELPERS
+   COLLECTIONS
 ========================================================= */
- 
-function getVortaxaInvestorRef(uid, investorId) {
-  return doc(
-    db,
-    "users",
-    uid,
-    "vortaxa",
-    investorId
-  );
+
+const INVESTORS_COLLECTION =
+  "vortaxaInvestors";
+
+const RATES_COLLECTION =
+  "vortaxaRates";
+
+
+/* =========================================================
+   GET CURRENT USER
+========================================================= */
+
+function getCurrentUser() {
+  const user =
+    auth.currentUser;
+
+  if (!user) {
+    throw new Error(
+      "User is not logged in."
+    );
+  }
+
+  return user;
 }
 
-function getTransactionsRef(uid, investorId) {
+
+/* =========================================================
+   GET USER COLLECTION
+========================================================= */
+
+function getUserCollection(
+  collectionName
+) {
+  const user =
+    getCurrentUser();
+
   return collection(
     db,
     "users",
-    uid,
-    "vortaxa",
-    investorId,
+    user.uid,
+    collectionName
+  );
+}
+
+
+/* =========================================================
+   GET INVESTOR DOCUMENT
+========================================================= */
+
+function getInvestorDocument(
+  investorId
+) {
+  const user =
+    getCurrentUser();
+
+  if (!investorId) {
+    throw new Error(
+      "Vortaxa investor ID is required."
+    );
+  }
+
+  return doc(
+    db,
+    "users",
+    user.uid,
+    INVESTORS_COLLECTION,
+    String(investorId)
+  );
+}
+
+
+/* =========================================================
+   INVESTOR TRANSACTION COLLECTION
+========================================================= */
+
+function getTransactionCollection(
+  investorId
+) {
+  const user =
+    getCurrentUser();
+
+  if (!investorId) {
+    throw new Error(
+      "Vortaxa investor ID is required."
+    );
+  }
+
+  return collection(
+    db,
+    "users",
+    user.uid,
+    INVESTORS_COLLECTION,
+    String(investorId),
     "transactions"
   );
 }
 
-function getDailyRatesRef(uid, investorId) {
-  return collection(
-    db,
-    "users",
-    uid,
-    "vortaxa",
-    investorId,
-    "dailyRates"
-  );
-}
 
 /* =========================================================
-   CREATE / UPDATE VORTAXA INVESTOR
+   GET TRANSACTION DOCUMENT
 ========================================================= */
 
-export async function createVortaxaInvestor(
-  uid,
+function getTransactionDocument(
   investorId,
-  data
+  transactionId
 ) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
-  }
+  const user =
+    getCurrentUser();
 
   if (!investorId) {
-    throw new Error("Investor is required.");
-  }
-
-  const investorRef =
-    getVortaxaInvestorRef(
-      uid,
-      investorId
+    throw new Error(
+      "Vortaxa investor ID is required."
     );
-
-  await setDoc(investorRef, {
-    investorId,
-    investorName: data.investorName || "",
-
-    startDate: data.startDate || "",
-
-    liquidity:
-      Number(data.liquidity) || 0,
-
-    totalFule:
-      Number(data.fule) || 0,
-
-    totalPiFule:
-      Number(data.piFule) || 0,
-
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-
-  return investorId;
-}
-
-/* =========================================================
-   GET VORTAXA INVESTORS
-========================================================= */
-
-export async function getVortaxaInvestors(
-  uid
-) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
   }
 
-  const vortaxaRef = collection(
+  if (!transactionId) {
+    throw new Error(
+      "Vortaxa transaction ID is required."
+    );
+  }
+
+  return doc(
     db,
     "users",
-    uid,
-    "vortaxa"
+    user.uid,
+    INVESTORS_COLLECTION,
+    String(investorId),
+    "transactions",
+    String(transactionId)
   );
-
-  const snapshot =
-    await getDocs(vortaxaRef);
-
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
 }
+
+
+/* =========================================================
+   RATE COLLECTION
+========================================================= */
+
+function getRateCollection() {
+  return getUserCollection(
+    RATES_COLLECTION
+  );
+}
+
+
+/* =========================================================
+   GET RATE DOCUMENT
+========================================================= */
+
+function getRateDocument(
+  rateId
+) {
+  const user =
+    getCurrentUser();
+
+  if (!rateId) {
+    throw new Error(
+      "Vortaxa rate ID is required."
+    );
+  }
+
+  return doc(
+    db,
+    "users",
+    user.uid,
+    RATES_COLLECTION,
+    String(rateId)
+  );
+}
+
+
+/* =========================================================
+   INVESTORS
+========================================================= */
+
+
+/* =========================================================
+   ADD INVESTOR
+========================================================= */
+
+export async function addVortaxaInvestor(
+  investor
+) {
+  try {
+    if (!investor) {
+      throw new Error(
+        "Vortaxa investor data is required."
+      );
+    }
+
+    const dataToSave = {
+      ...investor,
+      createdAt:
+        serverTimestamp(),
+    };
+
+    /*
+     * Firestore document ID
+     * khud generate karega.
+     */
+    delete dataToSave.id;
+
+    const docRef =
+      await addDoc(
+        getUserCollection(
+          INVESTORS_COLLECTION
+        ),
+        dataToSave
+      );
+
+    return {
+      ...investor,
+      id: docRef.id,
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Failed to add Vortaxa investor:",
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+/* =========================================================
+   GET ALL INVESTORS
+========================================================= */
+
+export async function getVortaxaInvestors() {
+  try {
+
+    const q =
+      query(
+        getUserCollection(
+          INVESTORS_COLLECTION
+        ),
+        orderBy(
+          "createdAt",
+          "asc"
+        )
+      );
+
+    const snapshot =
+      await getDocs(q);
+
+    return snapshot.docs.map(
+      (item) => ({
+        ...item.data(),
+        id: item.id,
+      })
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Failed to fetch Vortaxa investors:",
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+/* =========================================================
+   UPDATE INVESTOR
+========================================================= */
+
+export async function updateVortaxaInvestor(
+  id,
+  investor
+) {
+  try {
+
+    if (!id) {
+      throw new Error(
+        "Vortaxa investor ID is required."
+      );
+    }
+
+    if (!investor) {
+      throw new Error(
+        "Vortaxa investor data is required."
+      );
+    }
+
+    const dataToUpdate = {
+      ...investor,
+    };
+
+    /*
+     * ID and createdAt ko
+     * manually update nahi karna.
+     */
+    delete dataToUpdate.id;
+    delete dataToUpdate.createdAt;
+
+    await updateDoc(
+      getInvestorDocument(id),
+      dataToUpdate
+    );
+
+    return {
+      ...investor,
+      id,
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Failed to update Vortaxa investor:",
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+/* =========================================================
+   DELETE INVESTOR
+========================================================= */
+
+/*
+  IMPORTANT:
+
+  Firestore mein parent investor document
+  delete karne se subcollection automatically
+  delete nahi hoti.
+
+  Isliye pehle:
+
+  transactions delete
+
+  aur uske baad:
+
+  investor document delete
+*/
+
+export async function deleteVortaxaInvestor(
+  id
+) {
+  try {
+
+    if (!id) {
+      throw new Error(
+        "Vortaxa investor ID is required for deletion."
+      );
+    }
+
+
+    /* -----------------------------------------------------
+       GET ALL TRANSACTIONS
+    ----------------------------------------------------- */
+
+    const transactionQuery =
+      query(
+        getTransactionCollection(id)
+      );
+
+    const transactionSnapshot =
+      await getDocs(
+        transactionQuery
+      );
+
+
+    /* -----------------------------------------------------
+       DELETE ALL TRANSACTIONS
+    ----------------------------------------------------- */
+
+    if (
+      !transactionSnapshot.empty
+    ) {
+
+      await Promise.all(
+        transactionSnapshot.docs.map(
+          (transactionDoc) =>
+            deleteDoc(
+              transactionDoc.ref
+            )
+        )
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       DELETE INVESTOR DOCUMENT
+    ----------------------------------------------------- */
+
+    await deleteDoc(
+      getInvestorDocument(id)
+    );
+
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Failed to delete Vortaxa investor:",
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+/* =========================================================
+   TRANSACTIONS
+========================================================= */
+
+/*
+  Firestore structure:
+
+  users
+   └── {uid}
+        └── vortaxaInvestors
+             └── {investorId}
+                  └── transactions
+                       ├── transaction
+                       ├── transaction
+                       └── ...
+*/
+
 
 /* =========================================================
    ADD TRANSACTION
 ========================================================= */
 
 export async function addVortaxaTransaction(
-  uid,
   investorId,
   transaction
 ) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
-  }
+  try {
 
-  if (!investorId) {
-    throw new Error("Investor is required.");
-  }
+    if (!investorId) {
+      throw new Error(
+        "Vortaxa investor ID is required."
+      );
+    }
 
-  const transactionsRef =
-    getTransactionsRef(
-      uid,
-      investorId
-    );
+    if (!transaction) {
+      throw new Error(
+        "Vortaxa transaction data is required."
+      );
+    }
 
-  const docRef = await addDoc(
-    transactionsRef,
-    {
+
+    const dataToSave = {
       ...transaction,
 
-      amount:
-        transaction.amount !== undefined
-          ? Number(transaction.amount)
-          : null,
+      investorId,
 
-      liquidity:
-        transaction.liquidity !== undefined
-          ? Number(transaction.liquidity)
-          : null,
+      createdAt:
+        serverTimestamp(),
+    };
 
-      fule:
-        transaction.fule !== undefined
-          ? Number(transaction.fule)
-          : null,
 
-      piFule:
-        transaction.piFule !== undefined
-          ? Number(transaction.piFule)
-          : null,
+    /*
+     * Firestore ID generate karega.
+     */
+    delete dataToSave.id;
 
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }
-  );
 
-  return docRef.id;
+    const docRef =
+      await addDoc(
+        getTransactionCollection(
+          investorId
+        ),
+        dataToSave
+      );
+
+
+    return {
+      ...transaction,
+
+      investorId,
+
+      id: docRef.id,
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Failed to add Vortaxa transaction:",
+      error
+    );
+
+    throw error;
+  }
 }
 
+
 /* =========================================================
-   GET TRANSACTIONS
+   GET INVESTOR TRANSACTIONS
 ========================================================= */
 
 export async function getVortaxaTransactions(
-  uid,
   investorId
 ) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
-  }
+  try {
 
-  if (!investorId) {
-    return [];
-  }
+    if (!investorId) {
+      throw new Error(
+        "Vortaxa investor ID is required."
+      );
+    }
 
-  const transactionsRef =
-    getTransactionsRef(
-      uid,
-      investorId
+
+    const q =
+      query(
+        getTransactionCollection(
+          investorId
+        ),
+        orderBy(
+          "date",
+          "desc"
+        )
+      );
+
+
+    const snapshot =
+      await getDocs(q);
+
+
+    return snapshot.docs.map(
+      (item) => ({
+        ...item.data(),
+        id: item.id,
+      })
     );
 
-  const snapshot =
-    await getDocs(transactionsRef);
+  } catch (error) {
 
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+    console.error(
+      "Failed to fetch Vortaxa transactions:",
+      error
+    );
+
+    throw error;
+  }
 }
+
 
 /* =========================================================
    UPDATE TRANSACTION
 ========================================================= */
 
 export async function updateVortaxaTransaction(
-  uid,
   investorId,
   transactionId,
-  data
+  transaction
 ) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
+  try {
+
+    if (!investorId) {
+      throw new Error(
+        "Vortaxa investor ID is required."
+      );
+    }
+
+    if (!transactionId) {
+      throw new Error(
+        "Vortaxa transaction ID is required."
+      );
+    }
+
+    if (!transaction) {
+      throw new Error(
+        "Vortaxa transaction data is required."
+      );
+    }
+
+
+    const dataToUpdate = {
+      ...transaction,
+
+      investorId,
+    };
+
+
+    /*
+     * ID and createdAt ko
+     * overwrite nahi karna.
+     */
+    delete dataToUpdate.id;
+    delete dataToUpdate.createdAt;
+
+
+    await updateDoc(
+      getTransactionDocument(
+        investorId,
+        transactionId
+      ),
+      dataToUpdate
+    );
+
+
+    return {
+      ...transaction,
+
+      investorId,
+
+      id: transactionId,
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Failed to update Vortaxa transaction:",
+      error
+    );
+
+    throw error;
   }
-
-  const transactionRef = doc(
-    db,
-    "users",
-    uid,
-    "vortaxa",
-    investorId,
-    "transactions",
-    transactionId
-  );
-
-  await updateDoc(transactionRef, {
-    ...data,
-    updatedAt: serverTimestamp(),
-  });
 }
+
 
 /* =========================================================
    DELETE TRANSACTION
 ========================================================= */
 
 export async function deleteVortaxaTransaction(
-  uid,
   investorId,
   transactionId
 ) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
-  }
+  try {
 
-  const transactionRef = doc(
-    db,
-    "users",
-    uid,
-    "vortaxa",
-    investorId,
-    "transactions",
-    transactionId
-  );
-
-  await deleteDoc(transactionRef);
-}
-
-/* =========================================================
-   ADD DAILY RATE
-========================================================= */
-
-export async function addVortaxaDailyRate(
-  uid,
-  investorId,
-  rateData
-) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
-  }
-
-  if (!investorId) {
-    throw new Error("Investor is required.");
-  }
-
-  if (!rateData.date) {
-    throw new Error("Rate date is required.");
-  }
-
-  const dailyRatesRef =
-    getDailyRatesRef(
-      uid,
-      investorId
-    );
-
-  const docRef = await addDoc(
-    dailyRatesRef,
-    {
-      date: rateData.date,
-
-      rate:
-        Number(rateData.rate) || 0,
-
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    if (!investorId) {
+      throw new Error(
+        "Vortaxa investor ID is required."
+      );
     }
-  );
 
-  return docRef.id;
-}
+    if (!transactionId) {
+      throw new Error(
+        "Vortaxa transaction ID is required."
+      );
+    }
 
-/* =========================================================
-   GET DAILY RATES
-========================================================= */
 
-export async function getVortaxaDailyRates(
-  uid,
-  investorId
-) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
-  }
-
-  if (!investorId) {
-    return [];
-  }
-
-  const dailyRatesRef =
-    getDailyRatesRef(
-      uid,
-      investorId
+    await deleteDoc(
+      getTransactionDocument(
+        investorId,
+        transactionId
+      )
     );
 
-  const snapshot =
-    await getDocs(dailyRatesRef);
 
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Failed to delete Vortaxa transaction:",
+      error
+    );
+
+    throw error;
+  }
 }
 
+
 /* =========================================================
-   UPDATE DAILY RATE
+   RATES
 ========================================================= */
 
-export async function updateVortaxaDailyRate(
-  uid,
-  investorId,
-  rateId,
-  data
+/*
+  Rates GLOBAL hain.
+
+  Same rate sabhi investors ke liye
+  use hoga.
+
+  Firestore structure:
+
+  users
+   └── {uid}
+        └── vortaxaRates
+             ├── rate
+             ├── rate
+             └── ...
+*/
+
+
+/* =========================================================
+   ADD RATE
+========================================================= */
+
+export async function addVortaxaRate(
+  rate
 ) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
+  try {
+
+    if (!rate) {
+      throw new Error(
+        "Vortaxa rate data is required."
+      );
+    }
+
+
+    const dataToSave = {
+      ...rate,
+
+      createdAt:
+        serverTimestamp(),
+    };
+
+
+    /*
+     * Firestore ID generate karega.
+     */
+    delete dataToSave.id;
+
+
+    const docRef =
+      await addDoc(
+        getRateCollection(),
+        dataToSave
+      );
+
+
+    return {
+      ...rate,
+      id: docRef.id,
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Failed to add Vortaxa rate:",
+      error
+    );
+
+    throw error;
   }
-
-  const rateRef = doc(
-    db,
-    "users",
-    uid,
-    "vortaxa",
-    investorId,
-    "dailyRates",
-    rateId
-  );
-
-  const updateData = {
-    updatedAt: serverTimestamp(),
-  };
-
-  if (data.date !== undefined) {
-    updateData.date = data.date;
-  }
-
-  if (data.rate !== undefined) {
-    updateData.rate = Number(data.rate);
-  }
-
-  await updateDoc(
-    rateRef,
-    updateData
-  );
 }
 
+
 /* =========================================================
-   DELETE DAILY RATE
+   GET ALL RATES
 ========================================================= */
 
-export async function deleteVortaxaDailyRate(
-  uid,
-  investorId,
-  rateId
-) {
-  if (!uid) {
-    throw new Error("User is not logged in.");
+export async function getVortaxaRates() {
+  try {
+
+    const q =
+      query(
+        getRateCollection(),
+        orderBy(
+          "date",
+          "desc"
+        )
+      );
+
+
+    const snapshot =
+      await getDocs(q);
+
+
+    return snapshot.docs.map(
+      (item) => ({
+        ...item.data(),
+        id: item.id,
+      })
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Failed to fetch Vortaxa rates:",
+      error
+    );
+
+    throw error;
   }
+}
 
-  const rateRef = doc(
-    db,
-    "users",
-    uid,
-    "vortaxa",
-    investorId,
-    "dailyRates",
-    rateId
-  );
 
-  await deleteDoc(rateRef);
+/* =========================================================
+   UPDATE RATE
+========================================================= */
+
+/*
+  Rate delete nahi hoga.
+
+  Correction ke liye
+  sirf update/edit allowed hai.
+*/
+
+export async function updateVortaxaRate(
+  id,
+  rate
+) {
+  try {
+
+    if (!id) {
+      throw new Error(
+        "Vortaxa rate ID is required."
+      );
+    }
+
+    if (!rate) {
+      throw new Error(
+        "Vortaxa rate data is required."
+      );
+    }
+
+
+    const dataToUpdate = {
+      ...rate,
+    };
+
+
+    /*
+     * ID aur createdAt ko
+     * modify nahi karna.
+     */
+    delete dataToUpdate.id;
+    delete dataToUpdate.createdAt;
+
+
+    await updateDoc(
+      getRateDocument(id),
+      dataToUpdate
+    );
+
+
+    return {
+      ...rate,
+      id,
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Failed to update Vortaxa rate:",
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+/* =========================================================
+   DELETE RATE
+========================================================= */
+
+/*
+  Service level par function rakha gaya hai,
+  lekin UI mein delete button expose nahi karna.
+
+  Vortaxa rate history ko delete nahi karna hai.
+*/
+
+export async function deleteVortaxaRate(
+  id
+) {
+  try {
+
+    if (!id) {
+      throw new Error(
+        "Vortaxa rate ID is required."
+      );
+    }
+
+
+    await deleteDoc(
+      getRateDocument(id)
+    );
+
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Failed to delete Vortaxa rate:",
+      error
+    );
+
+    throw error;
+  }
 }

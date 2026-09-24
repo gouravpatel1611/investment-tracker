@@ -11,13 +11,25 @@ import {
   calculateAllInvestorsSummary,
 } from "../utils/vortaxa/vortaxaCalculations";
 
+import {
+  addVortaxaInvestor,
+  getVortaxaInvestors,
+  updateVortaxaInvestor,
+  deleteVortaxaInvestor,
 
-/* =========================================================
-   CONSTANTS
-========================================================= */
+  addVortaxaTransaction,
+  getVortaxaTransactions,
+  updateVortaxaTransaction,
+  deleteVortaxaTransaction,
 
-const STORAGE_KEY =
-  "investmentTracker_vortaxa";
+  addVortaxaRate,
+  getVortaxaRates,
+  updateVortaxaRate,
+} from "../services/firebase/vortaxaService";
+
+import {
+  useAuth,
+} from "./AuthContext";
 
 
 /* =========================================================
@@ -84,100 +96,13 @@ function getCreatedAt() {
 
 
 /* =========================================================
-   LOCAL STORAGE
-========================================================= */
-
-function readStorage() {
-  try {
-
-    const raw =
-      localStorage.getItem(
-        STORAGE_KEY
-      );
-
-
-    if (!raw) {
-
-      return {
-        investors: [],
-        rates: [],
-      };
-
-    }
-
-
-    const parsed =
-      JSON.parse(raw);
-
-
-    return {
-
-      investors:
-        Array.isArray(
-          parsed?.investors
-        )
-          ? parsed.investors
-          : [],
-
-      rates:
-        Array.isArray(
-          parsed?.rates
-        )
-          ? parsed.rates
-          : [],
-
-    };
-
-  } catch (error) {
-
-    console.error(
-      "Vortaxa LocalStorage read error:",
-      error
-    );
-
-
-    return {
-      investors: [],
-      rates: [],
-    };
-
-  }
-}
-
-
-function writeStorage(data) {
-  try {
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data)
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Vortaxa LocalStorage write error:",
-      error
-    );
-
-    throw new Error(
-      "Unable to save Vortaxa data."
-    );
-
-  }
-}
-
-
-/* =========================================================
    NORMALIZE TRANSACTION
 ========================================================= */
 
 function normalizeTransaction(
   transaction
 ) {
-
   return {
-
     id:
       transaction?.id ||
       generateId("txn"),
@@ -202,9 +127,7 @@ function normalizeTransaction(
     createdAt:
       transaction?.createdAt ||
       getCreatedAt(),
-
   };
-
 }
 
 
@@ -215,9 +138,7 @@ function normalizeTransaction(
 function normalizeRate(
   rate
 ) {
-
   return {
-
     id:
       rate?.id ||
       generateId("rate"),
@@ -238,9 +159,7 @@ function normalizeRate(
     createdAt:
       rate?.createdAt ||
       getCreatedAt(),
-
   };
-
 }
 
 
@@ -251,13 +170,10 @@ function normalizeRate(
 function normalizeInvestor(
   investor
 ) {
-
   const initial =
     investor?.initial || {};
 
-
   return {
-
     id:
       investor?.id ||
       generateId("investor"),
@@ -276,6 +192,11 @@ function normalizeInvestor(
       getTodayDate(),
 
     initial: {
+      /*
+       * Liquidity Firebase mein save rahegi,
+       * lekin earnings calculation mein
+       * use nahi hogi.
+       */
 
       liquidity:
         toNumber(
@@ -294,7 +215,6 @@ function normalizeInvestor(
           initial?.piFule ??
           investor?.piFule
         ),
-
     },
 
     transactions:
@@ -309,62 +229,17 @@ function normalizeInvestor(
     createdAt:
       investor?.createdAt ||
       getCreatedAt(),
-
   };
-
 }
 
 
 /* =========================================================
-   NORMALIZE DATA
+   SORT RATES
 ========================================================= */
-
-function normalizeData(
-  data
-) {
-
-  const investors =
-    Array.isArray(
-      data?.investors
-    )
-      ? data.investors.map(
-          normalizeInvestor
-        )
-      : [];
-
-
-  const rates =
-    Array.isArray(
-      data?.rates
-    )
-      ? data.rates.map(
-          normalizeRate
-        )
-      : [];
-
-
-  return {
-    investors,
-    rates,
-  };
-
-}
-
-
-/* =========================================================
-   RATE HELPERS
-========================================================= */
-
-/*
- * Rates are GLOBAL.
- *
- * Same rate is used by every investor.
- */
 
 function sortRates(
   rates
 ) {
-
   return [...rates].sort(
     (a, b) =>
       String(a?.date || "")
@@ -372,18 +247,16 @@ function sortRates(
           String(b?.date || "")
         )
   );
-
 }
 
 
-/*
- * Get earliest investment date.
- */
+/* =========================================================
+   EARLIEST INVESTMENT DATE
+========================================================= */
 
 function getEarliestInvestmentDate(
   investors
 ) {
-
   const dates =
     investors
       .map(
@@ -393,49 +266,17 @@ function getEarliestInvestmentDate(
       .filter(Boolean)
       .sort();
 
-
   return dates[0] || null;
-
 }
 
 
-/*
- * Rate history now starts from:
- *
- * Earliest investment date itself.
- *
- * FULE / PI FULE calculations are
- * effective on the SAME DAY.
- */
-
-function getRateStartDate(
-  investors
-) {
-
-  const earliest =
-    getEarliestInvestmentDate(
-      investors
-    );
-
-
-  if (!earliest) {
-    return null;
-  }
-
-
-  return earliest;
-
-}
-
-
-/*
- * Add one day.
- */
+/* =========================================================
+   ADD ONE DAY
+========================================================= */
 
 function addOneDay(
   dateString
 ) {
-
   const [
     year,
     month,
@@ -445,7 +286,6 @@ function addOneDay(
       .split("-")
       .map(Number);
 
-
   const date =
     new Date(
       year,
@@ -453,11 +293,9 @@ function addOneDay(
       day
     );
 
-
   date.setDate(
     date.getDate() + 1
   );
-
 
   return [
     date.getFullYear(),
@@ -468,40 +306,32 @@ function addOneDay(
       date.getDate()
     ).padStart(2, "0"),
   ].join("-");
-
 }
 
 
-/*
- * Create missing rate dates.
- *
- * Existing rates are NEVER overwritten.
- */
+/* =========================================================
+   GET MISSING RATE DATES
+========================================================= */
 
-function ensureMissingRateHistory(
+function getMissingRateDates(
   investors,
   rates
 ) {
-
   const startDate =
-    getRateStartDate(
+    getEarliestInvestmentDate(
       investors
     );
 
-
   if (!startDate) {
-    return rates;
+    return [];
   }
-
 
   const today =
     getTodayDate();
 
-
   if (startDate > today) {
-    return rates;
+    return [];
   }
-
 
   const existingDates =
     new Set(
@@ -511,14 +341,10 @@ function ensureMissingRateHistory(
       )
     );
 
-
-  const result =
-    [...rates];
-
+  const missingDates = [];
 
   let currentDate =
     startDate;
-
 
   while (
     currentDate <= today
@@ -529,40 +355,163 @@ function ensureMissingRateHistory(
         currentDate
       )
     ) {
-
-      result.push(
-        normalizeRate({
-
-          id:
-            generateId("rate"),
-
-          date:
-            currentDate,
-
-          rate:
-            0,
-
-          type:
-            "DAILY",
-
-        })
+      missingDates.push(
+        currentDate
       );
-
     }
-
 
     currentDate =
       addOneDay(
         currentDate
       );
+  }
+
+  return missingDates;
+}
+
+
+/* =========================================================
+   LOAD FIREBASE DATA
+========================================================= */
+
+async function loadFirebaseData() {
+
+  /*
+   * ---------------------------------------------
+   * LOAD INVESTORS
+   * ---------------------------------------------
+   */
+
+  const firebaseInvestors =
+    await getVortaxaInvestors();
+
+
+  /*
+   * ---------------------------------------------
+   * LOAD EACH INVESTOR TRANSACTIONS
+   * ---------------------------------------------
+   */
+
+  const investorsWithTransactions =
+    await Promise.all(
+
+      firebaseInvestors.map(
+        async (investor) => {
+
+          const transactions =
+            await getVortaxaTransactions(
+              investor.id
+            );
+
+          return normalizeInvestor({
+
+            ...investor,
+
+            transactions:
+              Array.isArray(
+                transactions
+              )
+                ? transactions
+                : [],
+
+          });
+
+        }
+      )
+
+    );
+
+
+  /*
+   * ---------------------------------------------
+   * LOAD GLOBAL RATES
+   * ---------------------------------------------
+   */
+
+  let rates =
+    (
+      await getVortaxaRates()
+    ).map(
+      normalizeRate
+    );
+
+
+  /*
+   * ---------------------------------------------
+   * BACKFILL MISSING RATE DATES
+   *
+   * Earliest investment date
+   * se aaj tak.
+   *
+   * Missing date = rate 0
+   *
+   * Existing rate kabhi overwrite nahi hogi.
+   * ---------------------------------------------
+   */
+
+  const missingRateDates =
+    getMissingRateDates(
+      investorsWithTransactions,
+      rates
+    );
+
+
+  if (
+    missingRateDates.length > 0
+  ) {
+
+    const newRates =
+      await Promise.all(
+
+        missingRateDates.map(
+          async (date) => {
+
+            return addVortaxaRate({
+
+              date,
+
+              rate: 0,
+
+              type: "DAILY",
+
+            });
+
+          }
+        )
+
+      );
+
+
+    rates = [
+
+      ...rates,
+
+      ...newRates.map(
+        normalizeRate
+      ),
+
+    ];
 
   }
 
 
-  return sortRates(
-    result
-  );
+  /*
+   * ---------------------------------------------
+   * RETURN FINAL DATA
+   * ---------------------------------------------
+   */
 
+  return {
+
+    investors:
+      investorsWithTransactions,
+
+    rates:
+      sortRates(
+        rates
+      ),
+
+  };
 }
 
 
@@ -574,12 +523,30 @@ export function VortaxaProvider({
   children,
 }) {
 
+  /*
+   * =======================================================
+   * AUTH STATE
+   *
+   * IMPORTANT:
+   * Firebase Auth ko restore hone ka wait karna hai.
+   * =======================================================
+   */
+
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
+
+
   const [
     data,
     setData,
   ] = useState({
+
     investors: [],
+
     rates: [],
+
   });
 
 
@@ -596,178 +563,159 @@ export function VortaxaProvider({
 
 
   /* =======================================================
-     INITIAL LOAD
+     REFRESH FIREBASE DATA
   ======================================================= */
 
-  useEffect(() => {
+  async function refreshFirebaseData() {
 
-    try {
+    /*
+     * User available nahi hai to Firebase call
+     * mat karo.
+     */
 
-      const stored =
-        readStorage();
+    if (!user) {
 
-
-      const normalized =
-        normalizeData(
-          stored
-        );
-
-
-      const rates =
-        ensureMissingRateHistory(
-          normalized.investors,
-          normalized.rates
-        );
-
-
-      const finalData = {
-
-        investors:
-          normalized.investors,
-
-        rates,
-
+      const emptyData = {
+        investors: [],
+        rates: [],
       };
 
-
       setData(
-        finalData
+        emptyData
       );
 
-
-      /*
-       * Save normalized/backfilled data.
-       */
-
-      writeStorage(
-        finalData
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Vortaxa initialization error:",
-        error
-      );
-
-    } finally {
-
-      setLoading(false);
-
+      return emptyData;
     }
 
-  }, []);
+
+    const firebaseData =
+      await loadFirebaseData();
+
+
+    setData(
+      firebaseData
+    );
+
+
+    return firebaseData;
+  }
 
 
   /* =======================================================
-     STORAGE EVENT
+     INITIAL LOAD
+     
+     IMPORTANT:
+     Auth loading complete hone ke baad hi
+     Firebase data load hoga.
   ======================================================= */
 
   useEffect(() => {
 
-    function handleStorageChange(
-      event
-    ) {
+    let mounted = true;
 
-      if (
-        event.key !==
-        STORAGE_KEY
-      ) {
+
+    async function initialize() {
+
+      /*
+       * Auth abhi Firebase se user restore kar raha hai.
+       *
+       * Is stage par kuch bhi load nahi karna.
+       */
+
+      if (authLoading) {
         return;
       }
 
 
-      const stored =
-        readStorage();
+      /*
+       * User logged out hai.
+       *
+       * Vortaxa data clear kar do.
+       */
+
+      if (!user) {
+
+        if (mounted) {
+
+          setData({
+            investors: [],
+            rates: [],
+          });
+
+          setLoading(
+            false
+          );
+
+        }
+
+        return;
+      }
 
 
-      const normalized =
-        normalizeData(
-          stored
+      /*
+       * User available hai.
+       *
+       * Ab Firebase data load karna safe hai.
+       */
+
+      try {
+
+        if (mounted) {
+
+          setLoading(
+            true
+          );
+
+        }
+
+
+        const firebaseData =
+          await loadFirebaseData();
+
+
+        if (mounted) {
+
+          setData(
+            firebaseData
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Vortaxa Firebase initialization error:",
+          error
         );
 
+      } finally {
 
-      const rates =
-        ensureMissingRateHistory(
-          normalized.investors,
-          normalized.rates
-        );
+        if (mounted) {
 
+          setLoading(
+            false
+          );
 
-      setData({
+        }
 
-        investors:
-          normalized.investors,
-
-        rates,
-
-      });
+      }
 
     }
 
 
-    window.addEventListener(
-      "storage",
-      handleStorageChange
-    );
+    initialize();
 
 
     return () => {
 
-      window.removeEventListener(
-        "storage",
-        handleStorageChange
-      );
+      mounted = false;
 
     };
 
-  }, []);
-
-
-  /* =======================================================
-     SAVE DATA
-  ======================================================= */
-
-  function saveData(
-    nextData
-  ) {
-
-    const normalized =
-      normalizeData(
-        nextData
-      );
-
-
-    const rates =
-      ensureMissingRateHistory(
-        normalized.investors,
-        normalized.rates
-      );
-
-
-    const finalData = {
-
-      investors:
-        normalized.investors,
-
-      rates,
-
-    };
-
-
-    writeStorage(
-      finalData
-    );
-
-
-    setData(
-      finalData
-    );
-
-
-    return finalData;
-
-  }
+  }, [
+    user,
+    authLoading,
+  ]);
 
 
   /* =======================================================
@@ -779,6 +727,7 @@ export function VortaxaProvider({
   ) {
 
     return (
+
       data.investors.find(
         (investor) =>
           investor.id ===
@@ -786,7 +735,9 @@ export function VortaxaProvider({
           investor.investorId ===
             investorId
       ) ||
+
       null
+
     );
 
   }
@@ -841,7 +792,6 @@ export function VortaxaProvider({
   ) {
 
     const {
-
       investorId,
       investorName,
       startDate,
@@ -862,11 +812,6 @@ export function VortaxaProvider({
     }
 
 
-    /*
-     * Prevent duplicate Vortaxa investment
-     * for same investor.
-     */
-
     const alreadyExists =
       data.investors.some(
         (investor) =>
@@ -884,50 +829,8 @@ export function VortaxaProvider({
     }
 
 
-    const newInvestorId =
-      generateId(
-        "investor"
-      );
-
-
-    const initialTransaction =
-      normalizeTransaction({
-
-        id:
-          generateId("txn"),
-
-        investorId:
-          newInvestorId,
-
-        type:
-          "INITIAL",
-
-        date:
-          startDate ||
-          getTodayDate(),
-
-        /*
-         * Initial transaction is kept
-         * only for history.
-         *
-         * Actual FULE / PI FULE /
-         * Liquidity values are stored
-         * separately in initial.
-         */
-
-        amount:
-          toNumber(liquidity) +
-          toNumber(fule) +
-          toNumber(piFule),
-
-      });
-
-
     const newInvestor =
       normalizeInvestor({
-
-        id:
-          newInvestorId,
 
         investorId,
 
@@ -957,28 +860,64 @@ export function VortaxaProvider({
 
         },
 
-        transactions: [
-          initialTransaction,
-        ],
+        transactions: [],
 
       });
 
 
-    saveData({
+    const savedInvestor =
+      await addVortaxaInvestor({
 
-      investors: [
-        ...data.investors,
-        newInvestor,
-      ],
+        investorId:
+          newInvestor.investorId,
 
-      rates:
-        data.rates,
+        investorName:
+          newInvestor.investorName,
 
-    });
+        startDate:
+          newInvestor.startDate,
+
+        initial:
+          newInvestor.initial,
+
+      });
 
 
-    return newInvestor;
+    await addVortaxaTransaction(
 
+      savedInvestor.id,
+
+      normalizeTransaction({
+
+        investorId:
+          savedInvestor.id,
+
+        type:
+          "INITIAL",
+
+        date:
+          newInvestor.startDate,
+
+        amount:
+          toNumber(
+            liquidity
+          ) +
+          toNumber(
+            fule
+          ) +
+          toNumber(
+            piFule
+          ),
+
+      })
+
+    );
+
+
+    await refreshFirebaseData();
+
+
+    return savedInvestor;
   }
 
 
@@ -991,52 +930,71 @@ export function VortaxaProvider({
     updates
   ) {
 
-    const investors =
-      data.investors.map(
-        (investor) => {
-
-          if (
-            investor.id !==
-            investorId
-          ) {
-            return investor;
-          }
-
-
-          return normalizeInvestor({
-
-            ...investor,
-
-            ...updates,
-
-            initial: {
-
-              ...investor.initial,
-
-              ...(updates?.initial || {}),
-
-            },
-
-          });
-
-        }
+    const investor =
+      getInvestor(
+        investorId
       );
 
 
-    saveData({
+    if (!investor) {
 
-      investors,
+      throw new Error(
+        "Investor not found."
+      );
 
-      rates:
-        data.rates,
+    }
 
-    });
+
+    const updatedInvestor =
+      normalizeInvestor({
+
+        ...investor,
+
+        ...updates,
+
+        id:
+          investor.id,
+
+        initial: {
+
+          ...investor.initial,
+
+          ...(updates?.initial || {}),
+
+        },
+
+      });
+
+
+    await updateVortaxaInvestor(
+
+      investor.id,
+
+      {
+
+        investorId:
+          updatedInvestor.investorId,
+
+        investorName:
+          updatedInvestor.investorName,
+
+        startDate:
+          updatedInvestor.startDate,
+
+        initial:
+          updatedInvestor.initial,
+
+      }
+
+    );
+
+
+    await refreshFirebaseData();
 
 
     return getInvestor(
-      investorId
+      investor.id
     );
-
   }
 
 
@@ -1048,23 +1006,27 @@ export function VortaxaProvider({
     investorId
   ) {
 
-    const investors =
-      data.investors.filter(
-        (investor) =>
-          investor.id !==
-          investorId
+    const investor =
+      getInvestor(
+        investorId
       );
 
 
-    saveData({
+    if (!investor) {
 
-      investors,
+      throw new Error(
+        "Investor not found."
+      );
 
-      rates:
-        data.rates,
+    }
 
-    });
 
+    await deleteVortaxaInvestor(
+      investor.id
+    );
+
+
+    await refreshFirebaseData();
   }
 
 
@@ -1096,63 +1058,26 @@ export function VortaxaProvider({
 
         ...transaction,
 
-        id:
-          generateId("txn"),
-
-        createdAt:
-          getCreatedAt(),
+        investorId:
+          targetInvestor.id,
 
       });
 
 
-    const investors =
-      data.investors.map(
-        (investor) => {
+    const savedTransaction =
+      await addVortaxaTransaction(
 
-          if (
-            investor.id !==
-            targetInvestor.id
-          ) {
-            return investor;
-          }
+        targetInvestor.id,
 
+        newTransaction
 
-          return {
-
-            ...investor,
-
-            transactions: [
-
-              ...investor.transactions,
-
-              newTransaction,
-
-            ],
-
-          };
-
-        }
       );
 
 
-    saveData({
-
-      investors,
-
-      /*
-       * IMPORTANT:
-       * Adding a transaction does NOT
-       * regenerate or overwrite rates.
-       */
-
-      rates:
-        data.rates,
-
-    });
+    await refreshFirebaseData();
 
 
-    return newTransaction;
-
+    return savedTransaction;
   }
 
 
@@ -1167,7 +1092,9 @@ export function VortaxaProvider({
   ) {
 
     const value =
-      toNumber(amount);
+      toNumber(
+        amount
+      );
 
 
     if (value <= 0) {
@@ -1207,7 +1134,9 @@ export function VortaxaProvider({
   ) {
 
     const value =
-      toNumber(amount);
+      toNumber(
+        amount
+      );
 
 
     if (value <= 0) {
@@ -1247,7 +1176,9 @@ export function VortaxaProvider({
   ) {
 
     const value =
-      toNumber(amount);
+      toNumber(
+        amount
+      );
 
 
     if (value <= 0) {
@@ -1274,16 +1205,6 @@ export function VortaxaProvider({
     }
 
 
-    /*
-     * Calculate current available earnings.
-     *
-     * IMPORTANT:
-     * Withdrawal fee is NOT deducted here.
-     *
-     * Existing withdrawal validation remains
-     * unchanged as requested.
-     */
-
     const summary =
       calculateInvestorSummary(
         investor,
@@ -1291,23 +1212,24 @@ export function VortaxaProvider({
       );
 
 
+    /*
+     * Withdrawal fee available earning
+     * se deduct nahi hoti.
+     */
+
     if (
       value >
       summary.availableEarn
     ) {
 
       throw new Error(
+
         `Withdrawal cannot exceed available earnings of ${summary.availableEarn.toFixed(2)}.`
+
       );
 
     }
 
-
-    /*
-     * Only actual withdrawal is saved.
-     *
-     * $2 fee is NOT saved as a transaction.
-     */
 
     return addTransaction({
 
@@ -1336,74 +1258,82 @@ export function VortaxaProvider({
     updates
   ) {
 
-    const investors =
-      data.investors.map(
-        (investor) => {
-
-          if (
-            investor.id !==
-            investorId
-          ) {
-            return investor;
-          }
-
-
-          const transactions =
-            investor.transactions.map(
-              (transaction) => {
-
-                if (
-                  transaction.id !==
-                  transactionId
-                ) {
-                  return transaction;
-                }
-
-
-                return normalizeTransaction({
-
-                  ...transaction,
-
-                  ...updates,
-
-                  id:
-                    transaction.id,
-
-                  investorId:
-                    investor.investorId,
-
-                });
-
-              }
-            );
-
-
-          return {
-
-            ...investor,
-
-            transactions,
-
-          };
-
-        }
+    const investor =
+      getInvestor(
+        investorId
       );
 
 
-    saveData({
+    if (!investor) {
 
-      investors,
+      throw new Error(
+        "Investor not found."
+      );
 
-      rates:
-        data.rates,
-
-    });
+    }
 
 
-    return getInvestor(
-      investorId
-    );
+    const targetTransaction =
+      investor.transactions.find(
+        (transaction) =>
+          transaction.id ===
+          transactionId
+      );
 
+
+    if (!targetTransaction) {
+
+      throw new Error(
+        "Transaction not found."
+      );
+
+    }
+
+
+    if (
+      targetTransaction.type ===
+      "INITIAL"
+    ) {
+
+      throw new Error(
+        "Initial transaction cannot be edited."
+      );
+
+    }
+
+
+    const updatedTransaction =
+      normalizeTransaction({
+
+        ...targetTransaction,
+
+        ...updates,
+
+        id:
+          targetTransaction.id,
+
+        investorId:
+          investor.id,
+
+      });
+
+
+    const savedTransaction =
+      await updateVortaxaTransaction(
+
+        investor.id,
+
+        targetTransaction.id,
+
+        updatedTransaction
+
+      );
+
+
+    await refreshFirebaseData();
+
+
+    return savedTransaction;
   }
 
 
@@ -1416,44 +1346,60 @@ export function VortaxaProvider({
     transactionId
   ) {
 
-    const investors =
-      data.investors.map(
-        (investor) => {
-
-          if (
-            investor.id !==
-            investorId
-          ) {
-            return investor;
-          }
-
-
-          return {
-
-            ...investor,
-
-            transactions:
-              investor.transactions.filter(
-                (transaction) =>
-                  transaction.id !==
-                  transactionId
-              ),
-
-          };
-
-        }
+    const investor =
+      getInvestor(
+        investorId
       );
 
 
-    saveData({
+    if (!investor) {
 
-      investors,
+      throw new Error(
+        "Investor not found."
+      );
 
-      rates:
-        data.rates,
+    }
 
-    });
 
+    const targetTransaction =
+      investor.transactions.find(
+        (transaction) =>
+          transaction.id ===
+          transactionId
+      );
+
+
+    if (!targetTransaction) {
+
+      throw new Error(
+        "Transaction not found."
+      );
+
+    }
+
+
+    if (
+      targetTransaction.type ===
+      "INITIAL"
+    ) {
+
+      throw new Error(
+        "Initial transaction cannot be deleted."
+      );
+
+    }
+
+
+    await deleteVortaxaTransaction(
+
+      investor.id,
+
+      targetTransaction.id
+
+    );
+
+
+    await refreshFirebaseData();
   }
 
 
@@ -1466,46 +1412,96 @@ export function VortaxaProvider({
     transactions
   ) {
 
-    const investors =
-      data.investors.map(
-        (investor) => {
-
-          if (
-            investor.id !==
-            investorId
-          ) {
-            return investor;
-          }
-
-
-          return {
-
-            ...investor,
-
-            transactions:
-              Array.isArray(
-                transactions
-              )
-                ? transactions.map(
-                    normalizeTransaction
-                  )
-                : [],
-
-          };
-
-        }
+    const investor =
+      getInvestor(
+        investorId
       );
 
 
-    saveData({
+    if (!investor) {
 
-      investors,
+      throw new Error(
+        "Investor not found."
+      );
 
-      rates:
-        data.rates,
+    }
 
-    });
 
+    if (
+      !Array.isArray(
+        transactions
+      )
+    ) {
+
+      throw new Error(
+        "Transactions must be an array."
+      );
+
+    }
+
+
+    for (
+      const transaction
+      of transactions
+    ) {
+
+      const normalized =
+        normalizeTransaction({
+
+          ...transaction,
+
+          investorId:
+            investor.id,
+
+        });
+
+
+      if (
+        normalized.type ===
+        "INITIAL"
+      ) {
+
+        continue;
+
+      }
+
+
+      const existing =
+        investor.transactions.find(
+          (item) =>
+            item.id ===
+            normalized.id
+        );
+
+
+      if (existing) {
+
+        await updateVortaxaTransaction(
+
+          investor.id,
+
+          existing.id,
+
+          normalized
+
+        );
+
+      } else {
+
+        await addVortaxaTransaction(
+
+          investor.id,
+
+          normalized
+
+        );
+
+      }
+
+    }
+
+
+    await refreshFirebaseData();
   }
 
 
@@ -1530,10 +1526,6 @@ export function VortaxaProvider({
     }
 
 
-    /*
-     * Rate dates are unique.
-     */
-
     const alreadyExists =
       data.rates.some(
         (rate) =>
@@ -1556,30 +1548,22 @@ export function VortaxaProvider({
 
         ...rateData,
 
-        id:
-          generateId("rate"),
-
         type:
           "DAILY",
 
       });
 
 
-    saveData({
-
-      investors:
-        data.investors,
-
-      rates: [
-        ...data.rates,
-        newRate,
-      ],
-
-    });
+    const savedRate =
+      await addVortaxaRate(
+        newRate
+      );
 
 
-    return newRate;
+    await refreshFirebaseData();
 
+
+    return savedRate;
   }
 
 
@@ -1609,63 +1593,50 @@ export function VortaxaProvider({
     }
 
 
-    /*
-     * Date should not be changed
-     * accidentally during edit.
-     *
-     * The rate date remains the
-     * same record date.
-     */
+    const updatedRate =
+      normalizeRate({
 
-    const rates =
-      data.rates.map(
-        (rate) => {
+        ...targetRate,
 
-          if (
-            rate.id !==
-            rateId
-          ) {
-            return rate;
-          }
+        ...updates,
+
+        id:
+          targetRate.id,
+
+        date:
+          targetRate.date,
+
+        createdAt:
+          targetRate.createdAt,
+
+      });
 
 
-          return normalizeRate({
+    const savedRate =
+      await updateVortaxaRate(
 
-            ...rate,
+        targetRate.id,
 
-            ...updates,
+        {
 
-            id:
-              rate.id,
+          date:
+            targetRate.date,
 
-            date:
-              rate.date,
+          rate:
+            updatedRate.rate,
 
-            createdAt:
-              rate.createdAt,
-
-          });
+          type:
+            "DAILY",
 
         }
+
       );
 
 
-    saveData({
-
-      investors:
-        data.investors,
-
-      rates,
-
-    });
+    await refreshFirebaseData();
 
 
-    return rates.find(
-      (rate) =>
-        rate.id ===
-        rateId
-    );
-
+    return savedRate;
   }
 
 
@@ -1683,10 +1654,10 @@ export function VortaxaProvider({
 
 
   /* =======================================================
-     REFRESH / BACKFILL
+     RELOAD DATA
   ======================================================= */
 
-  function reloadData() {
+  async function reloadData() {
 
     setDataLoading(
       true
@@ -1695,44 +1666,7 @@ export function VortaxaProvider({
 
     try {
 
-      const stored =
-        readStorage();
-
-
-      const normalized =
-        normalizeData(
-          stored
-        );
-
-
-      const rates =
-        ensureMissingRateHistory(
-          normalized.investors,
-          normalized.rates
-        );
-
-
-      const finalData = {
-
-        investors:
-          normalized.investors,
-
-        rates,
-
-      };
-
-
-      writeStorage(
-        finalData
-      );
-
-
-      setData(
-        finalData
-      );
-
-
-      return finalData;
+      return await refreshFirebaseData();
 
     } finally {
 
@@ -1746,34 +1680,7 @@ export function VortaxaProvider({
 
 
   /* =======================================================
-     CLEAR ALL DATA
-  ======================================================= */
-
-  function clearAllVortaxaData() {
-
-    const emptyData = {
-
-      investors: [],
-
-      rates: [],
-
-    };
-
-
-    writeStorage(
-      emptyData
-    );
-
-
-    setData(
-      emptyData
-    );
-
-  }
-
-
-  /* =======================================================
-     INVESTOR DATA WITH CALCULATIONS
+     INVESTOR DATA
   ======================================================= */
 
   const investorData =
@@ -1814,8 +1721,11 @@ export function VortaxaProvider({
     useMemo(() => {
 
       return calculateAllInvestorsSummary(
+
         data.investors,
+
         data.rates
+
       );
 
     }, [
@@ -1829,10 +1739,6 @@ export function VortaxaProvider({
   ======================================================= */
 
   const value = {
-
-    /*
-     * State
-     */
 
     data,
 
@@ -1851,10 +1757,6 @@ export function VortaxaProvider({
     dataLoading,
 
 
-    /*
-     * Investor
-     */
-
     getInvestor,
 
     getInvestorData,
@@ -1865,10 +1767,6 @@ export function VortaxaProvider({
 
     deleteInvestor,
 
-
-    /*
-     * Transactions
-     */
 
     addTransaction,
 
@@ -1885,10 +1783,6 @@ export function VortaxaProvider({
     updateInvestorTransactions,
 
 
-    /*
-     * Rates
-     */
-
     addRate,
 
     updateRate,
@@ -1896,29 +1790,18 @@ export function VortaxaProvider({
     getRates,
 
 
-    /*
-     * Storage
-     */
-
-    saveData,
-
     reloadData,
-
-    clearAllVortaxaData,
 
   };
 
 
   return (
-
     <VortaxaContext.Provider
       value={value}
     >
       {children}
     </VortaxaContext.Provider>
-
   );
-
 }
 
 
@@ -1944,7 +1827,6 @@ export function useVortaxa() {
 
 
   return context;
-
 }
 
 
