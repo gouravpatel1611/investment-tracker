@@ -1,3 +1,4 @@
+
 import {
   Pencil,
   Trash2,
@@ -18,12 +19,22 @@ import {
 
 function getTransactionInfo(type) {
   switch (type) {
-    case "INITIAL":
+
+    case "INITIAL_FULE":
       return {
-        label: "Initial Investment",
+        label: "Initial FULE",
         icon: CircleDollarSign,
         direction: "in",
       };
+
+
+    case "INITIAL_PI_FULE":
+      return {
+        label: "Initial PI FULE",
+        icon: CircleDollarSign,
+        direction: "in",
+      };
+
 
     case "FULE_ADD":
       return {
@@ -32,6 +43,7 @@ function getTransactionInfo(type) {
         direction: "in",
       };
 
+
     case "PI_FULE_ADD":
       return {
         label: "PI FULE Added",
@@ -39,12 +51,14 @@ function getTransactionInfo(type) {
         direction: "in",
       };
 
+
     case "EARN_WITHDRAW":
       return {
         label: "EARN Withdrawal",
         icon: ArrowUpRight,
         direction: "out",
       };
+
 
     default:
       return {
@@ -62,9 +76,19 @@ function getTransactionInfo(type) {
 
 function VortaxaTransactionList({
   transactions = [],
+
+  /*
+   * Initial FULE and PI FULE are passed separately.
+   *
+   * Liquidity is intentionally NOT used.
+   */
+  initialFule = 0,
+  initialPiFule = 0,
+
   onEdit,
   onDelete,
 }) {
+
   const safeTransactions =
     Array.isArray(transactions)
       ? transactions
@@ -72,11 +96,84 @@ function VortaxaTransactionList({
 
 
   /* =======================================================
+     REMOVE OLD INITIAL TRANSACTION
+     
+     We do NOT show the old combined INITIAL transaction.
+  ======================================================= */
+
+  const normalTransactions =
+    safeTransactions.filter(
+      (transaction) =>
+        transaction?.type !== "INITIAL"
+    );
+
+
+  /* =======================================================
+     CREATE INITIAL FULE + INITIAL PI FULE
+     
+     Liquidity is completely ignored.
+  ======================================================= */
+
+  const initialDate =
+    safeTransactions.find(
+      (transaction) =>
+        transaction?.type === "INITIAL"
+    )?.date || null;
+
+
+  const initialTransactions = [];
+
+
+  /* =======================================================
+     INITIAL FULE
+  ======================================================= */
+
+  if (
+    Number(initialFule) > 0
+  ) {
+    initialTransactions.push({
+      id: "initial-fule",
+      type: "INITIAL_FULE",
+      date: initialDate,
+      amount: Number(initialFule) || 0,
+      isInitial: true,
+    });
+  }
+
+
+  /* =======================================================
+     INITIAL PI FULE
+  ======================================================= */
+
+  if (
+    Number(initialPiFule) > 0
+  ) {
+    initialTransactions.push({
+      id: "initial-pi-fule",
+      type: "INITIAL_PI_FULE",
+      date: initialDate,
+      amount: Number(initialPiFule) || 0,
+      isInitial: true,
+    });
+  }
+
+
+  /* =======================================================
+     FINAL TRANSACTION LIST
+  ======================================================= */
+
+  const displayTransactions = [
+    ...initialTransactions,
+    ...normalTransactions,
+  ];
+
+
+  /* =======================================================
      EMPTY STATE
   ======================================================= */
 
   if (
-    safeTransactions.length === 0
+    displayTransactions.length === 0
   ) {
     return (
       <div
@@ -151,8 +248,8 @@ function VortaxaTransactionList({
               text-slate-500
             "
           >
-            {safeTransactions.length} transaction
-            {safeTransactions.length !== 1
+            {displayTransactions.length} transaction
+            {displayTransactions.length !== 1
               ? "s"
               : ""}
           </p>
@@ -173,7 +270,7 @@ function VortaxaTransactionList({
         "
       >
 
-        {safeTransactions.map(
+        {displayTransactions.map(
           (transaction) => {
 
             const info =
@@ -189,9 +286,14 @@ function VortaxaTransactionList({
                 transaction?.amount || 0
               );
 
+
+            /*
+             * Initial FULE / Initial PI FULE
+             * cannot be edited or deleted from
+             * transaction list.
+             */
             const isInitial =
-              transaction?.type ===
-              "INITIAL";
+              transaction?.isInitial === true;
 
 
             return (
@@ -236,7 +338,9 @@ function VortaxaTransactionList({
                       }
                     `}
                   >
-                    <Icon size={17} />
+                    <Icon
+                      size={17}
+                    />
                   </div>
 
 
@@ -302,6 +406,7 @@ function VortaxaTransactionList({
                       }
                     `}
                   >
+
                     {info.direction === "out"
                       ? "- "
                       : "+ "}
@@ -309,6 +414,7 @@ function VortaxaTransactionList({
                     {formatCurrency(
                       amount
                     )}
+
                   </p>
 
 
@@ -326,7 +432,6 @@ function VortaxaTransactionList({
 
                     {/* =====================================
                         EDIT
-                        INITIAL CANNOT BE EDITED
                     ====================================== */}
 
                     {onEdit &&
@@ -363,37 +468,34 @@ function VortaxaTransactionList({
                         DELETE
                     ====================================== */}
 
-                    {onDelete && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onDelete(
-                            transaction
-                          )
-                        }
-                        className="
-                          flex
-                          h-8
-                          w-8
-                          items-center
-                          justify-center
-                          rounded-lg
-                          text-slate-400
-                          transition
-                          hover:bg-red-500/10
-                          hover:text-red-400
-                        "
-                        title={
-                          isInitial
-                            ? "Delete investor"
-                            : "Delete transaction"
-                        }
-                      >
-                        <Trash2
-                          size={15}
-                        />
-                      </button>
-                    )}
+                    {onDelete &&
+                      !isInitial && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onDelete(
+                              transaction
+                            )
+                          }
+                          className="
+                            flex
+                            h-8
+                            w-8
+                            items-center
+                            justify-center
+                            rounded-lg
+                            text-slate-400
+                            transition
+                            hover:bg-red-500/10
+                            hover:text-red-400
+                          "
+                          title="Delete transaction"
+                        >
+                          <Trash2
+                            size={15}
+                          />
+                        </button>
+                      )}
 
                   </div>
 
@@ -412,3 +514,4 @@ function VortaxaTransactionList({
 
 
 export default VortaxaTransactionList;
+

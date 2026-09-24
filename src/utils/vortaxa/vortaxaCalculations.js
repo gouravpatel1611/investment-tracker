@@ -7,10 +7,13 @@
    - Liquidity is never used for earning calculation.
    - FULE earning = Effective FULE × Daily Rate% × 70%
    - PI FULE earning = Effective PI FULE × Daily Rate% × 3%
-   - FULE / PI FULE additions become effective after 2 days.
-   - Initial FULE / PI FULE also become effective after 2 days.
+   - FULE / PI FULE additions are effective on SAME DAY.
+   - Initial FULE / PI FULE are effective on SAME DAY.
    - Rates are global and applicable to all investors.
    - Withdrawal is deducted only from total earned amount.
+   - Withdrawal fee = Number of withdrawal transactions × $2.
+   - Net Withdrawal = Total Withdrawal - Withdrawal Fee.
+   - Withdrawal fee is NOT stored as a transaction.
 ========================================================= */
 
 
@@ -73,25 +76,6 @@ function formatDateOnly(date) {
 }
 
 
-function addDays(
-  dateString,
-  days
-) {
-  const date =
-    parseDateOnly(dateString);
-
-  if (!date) {
-    return "";
-  }
-
-  date.setDate(
-    date.getDate() + days
-  );
-
-  return formatDateOnly(date);
-}
-
-
 function getTodayDate() {
   const today = new Date();
 
@@ -104,22 +88,14 @@ function getTodayDate() {
 ========================================================= */
 
 /*
- * Any FULE / PI FULE amount added on a particular date
- * becomes effective exactly 2 days later.
- *
- * Example:
- *
- * Addition       Effective
- * 25 Sep         27 Sep
+ * FULE / PI FULE is effective
+ * on the SAME DAY as the transaction.
  */
 
 export function getEffectiveDate(
   transactionDate
 ) {
-  return addDays(
-    transactionDate,
-    2
-  );
+  return transactionDate || "";
 }
 
 
@@ -135,10 +111,6 @@ export function getEffectiveDate(
  *
  * Means:
  * 0.15%
- *
- * Therefore:
- *
- * amount × (0.15 / 100)
  */
 
 function getRatePercent(rate) {
@@ -149,17 +121,6 @@ function getRatePercent(rate) {
 /* =========================================================
    DAILY FULE / PI FULE AMOUNTS
 ========================================================= */
-
-/*
- * Calculate FULE amount which is effective
- * on a particular date.
- *
- * Initial FULE becomes effective:
- * initial date + 2 days
- *
- * Every FULE_ADD becomes effective:
- * transaction date + 2 days
- */
 
 export function getEffectiveFule(
   investor,
@@ -269,10 +230,9 @@ export function getEffectiveFule(
 }
 
 
-/*
- * Calculate PI FULE amount which is effective
- * on a particular date.
- */
+/* =========================================================
+   EFFECTIVE PI FULE
+========================================================= */
 
 export function getEffectivePiFule(
   investor,
@@ -388,11 +348,6 @@ export function getEffectivePiFule(
    DAILY EARNING
 ========================================================= */
 
-/*
- * Calculate earning for ONE investor
- * for ONE date.
- */
-
 export function calculateDailyEarning(
   investor,
   rate,
@@ -417,11 +372,9 @@ export function calculateDailyEarning(
     );
 
 
-  /*
-   * APR
-   *
-   * FULE × daily rate × 70%
-   */
+  /* -----------------------------------------
+     APR
+  ----------------------------------------- */
 
   const apr =
     fule *
@@ -429,11 +382,9 @@ export function calculateDailyEarning(
     0.70;
 
 
-  /*
-   * PI
-   *
-   * PI FULE × daily rate × 3%
-   */
+  /* -----------------------------------------
+     PI
+  ----------------------------------------- */
 
   const pi =
     piFule *
@@ -512,19 +463,6 @@ export function getDateRange(
    DAILY CALCULATION
 ========================================================= */
 
-/*
- * Calculate every day for one investor.
- *
- * rates:
- *
- * [
- *   {
- *     date: "2026-09-27",
- *     rate: 0.15
- *   }
- * ]
- */
-
 export function calculateInvestorDailyEarnings(
   investor,
   rates = [],
@@ -562,15 +500,8 @@ export function calculateInvestorDailyEarnings(
   }
 
 
-  /*
-   * Daily calculation starts from
-   * initial investment date + 2 days.
-   */
-
   const startDate =
-    getEffectiveDate(
-      investor?.startDate
-    );
+    investor?.startDate;
 
 
   if (!startDate) {
@@ -606,7 +537,7 @@ export function calculateInvestorDailyEarnings(
 
 
 /* =========================================================
-   WITHDRAWAL
+   TOTAL WITHDRAWAL
 ========================================================= */
 
 export function calculateTotalWithdrawn(
@@ -649,6 +580,103 @@ export function calculateTotalWithdrawn(
 
 
 /* =========================================================
+   WITHDRAWAL TRANSACTION COUNT
+========================================================= */
+
+export function calculateWithdrawalTransactionCount(
+  investor
+) {
+
+  const transactions =
+    Array.isArray(
+      investor?.transactions
+    )
+      ? investor.transactions
+      : [];
+
+
+  return transactions.reduce(
+    (
+      count,
+      transaction
+    ) => {
+
+      if (
+        transaction?.type !==
+        "EARN_WITHDRAW"
+      ) {
+        return count;
+      }
+
+
+      return count + 1;
+
+    },
+    0
+  );
+}
+
+
+/* =========================================================
+   WITHDRAWAL FEE
+========================================================= */
+
+/*
+ * Fixed withdrawal fee:
+ *
+ * $2 per withdrawal transaction.
+ */
+
+export function calculateWithdrawalFee(
+  investor,
+  feePerWithdrawal = 2
+) {
+
+  const withdrawalCount =
+    calculateWithdrawalTransactionCount(
+      investor
+    );
+
+
+  return (
+    withdrawalCount *
+    toNumber(
+      feePerWithdrawal
+    )
+  );
+}
+
+
+/* =========================================================
+   NET WITHDRAWAL
+========================================================= */
+
+export function calculateNetWithdrawal(
+  investor,
+  feePerWithdrawal = 2
+) {
+
+  const totalWithdrawn =
+    calculateTotalWithdrawn(
+      investor
+    );
+
+
+  const withdrawalFee =
+    calculateWithdrawalFee(
+      investor,
+      feePerWithdrawal
+    );
+
+
+  return (
+    totalWithdrawn -
+    withdrawalFee
+  );
+}
+
+
+/* =========================================================
    INVESTOR SUMMARY
 ========================================================= */
 
@@ -671,6 +699,11 @@ export function calculateInvestorSummary(
       totalEarn: 0,
 
       totalEarnWithdrawn: 0,
+
+      withdrawalFee: 0,
+
+      netWithdrawal: 0,
+
       availableEarn: 0,
 
       grossEarn: 0,
@@ -814,7 +847,7 @@ export function calculateInvestorSummary(
 
 
   /* -----------------------------------------
-     WITHDRAWAL
+     TOTAL WITHDRAWAL
   ----------------------------------------- */
 
   const totalEarnWithdrawn =
@@ -824,8 +857,32 @@ export function calculateInvestorSummary(
 
 
   /* -----------------------------------------
+     WITHDRAWAL FEE
+  ----------------------------------------- */
+
+  const withdrawalFee =
+    calculateWithdrawalFee(
+      investor
+    );
+
+
+  /* -----------------------------------------
+     NET WITHDRAWAL
+  ----------------------------------------- */
+
+  const netWithdrawal =
+    calculateNetWithdrawal(
+      investor
+    );
+
+
+  /* -----------------------------------------
      AVAILABLE EARN
   ----------------------------------------- */
+
+  /*
+   * Current logic intentionally unchanged.
+   */
 
   const availableEarn =
     Math.max(
@@ -837,9 +894,7 @@ export function calculateInvestorSummary(
 
   return {
 
-    /*
-     * Static investment values
-     */
+    /* Static investment values */
 
     liquidity,
 
@@ -847,9 +902,7 @@ export function calculateInvestorSummary(
     piFule,
 
 
-    /*
-     * Earnings
-     */
+    /* Earnings */
 
     apr,
     pi,
@@ -860,23 +913,21 @@ export function calculateInvestorSummary(
       totalEarn,
 
 
-    /*
-     * Withdrawal
-     */
+    /* Withdrawal */
 
     totalEarnWithdrawn,
 
+    withdrawalFee,
 
-    /*
-     * Remaining earnings
-     */
+    netWithdrawal,
+
+
+    /* Remaining earnings */
 
     availableEarn,
 
 
-    /*
-     * Aliases for summary components
-     */
+    /* Aliases */
 
     total:
       totalEarn,
@@ -885,9 +936,7 @@ export function calculateInvestorSummary(
       availableEarn,
 
 
-    /*
-     * Daily breakdown
-     */
+    /* Daily breakdown */
 
     dailyEarnings,
 
@@ -899,22 +948,6 @@ export function calculateInvestorSummary(
 /* =========================================================
    RATE-WISE CALCULATION
 ========================================================= */
-
-/*
- * Used by Rate List.
- *
- * Returns:
- *
- * {
- *   date,
- *   rate,
- *   apr,
- *   pi,
- *   total
- * }
- *
- * across all investors.
- */
 
 export function calculateRateSummary(
   date,
@@ -971,15 +1004,6 @@ export function calculateRateSummary(
 /* =========================================================
    GLOBAL RATE HISTORY SUMMARY
 ========================================================= */
-
-/*
- * Creates rate-wise calculations for all saved rates.
- *
- * Important:
- * Rates are GLOBAL.
- * Therefore every investor uses the same rate
- * on the same date.
- */
 
 export function calculateRateHistory(
   rates = [],
@@ -1070,6 +1094,10 @@ export function calculateAllInvestorsSummary(
     totalPi;
 
 
+  /* -----------------------------------------
+     TOTAL WITHDRAWAL
+  ----------------------------------------- */
+
   const totalWithdrawn =
     summaries.reduce(
       (
@@ -1084,6 +1112,38 @@ export function calculateAllInvestorsSummary(
       0
     );
 
+
+  /* -----------------------------------------
+     TOTAL WITHDRAWAL FEE
+  ----------------------------------------- */
+
+  const totalWithdrawalFee =
+    summaries.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        toNumber(
+          item?.summary
+            ?.withdrawalFee
+        ),
+      0
+    );
+
+
+  /* -----------------------------------------
+     TOTAL NET WITHDRAWAL
+  ----------------------------------------- */
+
+  const totalNetWithdrawal =
+    totalWithdrawn -
+    totalWithdrawalFee;
+
+
+  /* -----------------------------------------
+     AVAILABLE EARN
+  ----------------------------------------- */
 
   const availableEarn =
     Math.max(
@@ -1107,6 +1167,16 @@ export function calculateAllInvestorsSummary(
     totalEarn,
 
     totalWithdrawn,
+
+    /*
+     * New withdrawal fields
+     */
+
+    withdrawalFee:
+      totalWithdrawalFee,
+
+    netWithdrawal:
+      totalNetWithdrawal,
 
     availableEarn,
 

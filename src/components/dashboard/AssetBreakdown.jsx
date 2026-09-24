@@ -35,6 +35,10 @@ import {
   useETFStock,
 } from "../../context/ETFStockContext";
 
+import {
+  useVortaxa,
+} from "../../context/VortaxaContext";
+
 import AssetBreakdownCard
   from "./AssetBreakdownCard";
 
@@ -144,7 +148,20 @@ function AssetBreakdown() {
 
 
   // ========================================
-  // CALCULATIONS
+  // VORTAXA
+  // ========================================
+
+  const {
+    investorData:
+      vortaxaInvestorData = [],
+
+    allInvestorsSummary:
+      vortaxaAllSummary = {},
+  } = useVortaxa();
+
+
+  // ========================================
+  // NORMAL ASSET CALCULATIONS
   // ========================================
 
   const calculations =
@@ -167,6 +184,54 @@ function AssetBreakdown() {
         fds,
         licPliPolicies,
         etfStockSummary,
+      ]
+    );
+
+
+  // ========================================
+  // VORTAXA TOTAL WITHDRAWAL
+  // ========================================
+
+  const vortaxaTotalWithdrawal =
+    Number(
+      vortaxaAllSummary?.totalWithdrawn ??
+      vortaxaAllSummary?.totalEarnWithdrawn ??
+      0
+    );
+
+
+  // ========================================
+  // VORTAXA NET WITHDRAWAL
+  // ========================================
+
+  const vortaxaNetWithdrawal =
+    Number(
+      vortaxaAllSummary?.netWithdrawal || 0
+    );
+
+
+  // ========================================
+  // VORTAXA HOLDINGS
+  // ========================================
+
+  const vortaxaHoldings =
+    useMemo(
+      () => {
+
+        if (
+          !Array.isArray(
+            vortaxaInvestorData
+          )
+        ) {
+          return 0;
+        }
+
+
+        return vortaxaInvestorData.length;
+
+      },
+      [
+        vortaxaInvestorData,
       ]
     );
 
@@ -218,6 +283,7 @@ function AssetBreakdown() {
 
 
         calculatedAssets.push({
+
           ...vortaxaConfig,
 
           id:
@@ -227,17 +293,44 @@ function AssetBreakdown() {
             vortaxaConfig?.name ||
             "Vortaxa",
 
+
+          /*
+           * Vortaxa main value
+           * = Total Withdrawal
+           */
+
           currentValue:
-            0,
+            vortaxaTotalWithdrawal,
 
           formattedValue:
-            formatCurrency(0),
+            formatCurrency(
+              vortaxaTotalWithdrawal
+            ),
+
 
           profit:
             0,
 
           returnPercentage:
             0,
+
+
+          /*
+           * Net Withdrawal
+           * is shown below main value.
+           */
+
+          netWithdrawal:
+            vortaxaNetWithdrawal,
+
+
+          /*
+           * Number of Vortaxa investors.
+           */
+
+          holdings:
+            vortaxaHoldings,
+
         });
 
 
@@ -246,6 +339,9 @@ function AssetBreakdown() {
       },
       [
         calculations,
+        vortaxaTotalWithdrawal,
+        vortaxaNetWithdrawal,
+        vortaxaHoldings,
       ]
     );
 
@@ -282,6 +378,7 @@ function AssetBreakdown() {
 
         vortaxa:
           "/vortaxa",
+
       };
 
 
@@ -295,6 +392,7 @@ function AssetBreakdown() {
 
 
       navigate(route);
+
     };
 
 
@@ -375,6 +473,7 @@ function AssetBreakdown() {
     </div>
   );
 }
+
 
 export default AssetBreakdown;
 

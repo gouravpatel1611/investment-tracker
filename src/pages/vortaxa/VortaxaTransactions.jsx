@@ -1,3 +1,4 @@
+
 import {
   useEffect,
   useMemo,
@@ -17,19 +18,27 @@ import {
   useVortaxa,
 } from "../../context/VortaxaContext";
 
-import VortaxaDetailsHeader from "../../components/vortaxa/details/VortaxaDetailsHeader";
+import VortaxaDetailsHeader
+  from "../../components/vortaxa/details/VortaxaDetailsHeader";
 
-import VortaxaTransactionFilters from "../../components/vortaxa/transaction/VortaxaTransactionFilters";
-import VortaxaTransactionForm from "../../components/vortaxa/transaction/VortaxaTransactionForm";
-import VortaxaTransactionList from "../../components/vortaxa/transaction/VortaxaTransactionList";
+import VortaxaTransactionFilters
+  from "../../components/vortaxa/transaction/VortaxaTransactionFilters";
+
+import VortaxaTransactionForm
+  from "../../components/vortaxa/transaction/VortaxaTransactionForm";
+
+import VortaxaTransactionList
+  from "../../components/vortaxa/transaction/VortaxaTransactionList";
 
 
 function VortaxaTransactions() {
+
   const {
     investorId,
   } = useParams();
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
 
   /* =========================================================
@@ -46,7 +55,6 @@ function VortaxaTransactions() {
 
     updateTransaction,
     deleteTransaction,
-    deleteInvestor,
 
     loading,
     dataLoading,
@@ -58,7 +66,9 @@ function VortaxaTransactions() {
   ========================================================= */
 
   const investor =
-    getInvestor(investorId);
+    getInvestor(
+      investorId
+    );
 
 
   /* =========================================================
@@ -69,7 +79,8 @@ function VortaxaTransactions() {
     investor
       ? investorData?.find(
           (item) =>
-            item.id === investor.id
+            item.id ===
+            investor.id
         )
       : null;
 
@@ -84,6 +95,30 @@ function VortaxaTransactions() {
     )
       ? investor.transactions
       : [];
+
+
+  /* =========================================================
+     INITIAL FULE
+     
+     Liquidity is intentionally NOT used.
+  ========================================================= */
+
+  const initialFule =
+    Number(
+      investor?.initial?.fule || 0
+    );
+
+
+  /* =========================================================
+     INITIAL PI FULE
+     
+     Liquidity is intentionally NOT used.
+  ========================================================= */
+
+  const initialPiFule =
+    Number(
+      investor?.initial?.piFule || 0
+    );
 
 
   /* =========================================================
@@ -134,56 +169,117 @@ function VortaxaTransactions() {
   ========================================================= */
 
   useEffect(() => {
+
     setShowForm(false);
+
     setEditingTransaction(null);
 
     setYear("all");
+
     setMonth("all");
+
     setType("all");
-  }, [investorId]);
+
+  }, [
+    investorId,
+  ]);
 
 
   /* =========================================================
      YEARS
   ========================================================= */
 
-  const years = useMemo(() => {
-    const uniqueYears =
-      new Set();
+  const years =
+    useMemo(
+      () => {
 
-    transactions.forEach(
-      (transaction) => {
+        const uniqueYears =
+          new Set();
 
-        if (!transaction?.date) {
-          return;
-        }
 
-        const date =
-          new Date(
-            transaction.date
+        transactions.forEach(
+          (transaction) => {
+
+            if (
+              !transaction?.date
+            ) {
+              return;
+            }
+
+
+            const date =
+              new Date(
+                transaction.date
+              );
+
+
+            if (
+              Number.isNaN(
+                date.getTime()
+              )
+            ) {
+              return;
+            }
+
+
+            uniqueYears.add(
+              date.getFullYear()
+            );
+
+          }
+        );
+
+
+        /*
+         * Initial transaction date
+         * is also included in year
+         * filter options.
+         */
+
+        const initialTransaction =
+          transactions.find(
+            (transaction) =>
+              transaction?.type ===
+              "INITIAL"
           );
 
+
         if (
-          Number.isNaN(
-            date.getTime()
-          )
+          initialTransaction?.date
         ) {
-          return;
+
+          const initialDate =
+            new Date(
+              initialTransaction.date
+            );
+
+
+          if (
+            !Number.isNaN(
+              initialDate.getTime()
+            )
+          ) {
+
+            uniqueYears.add(
+              initialDate.getFullYear()
+            );
+
+          }
         }
 
-        uniqueYears.add(
-          date.getFullYear()
+
+        return Array.from(
+          uniqueYears
+        ).sort(
+          (a, b) =>
+            b - a
         );
-      }
-    );
 
-    return Array.from(
-      uniqueYears
-    ).sort(
-      (a, b) => b - a
+      },
+      [
+        transactions,
+      ]
     );
-
-  }, [transactions]);
 
 
   /* =========================================================
@@ -191,103 +287,130 @@ function VortaxaTransactions() {
   ========================================================= */
 
   const filteredTransactions =
-    useMemo(() => {
+    useMemo(
+      () => {
 
-      return [...transactions]
+        return [
+          ...transactions,
+        ]
 
-        .filter(
-          (transaction) => {
+          .filter(
+            (transaction) => {
 
-            /* ================================================
-               YEAR
-            ================================================= */
-
-            if (year !== "all") {
-
-              const transactionYear =
-                transaction?.date
-                  ? new Date(
-                      transaction.date
-                    ).getFullYear()
-                  : null;
+              /* ================================================
+                 YEAR
+              ================================================= */
 
               if (
-                String(
-                  transactionYear
-                ) !== String(year)
+                year !== "all"
+              ) {
+
+                const transactionYear =
+                  transaction?.date
+                    ? new Date(
+                        transaction.date
+                      ).getFullYear()
+                    : null;
+
+
+                if (
+                  String(
+                    transactionYear
+                  ) !==
+                  String(year)
+                ) {
+                  return false;
+                }
+
+              }
+
+
+              /* ================================================
+                 MONTH
+              ================================================= */
+
+              if (
+                month !== "all"
+              ) {
+
+                const transactionMonth =
+                  transaction?.date
+                    ? new Date(
+                        transaction.date
+                      ).getMonth() + 1
+                    : null;
+
+
+                if (
+                  String(
+                    transactionMonth
+                  ).padStart(
+                    2,
+                    "0"
+                  ) !==
+                  String(month).padStart(
+                    2,
+                    "0"
+                  )
+                ) {
+                  return false;
+                }
+
+              }
+
+
+              /* ================================================
+                 TYPE
+              ================================================= */
+
+              if (
+                type !== "all" &&
+                transaction?.type !== type
               ) {
                 return false;
               }
+
+
+              return true;
+
             }
+          )
+
+          /* ================================================
+             NEWEST FIRST
+          ================================================= */
+
+          .sort(
+            (a, b) => {
+
+              const dateA =
+                new Date(
+                  a?.date || 0
+                ).getTime();
 
 
-            /* ================================================
-               MONTH
-            ================================================= */
+              const dateB =
+                new Date(
+                  b?.date || 0
+                ).getTime();
 
-            if (month !== "all") {
 
-              const transactionMonth =
-                transaction?.date
-                  ? new Date(
-                      transaction.date
-                    ).getMonth() + 1
-                  : null;
+              return (
+                dateB -
+                dateA
+              );
 
-              if (
-                String(
-                  transactionMonth
-                ).padStart(2, "0") !==
-                String(month).padStart(2, "0")
-              ) {
-                return false;
-              }
             }
+          );
 
-
-            /* ================================================
-               TYPE
-            ================================================= */
-
-            if (
-              type !== "all" &&
-              transaction?.type !== type
-            ) {
-              return false;
-            }
-
-
-            return true;
-          }
-        )
-
-        /* ================================================
-           NEWEST FIRST
-        ================================================= */
-
-        .sort(
-          (a, b) => {
-
-            const dateA =
-              new Date(
-                a?.date || 0
-              ).getTime();
-
-            const dateB =
-              new Date(
-                b?.date || 0
-              ).getTime();
-
-            return dateB - dateA;
-          }
-        );
-
-    }, [
-      transactions,
-      year,
-      month,
-      type,
-    ]);
+      },
+      [
+        transactions,
+        year,
+        month,
+        type,
+      ]
+    );
 
 
   /* =========================================================
@@ -295,8 +418,15 @@ function VortaxaTransactions() {
   ========================================================= */
 
   function handleAddTransaction() {
-    setEditingTransaction(null);
-    setShowForm(true);
+
+    setEditingTransaction(
+      null
+    );
+
+    setShowForm(
+      true
+    );
+
   }
 
 
@@ -307,15 +437,20 @@ function VortaxaTransactions() {
   function handleEditTransaction(
     transaction
   ) {
+
     if (!transaction) {
       return;
     }
+
 
     setEditingTransaction(
       transaction
     );
 
-    setShowForm(true);
+    setShowForm(
+      true
+    );
+
   }
 
 
@@ -331,11 +466,16 @@ function VortaxaTransactions() {
       return;
     }
 
+
     const currentInvestorId =
       investor.investorId ||
       investor.id;
 
-    setSaving(true);
+
+    setSaving(
+      true
+    );
+
 
     try {
 
@@ -343,7 +483,9 @@ function VortaxaTransactions() {
          UPDATE EXISTING
       ===================================================== */
 
-      if (editingTransaction) {
+      if (
+        editingTransaction
+      ) {
 
         await updateTransaction(
           currentInvestorId,
@@ -351,8 +493,14 @@ function VortaxaTransactions() {
           transaction
         );
 
-        setEditingTransaction(null);
-        setShowForm(false);
+
+        setEditingTransaction(
+          null
+        );
+
+        setShowForm(
+          false
+        );
 
         return;
       }
@@ -404,11 +552,18 @@ function VortaxaTransactions() {
           transaction.amount,
           transaction.date
         );
+
       }
 
 
-      setShowForm(false);
-      setEditingTransaction(null);
+      setShowForm(
+        false
+      );
+
+      setEditingTransaction(
+        null
+      );
+
 
     } catch (error) {
 
@@ -417,15 +572,21 @@ function VortaxaTransactions() {
         error
       );
 
+
       alert(
         error?.message ||
         "Failed to save transaction."
       );
 
+
     } finally {
 
-      setSaving(false);
+      setSaving(
+        false
+      );
+
     }
+
   }
 
 
@@ -437,9 +598,12 @@ function VortaxaTransactions() {
     transaction
   ) {
 
-    if (!transaction?.id) {
+    if (
+      !transaction?.id
+    ) {
       return;
     }
+
 
     if (!investor) {
       return;
@@ -452,8 +616,27 @@ function VortaxaTransactions() {
 
 
     /* =======================================================
-       INITIAL TRANSACTION
-       DELETE COMPLETE INVESTOR
+       INITIAL FULE / INITIAL PI FULE
+       
+       These are display-only.
+       They are NOT actual transactions.
+    ======================================================= */
+
+    if (
+      transaction.type ===
+        "INITIAL_FULE" ||
+      transaction.type ===
+        "INITIAL_PI_FULE"
+    ) {
+
+      return;
+    }
+
+
+    /* =======================================================
+       LEGACY INITIAL TRANSACTION
+       
+       Kept only for old stored data.
     ======================================================= */
 
     if (
@@ -466,6 +649,7 @@ function VortaxaTransactions() {
           "Deleting the Initial Investment will delete this investor and all of its Vortaxa data.\n\nAre you sure you want to continue?"
         );
 
+
       if (!confirmed) {
         return;
       }
@@ -476,33 +660,19 @@ function VortaxaTransactions() {
           "This action cannot be undone.\n\nDelete the entire investor?"
         );
 
+
       if (!confirmedAgain) {
         return;
       }
 
 
-      try {
-
-        await deleteInvestor(
-          currentInvestorId
-        );
-
-        navigate(
-          "/vortaxa"
-        );
-
-      } catch (error) {
-
-        console.error(
-          "Failed to delete investor:",
-          error
-        );
-
-        alert(
-          error?.message ||
-          "Failed to delete investor."
-        );
-      }
+      /*
+       * deleteInvestor is no longer
+       * used from the current UI.
+       *
+       * This block is only for legacy
+       * INITIAL data.
+       */
 
       return;
     }
@@ -518,6 +688,7 @@ function VortaxaTransactions() {
         "Are you sure you want to delete this transaction?"
       );
 
+
     if (!confirmed) {
       return;
     }
@@ -530,6 +701,7 @@ function VortaxaTransactions() {
         transaction.id
       );
 
+
     } catch (error) {
 
       console.error(
@@ -537,11 +709,14 @@ function VortaxaTransactions() {
         error
       );
 
+
       alert(
         error?.message ||
         "Failed to delete transaction."
       );
+
     }
+
   }
 
 
@@ -550,8 +725,15 @@ function VortaxaTransactions() {
   ========================================================= */
 
   function handleCancelForm() {
-    setShowForm(false);
-    setEditingTransaction(null);
+
+    setShowForm(
+      false
+    );
+
+    setEditingTransaction(
+      null
+    );
+
   }
 
 
@@ -670,9 +852,12 @@ function VortaxaTransactions() {
                 hover:bg-yellow-300
               "
             >
-              <Plus size={15} />
+              <Plus
+                size={15}
+              />
 
               Add Transaction
+
             </button>
           )}
 
@@ -696,7 +881,9 @@ function VortaxaTransactions() {
               availableEarn={
                 availableEarn
               }
-              saving={saving}
+              saving={
+                saving
+              }
               editingTransaction={
                 editingTransaction
               }
@@ -713,10 +900,18 @@ function VortaxaTransactions() {
         <div className="mb-4">
 
           <VortaxaTransactionFilters
-            year={year}
-            month={month}
-            type={type}
-            years={years}
+            year={
+              year
+            }
+            month={
+              month
+            }
+            type={
+              type
+            }
+            years={
+              years
+            }
             onYearChange={
               setYear
             }
@@ -739,9 +934,19 @@ function VortaxaTransactions() {
           transactions={
             filteredTransactions
           }
+
+          initialFule={
+            initialFule
+          }
+
+          initialPiFule={
+            initialPiFule
+          }
+
           onEdit={
             handleEditTransaction
           }
+
           onDelete={
             handleDeleteTransaction
           }
@@ -755,3 +960,4 @@ function VortaxaTransactions() {
 
 
 export default VortaxaTransactions;
+

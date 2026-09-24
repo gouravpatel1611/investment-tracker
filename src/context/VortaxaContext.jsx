@@ -1,4 +1,3 @@
-
 import {
   createContext,
   useContext,
@@ -401,9 +400,12 @@ function getEarliestInvestmentDate(
 
 
 /*
- * Rate history starts from:
+ * Rate history now starts from:
  *
- * Earliest investment date + 2 days
+ * Earliest investment date itself.
+ *
+ * FULE / PI FULE calculations are
+ * effective on the SAME DAY.
  */
 
 function getRateStartDate(
@@ -421,44 +423,7 @@ function getRateStartDate(
   }
 
 
-  const [
-    year,
-    month,
-    day,
-  ] =
-    earliest
-      .split("-")
-      .map(Number);
-
-
-  const date =
-    new Date(
-      year,
-      month - 1,
-      day
-    );
-
-
-  date.setDate(
-    date.getDate() + 2
-  );
-
-
-  const resultYear =
-    date.getFullYear();
-
-  const resultMonth =
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
-
-  const resultDay =
-    String(
-      date.getDate()
-    ).padStart(2, "0");
-
-
-  return `${resultYear}-${resultMonth}-${resultDay}`;
+  return earliest;
 
 }
 
@@ -967,7 +932,6 @@ export function VortaxaProvider({
         investorId,
 
         investorName:
-
           investorName || "",
 
         startDate:
@@ -1312,6 +1276,12 @@ export function VortaxaProvider({
 
     /*
      * Calculate current available earnings.
+     *
+     * IMPORTANT:
+     * Withdrawal fee is NOT deducted here.
+     *
+     * Existing withdrawal validation remains
+     * unchanged as requested.
      */
 
     const summary =
@@ -1332,6 +1302,12 @@ export function VortaxaProvider({
 
     }
 
+
+    /*
+     * Only actual withdrawal is saved.
+     *
+     * $2 fee is NOT saved as a transaction.
+     */
 
     return addTransaction({
 

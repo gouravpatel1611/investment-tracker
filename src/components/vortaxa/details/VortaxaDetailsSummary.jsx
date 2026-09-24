@@ -1,4 +1,3 @@
-
 import {
   CircleDollarSign,
   TrendingUp,
@@ -49,6 +48,8 @@ function VortaxaDetailsSummary({ summary = {} }) {
     piFule = 0,
     grossEarn = 0,
     totalEarnWithdrawn = 0,
+    withdrawalFee = 0,
+    netWithdrawal = 0,
     availableEarn = 0,
   } = summary;
 
@@ -113,6 +114,24 @@ function VortaxaDetailsSummary({ summary = {} }) {
           valueClass="text-rose-400"
         />
 
+        {/* Withdrawal Fee */}
+        <SummaryItem
+          icon={ArrowDownToLine}
+          label="Withdrawal Fee"
+          value={formatDollar(withdrawalFee)}
+          iconClass="text-orange-300"
+          valueClass="text-orange-400"
+        />
+
+        {/* Net Withdrawal */}
+        <SummaryItem
+          icon={ArrowDownToLine}
+          label="Net Withdrawal"
+          value={formatDollar(netWithdrawal)}
+          iconClass="text-pink-300"
+          valueClass="text-pink-400"
+        />
+
         {/* PI FULE */}
         <SummaryItem
           icon={PiggyBank}
@@ -137,4 +156,3 @@ function VortaxaDetailsSummary({ summary = {} }) {
 }
 
 export default VortaxaDetailsSummary;
-

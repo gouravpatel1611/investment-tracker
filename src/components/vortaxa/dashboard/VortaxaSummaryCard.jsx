@@ -19,23 +19,6 @@ function VortaxaSummaryCard() {
    * ==========================================
    * REAL INVESTOR DATA
    * ==========================================
-   *
-   * investorData comes from VortaxaContext.
-   *
-   * Each investor contains:
-   *
-   * {
-   *   ...investor,
-   *   summary
-   * }
-   *
-   * summary contains:
-   *
-   * apr
-   * pi
-   * totalEarn
-   * totalEarnWithdrawn
-   * availableEarn
    */
 
   const {
@@ -53,9 +36,6 @@ function VortaxaSummaryCard() {
    * ==========================================
    * NORMALIZED SUMMARY VALUES
    * ==========================================
-   *
-   * Keep the table independent from the
-   * internal summary property names.
    */
 
   const investorRows =
@@ -86,9 +66,41 @@ function VortaxaSummaryCard() {
           );
 
 
+        /*
+         * Total Withdrawal
+         *
+         * This remains the actual
+         * withdrawal amount.
+         */
+
         const wdl =
           Number(
             summary?.totalEarnWithdrawn || 0
+          );
+
+
+        /*
+         * Withdrawal Fee
+         *
+         * $2 per withdrawal transaction.
+         */
+
+        const withdrawalFee =
+          Number(
+            summary?.withdrawalFee || 0
+          );
+
+
+        /*
+         * Net Withdrawal
+         *
+         * Total Withdrawal - Fee
+         */
+
+        const netWithdrawal =
+          Number(
+            summary?.netWithdrawal ??
+            wdl - withdrawalFee
           );
 
 
@@ -113,6 +125,8 @@ function VortaxaSummaryCard() {
           pi,
           total,
           wdl,
+          withdrawalFee,
+          netWithdrawal,
           balance,
         };
 
@@ -165,6 +179,28 @@ function VortaxaSummaryCard() {
         sum +
         Number(
           investor?.wdl || 0
+        ),
+      0
+    );
+
+
+  const totalWithdrawalFee =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.withdrawalFee || 0
+        ),
+      0
+    );
+
+
+  const totalNetWithdrawal =
+    investorRows.reduce(
+      (sum, investor) =>
+        sum +
+        Number(
+          investor?.netWithdrawal || 0
         ),
       0
     );
@@ -794,6 +830,172 @@ function VortaxaSummaryCard() {
                   {
                     formatCurrency(
                       totalWdl
+                    )
+                  }
+
+                </td>
+
+              </tr>
+
+
+              {/* =================================
+                  WDL FEE
+              ================================= */}
+
+              <tr>
+
+                <td
+                  className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
+                    border-b
+                    border-slate-700
+                    bg-slate-800
+                    px-3
+                    py-3
+                    text-sm
+                    font-bold
+                    text-orange-400
+                  "
+                >
+                  WDL Fee
+                </td>
+
+
+                {investorRows.map(
+                  (investor) => (
+
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-bold
+                        text-orange-400
+                      "
+                    >
+
+                      {
+                        formatCurrency(
+                          investor.withdrawalFee
+                        )
+                      }
+
+                    </td>
+
+                  )
+                )}
+
+
+                <td
+                  className="
+                    border-b
+                    border-l
+                    border-slate-700
+                    bg-slate-900/50
+                    px-3
+                    py-3
+                    text-center
+                    text-base
+                    font-extrabold
+                    text-orange-400
+                  "
+                >
+
+                  {
+                    formatCurrency(
+                      totalWithdrawalFee
+                    )
+                  }
+
+                </td>
+
+              </tr>
+
+
+              {/* =================================
+                  NET WDL
+              ================================= */}
+
+              <tr>
+
+                <td
+                  className="
+                    sticky
+                    left-0
+                    z-10
+                    border-r
+                    border-b
+                    border-slate-700
+                    bg-slate-800
+                    px-3
+                    py-3
+                    text-sm
+                    font-bold
+                    text-pink-400
+                  "
+                >
+                  Net WDL
+                </td>
+
+
+                {investorRows.map(
+                  (investor) => (
+
+                    <td
+                      key={
+                        investor.id
+                      }
+                      className="
+                        border-b
+                        border-slate-700
+                        px-3
+                        py-3
+                        text-center
+                        text-base
+                        font-bold
+                        text-pink-400
+                      "
+                    >
+
+                      {
+                        formatCurrency(
+                          investor.netWithdrawal
+                        )
+                      }
+
+                    </td>
+
+                  )
+                )}
+
+
+                <td
+                  className="
+                    border-b
+                    border-l
+                    border-slate-700
+                    bg-slate-900/50
+                    px-3
+                    py-3
+                    text-center
+                    text-base
+                    font-extrabold
+                    text-pink-400
+                  "
+                >
+
+                  {
+                    formatCurrency(
+                      totalNetWithdrawal
                     )
                   }
 

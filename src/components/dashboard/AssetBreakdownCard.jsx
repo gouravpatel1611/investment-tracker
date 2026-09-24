@@ -1,9 +1,13 @@
+
 function AssetBreakdownCard({
   asset,
   isLoading = false,
   onClick,
 }) {
   const Icon = asset?.icon;
+
+  const isVortaxa =
+    asset?.id === "vortaxa";
 
   return (
     <button
@@ -34,7 +38,7 @@ function AssetBreakdownCard({
     >
       {/* =============================
           TOP BAR
-      ============================== */}
+      ============================= */}
 
       <div
         className="
@@ -111,7 +115,7 @@ function AssetBreakdownCard({
 
       {/* =============================
           BOTTOM BAR
-      ============================== */}
+      ============================= */}
 
       <div
         className="
@@ -137,13 +141,37 @@ function AssetBreakdownCard({
               text-yellow-400
             "
             style={{
-              fontFamily: "Calibri, Arial, sans-serif",
+              fontFamily:
+                "Calibri, Arial, sans-serif",
             }}
           >
             {isLoading
               ? "Loading..."
-              : asset?.formattedValue || "—"}
+              : isVortaxa
+                ? formatDollar(
+                    asset?.currentValue || 0
+                  )
+                : asset?.formattedValue || "—"}
           </p>
+
+          {/* VORTAXA NET WITHDRAWAL */}
+
+          {isVortaxa && (
+            <p
+              className="
+                mt-0.5
+                text-[15px]
+                font-medium
+                text-green-400
+                tabular-nums
+              "
+            >
+              NET WDL :{" "}
+              {formatDollar(
+                asset?.netWithdrawal || 0
+              )}
+            </p>
+          )}
         </div>
 
         {/* ARROW */}
@@ -173,4 +201,44 @@ function AssetBreakdownCard({
   );
 }
 
+
+/* ========================================
+   INR FORMAT
+   Other assets use this
+======================================== */
+
+function formatCurrency(value = 0) {
+  return new Intl.NumberFormat(
+    "en-IN",
+    {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }
+  ).format(
+    Number(value) || 0
+  );
+}
+
+
+/* ========================================
+   USD FORMAT
+   Vortaxa uses this
+======================================== */
+
+function formatDollar(value = 0) {
+  return new Intl.NumberFormat(
+    "en-US",
+    {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }
+  ).format(
+    Number(value) || 0
+  );
+}
+
+
 export default AssetBreakdownCard;
+
