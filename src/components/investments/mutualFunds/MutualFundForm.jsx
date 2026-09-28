@@ -21,6 +21,8 @@ import SchemeCodeInput from "./SchemeCodeInput";
 import FundPreview from "./FundPreview";
 import InvestmentSummary from "./InvestmentSummary";
 
+import { investors } from "../../../data/mutualFunds";
+
 import {
   findMutualFundBySchemeCode,
   getHistoricalNav,
@@ -38,10 +40,6 @@ import {
   useMutualFunds,
 } from "../../../context/MutualFundContext";
 
-import {
-  useInvestors,
-} from "../../../context/InvestorContext";
-
 
 function MutualFundForm() {
 
@@ -56,6 +54,14 @@ function MutualFundForm() {
    * --------------------------------
    * SELECTED FUND FROM DETAILS PAGE
    * --------------------------------
+   *
+   * Details page se:
+   *
+   * navigate("/portfolio/mutual-funds/add", {
+   *   state: { fund }
+   * })
+   *
+   * kiya gaya hai.
    */
 
   const selectedFund =
@@ -75,20 +81,12 @@ function MutualFundForm() {
 
   /*
    * --------------------------------
-   * INVESTOR CONTEXT
-   * --------------------------------
-   */
-
-  const {
-    investors,
-    loading: investorsLoading,
-  } = useInvestors();
-
-
-  /*
-   * --------------------------------
    * INITIAL FUND DATA
    * --------------------------------
+   *
+   * Holding ke schema ko form ke
+   * expected fund schema ke saath
+   * normalize kar rahe hain.
    */
 
   const initialFund =
@@ -96,6 +94,12 @@ function MutualFundForm() {
       ? {
           ...selectedFund,
 
+          /*
+           * API FundPreview generally
+           * fund.name use karta hai.
+           *
+           * Holding me schemeName hai.
+           */
           name:
             selectedFund.name ||
             selectedFund.schemeName ||
@@ -177,30 +181,9 @@ function MutualFundForm() {
   );
 
 
-  /*
-   * --------------------------------
-   * NAV
-   * --------------------------------
-   *
-   * nav:
-   * API se fetched NAV ya user edited NAV
-   *
-   * actualNav:
-   * API se mili original NAV
-   *
-   * actualNavDate:
-   * API se mili actual NAV date
-   */
-
   const [
     nav,
     setNav,
-  ] = useState(null);
-
-
-  const [
-    actualNav,
-    setActualNav,
   ] = useState(null);
 
 
@@ -251,8 +234,6 @@ function MutualFundForm() {
    * CALCULATE UNITS
    *
    * Amount ÷ NAV = Units
-   *
-   * Yahan user edited NAV bhi use hoga.
    * --------------------------------
    */
 
@@ -293,11 +274,10 @@ function MutualFundForm() {
    * FETCH NAV
    * --------------------------------
    *
-   * Date change hone par API se
-   * NAV dobara fetch hoga.
+   * Fund already selected hai.
    *
-   * Fetched NAV ko editable nav state
-   * mein set kiya jayega.
+   * Sirf date change hone par
+   * historical NAV dobara fetch hoga.
    */
 
   useEffect(() => {
@@ -313,7 +293,6 @@ function MutualFundForm() {
       ) {
 
         setNav(null);
-        setActualNav(null);
         setActualNavDate(null);
         setIsPreviousDate(false);
 
@@ -337,20 +316,6 @@ function MutualFundForm() {
           return;
         }
 
-
-        /*
-         * Original API NAV
-         */
-
-        setActualNav(
-          result.nav
-        );
-
-
-        /*
-         * Editable NAV field mein
-         * initially API NAV hi rahega.
-         */
 
         setNav(
           result.nav
@@ -377,8 +342,6 @@ function MutualFundForm() {
         if (!cancelled) {
 
           setNav(null);
-
-          setActualNav(null);
 
           setActualNavDate(null);
 
@@ -416,6 +379,12 @@ function MutualFundForm() {
    * --------------------------------
    * SCHEME SEARCH
    * --------------------------------
+   *
+   * Ye fallback ke liye rakha hai.
+   *
+   * Normally Add button se fund already
+   * filled hoga, isliye user ko search
+   * karne ki zarurat nahi padegi.
    */
 
   const handleSchemeSearch =
@@ -429,8 +398,6 @@ function MutualFundForm() {
 
         setFund(null);
         setNav(null);
-        setActualNav(null);
-        setActualNavDate(null);
         setNotFound(false);
 
         return;
@@ -441,8 +408,6 @@ function MutualFundForm() {
       setNotFound(false);
       setFund(null);
       setNav(null);
-      setActualNav(null);
-      setActualNavDate(null);
       setError("");
 
 
@@ -489,6 +454,12 @@ function MutualFundForm() {
    * --------------------------------
    * SCHEME CODE CHANGE
    * --------------------------------
+   *
+   * Auto-filled scheme code ko normally
+   * change nahi karna padega.
+   *
+   * Agar user change karta hai to
+   * purana fund clear hoga.
    */
 
   const handleSchemeCodeChange =
@@ -500,37 +471,11 @@ function MutualFundForm() {
 
       setNav(null);
 
-      setActualNav(null);
-
       setActualNavDate(null);
 
       setIsPreviousDate(false);
 
       setNotFound(false);
-
-      setError("");
-
-    };
-
-
-  /*
-   * --------------------------------
-   * NAV CHANGE
-   * --------------------------------
-   *
-   * User yahan NAV manually edit
-   * kar sakta hai.
-   *
-   * Edited value:
-   * - Units calculation mein use hogi
-   * - Firebase mein purchaseNav ke
-   *   roop mein save hogi
-   */
-
-  const handleNavChange =
-    (value) => {
-
-      setNav(value);
 
       setError("");
 
@@ -618,14 +563,10 @@ function MutualFundForm() {
        * NAV VALIDATION
        */
 
-      if (
-        nav === null ||
-        nav === "" ||
-        Number(nav) <= 0
-      ) {
+      if (nav === null) {
 
         setError(
-          "Please enter a valid purchase NAV."
+          "Purchase NAV is not available."
         );
 
         return;
@@ -746,30 +687,16 @@ function MutualFundForm() {
 
 
         /*
-         * EDITED / FINAL NAV
-         *
-         * User ne agar NAV change kiya hai
-         * to wahi Firebase mein save hoga.
-         */
-
-        purchaseNav:
-          Number(nav),
-
-
-        /*
-         * UNITS
-         *
-         * Edited NAV ke basis par
-         * automatically calculated.
+         * AUTOMATICALLY CALCULATED UNITS
          */
 
         units:
           calculatedUnits,
 
 
-        /*
-         * API SE MILI ACTUAL NAV DATE
-         */
+        purchaseNav:
+          Number(nav),
+
 
         navDate:
           actualNavDate,
@@ -944,6 +871,7 @@ function MutualFundForm() {
         className="space-y-4"
       >
 
+
         {/* --------------------------------
             INVESTOR
         -------------------------------- */}
@@ -963,25 +891,7 @@ function MutualFundForm() {
             investors={investors}
             value={investorId}
             onChange={setInvestorId}
-            loading={investorsLoading}
           />
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/investors")
-            }
-            className="
-              mt-2
-              text-sm
-              font-semibold
-              text-purple-400
-              transition
-              hover:text-purple-300
-            "
-          >
-            Add / Edit Investor
-          </button>
 
         </div>
 
@@ -1082,6 +992,7 @@ function MutualFundForm() {
 
 
           <div className="space-y-4">
+
 
             {/* --------------------------------
                 PURCHASE DATE
@@ -1417,20 +1328,13 @@ function MutualFundForm() {
 
                 <input
                   id="purchaseNav"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.0001"
+                  type="text"
                   value={
                     nav !== null
                       ? nav
                       : ""
                   }
-                  onChange={(event) =>
-                    handleNavChange(
-                      event.target.value
-                    )
-                  }
+                  readOnly
                   placeholder={
                     fund
                       ? "Fetching NAV..."
@@ -1441,7 +1345,7 @@ function MutualFundForm() {
                     w-full
                     rounded-xl
                     border
-                    border-slate-600
+                    border-slate-700
                     bg-slate-900
                     pl-10
                     pr-3
@@ -1450,34 +1354,10 @@ function MutualFundForm() {
                     text-white
                     outline-none
                     placeholder:text-slate-500
-                    focus:border-purple-500
-                    focus:ring-2
-                    focus:ring-purple-500/20
                   "
                 />
 
               </div>
-
-
-              {actualNav !== null &&
-                nav !== null &&
-                Number(nav) !==
-                  Number(actualNav) && (
-
-                  <p
-                    className="
-                      mt-2
-                      text-[11px]
-                      font-semibold
-                      text-amber-400
-                    "
-                  >
-                    API NAV: ₹
-                    {actualNav}
-                    {" "}• Using your entered NAV
-                  </p>
-
-                )}
 
             </div>
 
@@ -1591,7 +1471,6 @@ function MutualFundForm() {
             disabled={
               !fund ||
               nav === null ||
-              Number(nav) <= 0 ||
               isNavLoading ||
               !amount ||
               Number(amount) <= 0 ||
