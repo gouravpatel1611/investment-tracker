@@ -266,7 +266,7 @@ function MutualFunds() {
             type="button"
             onClick={() =>
               navigate(
-                "/portfolio/mutual-funds/add"
+                "/investors"
               )
             }
             className="
