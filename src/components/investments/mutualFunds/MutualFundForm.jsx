@@ -21,8 +21,6 @@ import SchemeCodeInput from "./SchemeCodeInput";
 import FundPreview from "./FundPreview";
 import InvestmentSummary from "./InvestmentSummary";
 
-import { investors } from "../../../data/mutualFunds";
-
 import {
   findMutualFundBySchemeCode,
   getHistoricalNav,
@@ -40,6 +38,10 @@ import {
   useMutualFunds,
 } from "../../../context/MutualFundContext";
 
+import {
+  useInvestors,
+} from "../../../context/InvestorContext";
+
 
 function MutualFundForm() {
 
@@ -55,17 +57,37 @@ function MutualFundForm() {
    * SELECTED FUND FROM DETAILS PAGE
    * --------------------------------
    *
-   * Details page se:
+   * Existing Mutual Fund ke Add button
+   * se fund yahan state ke through aata hai.
    *
-   * navigate("/portfolio/mutual-funds/add", {
-   *   state: { fund }
-   * })
+   * selectedFund ke andar already:
    *
-   * kiya gaya hai.
+   * investorId
+   * investorName
+   * schemeCode
+   * schemeName
+   * folioNumber
+   * etc.
+   *
+   * maujood hote hain.
    */
 
   const selectedFund =
     location.state?.fund || null;
+
+
+  /*
+   * --------------------------------
+   * EXISTING FUND MODE
+   * --------------------------------
+   *
+   * Agar selectedFund available hai
+   * to ye existing fund se Add transaction
+   * karne ka flow hai.
+   */
+
+  const isExistingFund =
+    Boolean(selectedFund);
 
 
   /*
@@ -81,12 +103,26 @@ function MutualFundForm() {
 
   /*
    * --------------------------------
-   * INITIAL FUND DATA
+   * INVESTOR CONTEXT
    * --------------------------------
    *
-   * Holding ke schema ko form ke
-   * expected fund schema ke saath
-   * normalize kar rahe hain.
+   * New Mutual Fund ke liye investors
+   * Firebase se dynamically load honge.
+   *
+   * Existing Fund ke case me investor
+   * selectedFund se directly use hoga.
+   */
+
+  const {
+    investors,
+    loading: investorsLoading,
+  } = useInvestors();
+
+
+  /*
+   * --------------------------------
+   * INITIAL FUND DATA
+   * --------------------------------
    */
 
   const initialFund =
@@ -94,12 +130,6 @@ function MutualFundForm() {
       ? {
           ...selectedFund,
 
-          /*
-           * API FundPreview generally
-           * fund.name use karta hai.
-           *
-           * Holding me schemeName hai.
-           */
           name:
             selectedFund.name ||
             selectedFund.schemeName ||
@@ -383,8 +413,7 @@ function MutualFundForm() {
    * Ye fallback ke liye rakha hai.
    *
    * Normally Add button se fund already
-   * filled hoga, isliye user ko search
-   * karne ki zarurat nahi padegi.
+   * filled hoga.
    */
 
   const handleSchemeSearch =
@@ -454,12 +483,6 @@ function MutualFundForm() {
    * --------------------------------
    * SCHEME CODE CHANGE
    * --------------------------------
-   *
-   * Auto-filled scheme code ko normally
-   * change nahi karna padega.
-   *
-   * Agar user change karta hai to
-   * purana fund clear hoga.
    */
 
   const handleSchemeCodeChange =
@@ -508,11 +531,38 @@ function MutualFundForm() {
 
       /*
        * --------------------------------
+       * INVESTOR
+       * --------------------------------
+       *
+       * Existing fund ke case me
+       * investor selectedFund se hi liya jayega.
+       *
+       * New fund ke case me
+       * InvestorSelect se selected investorId
+       * use hoga.
+       */
+
+      const finalInvestorId =
+        selectedFund?.investorId ||
+        investorId;
+
+
+      const finalInvestorName =
+        selectedFund?.investorName ||
+        investors.find(
+          (item) =>
+            item.id === finalInvestorId
+        )?.name ||
+        "";
+
+
+      /*
+       * --------------------------------
        * VALIDATION
        * --------------------------------
        */
 
-      if (!investorId) {
+      if (!finalInvestorId) {
 
         setError(
           "Please select an investor."
@@ -606,19 +656,6 @@ function MutualFundForm() {
 
       /*
        * --------------------------------
-       * SELECT INVESTOR
-       * --------------------------------
-       */
-
-      const selectedInvestor =
-        investors.find(
-          (item) =>
-            item.id === investorId
-        );
-
-
-      /*
-       * --------------------------------
        * CREATE TRANSACTION
        * --------------------------------
        */
@@ -640,14 +677,20 @@ function MutualFundForm() {
           "BUY",
 
 
-        investorId,
+        /*
+         * Existing fund:
+         * selectedFund investor
+         *
+         * New fund:
+         * InvestorContext selected investor
+         */
+
+        investorId:
+          finalInvestorId,
 
 
         investorName:
-          selectedInvestor?.name ||
-          selectedFund?.investorName ||
-          fund?.investorName ||
-          "",
+          finalInvestorName,
 
 
         schemeCode:
@@ -891,6 +934,8 @@ function MutualFundForm() {
             investors={investors}
             value={investorId}
             onChange={setInvestorId}
+            loading={investorsLoading}
+            disabled={isExistingFund}
           />
 
         </div>
@@ -1520,3 +1565,4 @@ function MutualFundForm() {
 }
 
 export default MutualFundForm;
+

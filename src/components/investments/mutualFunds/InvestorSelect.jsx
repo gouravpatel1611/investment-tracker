@@ -1,4 +1,3 @@
-
 import {
   ChevronDown,
   UserRound,
@@ -10,6 +9,7 @@ function InvestorSelect({
   value,
   onChange,
   loading = false,
+  disabled = false,
 }) {
 
   return (
@@ -48,7 +48,7 @@ function InvestorSelect({
         <select
           id="investor"
           value={value}
-          disabled={loading}
+          disabled={loading || disabled}
           onChange={(event) =>
             onChange(
               event.target.value
@@ -80,7 +80,9 @@ function InvestorSelect({
           <option value="">
             {loading
               ? "Loading investors..."
-              : "Select investor"}
+              : disabled
+                ? "Investor"
+                : "Select investor"}
           </option>
 
 
