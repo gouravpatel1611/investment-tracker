@@ -122,226 +122,91 @@ function getRatePercent(rate) {
    DAILY FULE / PI FULE AMOUNTS
 ========================================================= */
 
-export function getEffectiveFule(
-  investor,
-  date
-) {
-  if (
-    !investor ||
-    !date
-  ) {
+
+export function getEffectiveFule(investor, date) {
+  if (!investor || !date) {
     return 0;
   }
 
-  const targetDate =
-    parseDateOnly(date);
+  const targetDate = parseDateOnly(date);
 
   if (!targetDate) {
     return 0;
   }
 
+  const transactions = Array.isArray(investor?.transactions)
+    ? investor.transactions
+    : [];
 
-  /* -----------------------------------------
-     INITIAL FULE
-  ----------------------------------------- */
+  return transactions.reduce((total, transaction) => {
+    if (transaction?.type !== "FULE_ADD" || !transaction?.date) {
+      return total;
+    }
 
-  const initialFule =
-    toNumber(
-      investor?.initial?.fule
+    const transactionDate = parseDateOnly(
+      getEffectiveDate(transaction.date)
     );
 
-  const initialDate =
-    getEffectiveDate(
-      investor?.startDate
-    );
-
-  let effectiveFule = 0;
-
-
-  if (
-    initialDate &&
-    targetDate >=
-      parseDateOnly(initialDate)
-  ) {
-    effectiveFule +=
-      initialFule;
-  }
-
-
-  /* -----------------------------------------
-     ADDITIONAL FULE
-  ----------------------------------------- */
-
-  const transactions =
-    Array.isArray(
-      investor?.transactions
-    )
-      ? investor.transactions
-      : [];
-
-
-  for (
-    const transaction
-    of transactions
-  ) {
-
-    if (
-      transaction?.type !==
-      "FULE_ADD"
-    ) {
-      continue;
+    if (!transactionDate || targetDate < transactionDate) {
+      return total;
     }
 
-
-    const transactionDate =
-      transaction?.date;
-
-    if (!transactionDate) {
-      continue;
-    }
-
-
-    const effectiveDate =
-      getEffectiveDate(
-        transactionDate
-      );
-
-    if (!effectiveDate) {
-      continue;
-    }
-
-
-    if (
-      targetDate >=
-      parseDateOnly(effectiveDate)
-    ) {
-
-      effectiveFule +=
-        toNumber(
-          transaction?.amount
-        );
-
-    }
-
-  }
-
-
-  return effectiveFule;
+    return total + Math.max(0, toNumber(transaction.amount));
+  }, 0);
 }
+
 
 
 /* =========================================================
    EFFECTIVE PI FULE
 ========================================================= */
 
-export function getEffectivePiFule(
-  investor,
-  date
-) {
-  if (
-    !investor ||
-    !date
-  ) {
+export function getEffectivePiFule(investor, date) {
+  if (!investor || !date) {
     return 0;
   }
 
-  const targetDate =
-    parseDateOnly(date);
+  const targetDate = parseDateOnly(date);
 
   if (!targetDate) {
     return 0;
   }
 
-
-  /* -----------------------------------------
-     INITIAL PI FULE
-  ----------------------------------------- */
-
-  const initialPiFule =
-    toNumber(
-      investor?.initial?.piFule
-    );
-
-  const initialDate =
-    getEffectiveDate(
-      investor?.startDate
-    );
+  const transactions = Array.isArray(investor?.transactions)
+    ? investor.transactions
+    : [];
 
   let effectivePiFule = 0;
 
-
-  if (
-    initialDate &&
-    targetDate >=
-      parseDateOnly(initialDate)
-  ) {
-
-    effectivePiFule +=
-      initialPiFule;
-
-  }
-
-
-  /* -----------------------------------------
-     ADDITIONAL PI FULE
-  ----------------------------------------- */
-
-  const transactions =
-    Array.isArray(
-      investor?.transactions
-    )
-      ? investor.transactions
-      : [];
-
-
-  for (
-    const transaction
-    of transactions
-  ) {
-
-    if (
-      transaction?.type !==
-      "PI_FULE_ADD"
-    ) {
+  for (const transaction of transactions) {
+    if (transaction?.type !== "PI_FULE_ADD") {
       continue;
     }
 
-
-    const transactionDate =
-      transaction?.date;
-
-    if (!transactionDate) {
+    if (!transaction?.date) {
       continue;
     }
 
-
-    const effectiveDate =
-      getEffectiveDate(
-        transactionDate
-      );
+    const effectiveDate = getEffectiveDate(transaction.date);
 
     if (!effectiveDate) {
       continue;
     }
 
+    const transactionDate = parseDateOnly(effectiveDate);
 
-    if (
-      targetDate >=
-      parseDateOnly(effectiveDate)
-    ) {
-
-      effectivePiFule +=
-        toNumber(
-          transaction?.amount
-        );
-
+    if (!transactionDate) {
+      continue;
     }
 
+    if (targetDate >= transactionDate) {
+      effectivePiFule += toNumber(transaction.amount);
+    }
   }
-
 
   return effectivePiFule;
 }
+
 
 
 /* =========================================================
@@ -394,7 +259,6 @@ export function calculateDailyEarning(
 
   const total =
     apr + pi;
-
 
   return {
     date,
@@ -463,76 +327,54 @@ export function getDateRange(
    DAILY CALCULATION
 ========================================================= */
 
+
 export function calculateInvestorDailyEarnings(
   investor,
   rates = [],
   endDate = getTodayDate()
 ) {
-
   if (!investor) {
     return [];
   }
 
+  const transactions = Array.isArray(investor?.transactions)
+    ? investor.transactions
+    : [];
 
-  const rateMap =
-    new Map();
+  // Calculation begins with the first actual FULE / PI FULE addition.
+  const investmentDates = transactions
+    .filter(
+      (transaction) =>
+        ["FULE_ADD", "PI_FULE_ADD"].includes(transaction?.type) &&
+        transaction?.date &&
+        parseDateOnly(transaction.date)
+    )
+    .map((transaction) => transaction.date)
+    .sort();
 
-
-  for (
-    const rate
-    of rates
-  ) {
-
-    if (
-      !rate?.date
-    ) {
-      continue;
-    }
-
-
-    rateMap.set(
-      rate.date,
-      toNumber(
-        rate.rate
-      )
-    );
-
-  }
-
-
-  const startDate =
-    investor?.startDate;
-
-
-  if (!startDate) {
+  // No FULE or PI FULE transaction means no earnings.
+  if (investmentDates.length === 0) {
     return [];
   }
 
+  const startDate = investmentDates[0];
+  const rateMap = new Map();
 
-  const dates =
-    getDateRange(
-      startDate,
-      endDate
-    );
-
-
-  return dates.map(
-    (date) => {
-
-      const rate =
-        rateMap.get(
-          date
-        ) ?? 0;
-
-
-      return calculateDailyEarning(
-        investor,
-        rate,
-        date
-      );
-
+  for (const rate of rates) {
+    if (!rate?.date) {
+      continue;
     }
-  );
+
+    rateMap.set(rate.date, toNumber(rate.rate));
+  }
+
+  const dates = getDateRange(startDate, endDate);
+
+  return dates.map((date) => {
+    const rate = rateMap.get(date) ?? 0;
+
+    return calculateDailyEarning(investor, rate, date);
+  });
 }
 
 
@@ -721,63 +563,31 @@ export function calculateInvestorSummary(
      CURRENT INVESTMENT AMOUNTS
   ----------------------------------------- */
 
-  const liquidity =
-    toNumber(
-      investor?.initial?.liquidity
-    );
+  // Keep legacy liquidity for display only.
+  // Liquidity never contributes to earnings.
+  const liquidity = toNumber(investor?.initial?.liquidity);
 
+  const transactions = Array.isArray(investor?.transactions)
+    ? investor.transactions
+    : [];
 
-  let fule =
-    toNumber(
-      investor?.initial?.fule
-    );
-
-
-  let piFule =
-    toNumber(
-      investor?.initial?.piFule
-    );
-
-
-  const transactions =
-    Array.isArray(
-      investor?.transactions
-    )
-      ? investor.transactions
-      : [];
-
-
-  for (
-    const transaction
-    of transactions
-  ) {
-
-    const amount =
-      toNumber(
-        transaction?.amount
-      );
-
-
-    if (
-      transaction?.type ===
-      "FULE_ADD"
-    ) {
-
-      fule += amount;
-
+  // Ignore legacy initial FULE / PI FULE values.
+  // Only actual addition transactions count.
+  const fule = transactions.reduce((total, transaction) => {
+    if (transaction?.type !== "FULE_ADD") {
+      return total;
     }
 
+    return total + Math.max(0, toNumber(transaction.amount));
+  }, 0);
 
-    if (
-      transaction?.type ===
-      "PI_FULE_ADD"
-    ) {
-
-      piFule += amount;
-
+  const piFule = transactions.reduce((total, transaction) => {
+    if (transaction?.type !== "PI_FULE_ADD") {
+      return total;
     }
 
-  }
+    return total + Math.max(0, toNumber(transaction.amount));
+  }, 0);
 
 
   /* -----------------------------------------

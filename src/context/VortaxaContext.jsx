@@ -254,20 +254,25 @@ function sortRates(
    EARLIEST INVESTMENT DATE
 ========================================================= */
 
-function getEarliestInvestmentDate(
-  investors
-) {
-  const dates =
-    investors
-      .map(
-        (investor) =>
-          investor?.startDate
-      )
-      .filter(Boolean)
-      .sort();
 
-  return dates[0] || null;
+function getEarliestInvestmentDate(investors) {
+  const dates = investors.flatMap((investor) => {
+    const transactions = Array.isArray(investor?.transactions)
+      ? investor.transactions
+      : [];
+
+    return transactions
+      .filter(
+        (transaction) =>
+          ["FULE_ADD", "PI_FULE_ADD"].includes(transaction?.type) &&
+          transaction?.date
+      )
+      .map((transaction) => transaction.date);
+  });
+
+  return dates.sort()[0] || null;
 }
+
 
 
 /* =========================================================

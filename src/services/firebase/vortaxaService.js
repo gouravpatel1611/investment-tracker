@@ -546,6 +546,15 @@ export async function getVortaxaTransactions(
       await getDocs(q);
 
 
+
+
+
+
+return snapshot.docs.map((item) => ({
+  ...item.data(),
+  id: item.id,
+}));
+
     return snapshot.docs.map(
       (item) => ({
         ...item.data(),
