@@ -36,9 +36,7 @@ import {
   CPFProvider,
 } from "./context/CPFContext";
 
-import { 
-  VortaxaProvider 
-} from "./context/VortaxaContext";
+
 
 function App() {
   return (
@@ -51,9 +49,7 @@ function App() {
                 <SGBProvider>
                   <ETFStockProvider>
                     <CPFProvider>
-                      <VortaxaProvider>
                         <AppRoutes />
-                      </VortaxaProvider>
                     </CPFProvider>
                   </ETFStockProvider>
                 </SGBProvider>

@@ -30,10 +30,6 @@ export const assetTypes = [
     label: "Bonds",
   },
 
-  {
-    id: "vortaxa",
-    label: "Vortaxa",
-  },
 
   {
     id: "other",

@@ -6,8 +6,6 @@ function AssetBreakdownCard({
 }) {
   const Icon = asset?.icon;
 
-  const isVortaxa =
-    asset?.id === "vortaxa";
 
   return (
     <button
@@ -147,31 +145,12 @@ function AssetBreakdownCard({
           >
             {isLoading
               ? "Loading..."
-              : isVortaxa
-                ? formatDollar(
-                    asset?.currentValue || 0
-                  )
-                : asset?.formattedValue || "—"}
+              : asset?.formattedValue || "—"}
           </p>
 
-          {/* VORTAXA NET WITHDRAWAL */}
 
-          {isVortaxa && (
-            <p
-              className="
-                mt-0.5
-                text-[15px]
-                font-medium
-                text-green-400
-                tabular-nums
-              "
-            >
-              NET WDL :{" "}
-              {formatDollar(
-                asset?.netWithdrawal || 0
-              )}
-            </p>
-          )}
+
+
         </div>
 
         {/* ARROW */}
@@ -221,23 +200,7 @@ function formatCurrency(value = 0) {
 }
 
 
-/* ========================================
-   USD FORMAT
-   Vortaxa uses this
-======================================== */
 
-function formatDollar(value = 0) {
-  return new Intl.NumberFormat(
-    "en-US",
-    {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 2,
-    }
-  ).format(
-    Number(value) || 0
-  );
-}
 
 
 export default AssetBreakdownCard;

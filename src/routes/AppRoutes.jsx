@@ -42,11 +42,7 @@ import ETFStock from "../pages/etfStock/ETFStock";
 import ETFStockDetails from "../pages/etfStock/ETFStockDetails";
 import ETFStockTransactionForm from "../components/etfStock/ETFStockTransactionForm"
 import Investors from "../pages/investors/Investors";
-import Vortaxa from "../pages/vortaxa/Vortaxa";
-import AddVortaxa from "../pages/vortaxa/AddVortaxa";
-import VortaxaDetails from "../pages/vortaxa/VortaxaDetails";
-import VortaxaTransactions from "../pages/vortaxa/VortaxaTransactions";
-import VortaxaRates from "../pages/vortaxa/VortaxaRates";
+
 
 
 
@@ -218,42 +214,6 @@ function AppRoutes() {
             />
 
             
-
-            {/* vortaxa  */}
-
-            <Route
-              path="/vortaxa"
-              element={
-                <Vortaxa />
-              }
-            />
-
-
-            <Route
-              path="/vortaxa/add"
-              element={
-                <AddVortaxa />
-              }
-            />
-
-            <Route
-              path="/vortaxa/:investorId/transactions"
-              element={<VortaxaTransactions />}
-            />
-
-
-            <Route
-              path="/vortaxa/:investorId"
-              element={<VortaxaDetails />}
-            />
-
-            <Route
-              path="/vortaxa/:investorId/rates"
-              element={<VortaxaRates />}
-            />
-                        
-
-
 
 
 

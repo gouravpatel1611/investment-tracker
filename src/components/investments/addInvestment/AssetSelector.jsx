@@ -75,19 +75,7 @@ const assets = [
     route: "/etf-stock/add",
   },
 
-  // ========================================
-  // VORTAXA
-  // ========================================
 
-  {
-    id: "vortaxa",
-    name: "Vortaxa",
-    type: "Cryptocurrency",
-    icon: CircleDollarSign,
-    iconClass:
-      "bg-orange-500/15 text-orange-300",
-    route: "/vortaxa/add",
-  },
 
 ];
 
