@@ -1,4 +1,9 @@
-const API_BASE_URL = "https://api.mfapi.in";
+const API_BASE_URL = "/api/mf";
+
+
+
+
+
 
 /* --------------------------------
    API DATE → YYYY-MM-DD
@@ -78,6 +83,7 @@ function normalizeFundResponse(data) {
    FIND FUND BY SCHEME CODE
 -------------------------------- */
 
+
 export async function findMutualFundBySchemeCode(
   schemeCode
 ) {
@@ -85,95 +91,104 @@ export async function findMutualFundBySchemeCode(
     schemeCode || ""
   ).trim();
 
-  /*
-    Empty scheme code
-  */
-
-  if (!code) {
+  if (!code || !/^\d+$/.test(code)) {
     return null;
   }
 
-  /*
-    Basic validation
-    Mutual fund scheme codes are numeric.
-  */
+  const url =
+    `${API_BASE_URL}/${encodeURIComponent(code)}`;
 
-  if (!/^\d+$/.test(code)) {
-    return null;
-  }
+  let lastError;
 
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/mf/${encodeURIComponent(
-        code
-      )}`
+  // Retry up to 2 attempts
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+
+    const timeout = setTimeout(
+      () => controller.abort(),
+      12000
     );
 
-    /*
-      WRONG SCHEME CODE
-      API normally returns 404.
-    */
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
 
-    if (response.status === 404) {
-      return null;
-    }
+      clearTimeout(timeout);
 
-    /*
-      Other server errors
-    */
+      if (response.status === 404) {
+        return null;
+      }
 
-    if (!response.ok) {
-      throw new Error(
-        `Mutual fund API error: ${response.status}`
+      if (
+        [429, 502, 503, 504].includes(
+          response.status
+        ) && attempt < 2
+      ) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 500)
+        );
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Mutual Fund API error: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (
+        !data ||
+        data.status === "FAILED" ||
+        !data.meta
+      ) {
+        return null;
+      }
+
+      const fund = normalizeFundResponse(data);
+
+      if (
+        !fund ||
+        !fund.schemeCode ||
+        !fund.name
+      ) {
+        return null;
+      }
+
+      return fund;
+
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === 2) {
+        break;
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 500)
       );
+
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const data =
-      await response.json();
-
-    /*
-      API returned unsuccessful response
-    */
-
-    if (
-      !data ||
-      data.status === "FAILED" ||
-      !data.meta
-    ) {
-      return null;
-    }
-
-    const fund =
-      normalizeFundResponse(data);
-
-    /*
-      Safety check
-    */
-
-    if (
-      !fund ||
-      !fund.schemeCode ||
-      !fund.name
-    ) {
-      return null;
-    }
-
-    return fund;
-
-  } catch (error) {
-    console.error(
-      "Scheme search error:",
-      error
-    );
-
-    /*
-      Network/server error ko
-      not-found nahi banana hai.
-    */
-
-    throw error;
   }
+
+  console.error(
+    "Scheme search error:",
+    lastError
+  );
+
+  throw lastError || new Error(
+    "Unable to fetch mutual fund data"
+  );
 }
+
 
 
 /* --------------------------------

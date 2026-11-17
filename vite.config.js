@@ -113,6 +113,28 @@ export default defineConfig({
 
       },
 
+
+
+      /* =========================================
+        MUTUAL FUND API
+      ========================================= */
+
+      "/api/mf": {
+        target: "https://api.mfapi.in",
+
+        changeOrigin: true,
+
+        secure: true,
+
+        rewrite: (path) =>
+          path.replace(
+            /^\/api\/mf/,
+            "/mf"
+          ),
+      },
+
+
+
     },
 
   },
